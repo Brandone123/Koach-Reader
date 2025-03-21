@@ -326,12 +326,9 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
           username: body.username,
           email: body.email,
           password: hashedPassword,
-          firstName: body.firstName || null,
-          lastName: body.lastName || null,
-          profilePicUrl: body.profilePicUrl || null,
           koachPoints: 0,
           isPremium: false,
-          preferences: {} 
+          preferences: {}
         };
         
         const user = await storage.createUser(userToCreate);

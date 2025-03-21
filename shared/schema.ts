@@ -49,14 +49,12 @@ export const notificationTypeEnum = pgEnum("notification_type", [
 // Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  email: text("email").notNull().unique(),
   username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
-  firstName: text("first_name"),
-  lastName: text("last_name"),
-  profilePicUrl: text("profile_pic_url"),
-  koachPoints: integer("koach_points").default(0).notNull(),
   isPremium: boolean("is_premium").default(false).notNull(),
+  koachPoints: integer("koach_points").default(0).notNull(),
+  readingStreak: integer("reading_streak").default(0).notNull(),
   preferences: json("preferences").$type<UserPreferences>().default({}),
   createdAt: timestamp("created_at").default(sql`NOW()`).notNull(),
   updatedAt: timestamp("updated_at").default(sql`NOW()`).notNull(),

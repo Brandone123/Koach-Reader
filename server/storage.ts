@@ -253,34 +253,46 @@ export class DatabaseStorage implements IStorage {
     current_page?: number;
     notes?: string;
   }): Promise<any> {
-    // Construction de la requête SQL directe pour éviter les problèmes de schéma
-    const query = `
-      INSERT INTO reading_plans (
-        user_id, book_id, start_date, end_date, frequency, 
-        pages_per_session, title, total_pages, current_page, notes,
-        created_at, updated_at
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()
-      ) RETURNING *
-    `;
+    console.log("Création d'un plan de lecture avec les données:", JSON.stringify(planData, null, 2));
     
-    const values = [
-      planData.userId,
-      planData.bookId,
-      planData.startDate,
-      planData.endDate,
-      planData.frequency,
-      planData.pagesPerSession,
-      planData.title || `Plan de lecture: ${planData.bookId}`,
-      planData.total_pages || 100,
-      planData.current_page || 0,
-      planData.notes || ''
-    ];
-    
-    // Importer le pool depuis db.ts
-    const { pool } = await import('./db');
-    const { rows } = await pool.query(query, values);
-    return rows[0];
+    try {
+      // Construction de la requête SQL directe pour éviter les problèmes de schéma
+      const query = `
+        INSERT INTO reading_plans (
+          user_id, book_id, start_date, end_date, frequency, 
+          pages_per_session, title, total_pages, current_page, notes,
+          created_at, updated_at
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()
+        ) RETURNING *
+      `;
+      
+      const values = [
+        planData.userId,
+        planData.bookId,
+        planData.startDate,
+        planData.endDate,
+        planData.frequency,
+        planData.pagesPerSession,
+        planData.title || `Plan de lecture: ${planData.bookId}`,
+        planData.total_pages || 100,
+        planData.current_page || 0,
+        planData.notes || ''
+      ];
+      
+      console.log("Exécution de la requête SQL:", query);
+      console.log("Avec les valeurs:", JSON.stringify(values, null, 2));
+      
+      // Importer le pool depuis db.ts
+      const { pool } = await import('./db');
+      const { rows } = await pool.query(query, values);
+      
+      console.log("Plan de lecture créé avec succès:", JSON.stringify(rows[0], null, 2));
+      return rows[0];
+    } catch (error) {
+      console.error("Erreur lors de la création du plan de lecture:", error);
+      throw error;
+    }
   }
 
   async updateReadingPlan(
@@ -497,14 +509,12 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select({
         id: users.id,
-        email: users.email,
         username: users.username,
+        email: users.email,
         password: users.password,
-        firstName: users.firstName,
-        lastName: users.lastName,
-        profilePicUrl: users.profilePicUrl,
-        koachPoints: users.koachPoints,
         isPremium: users.isPremium,
+        koachPoints: users.koachPoints,
+        readingStreak: users.readingStreak,
         preferences: users.preferences,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt
@@ -519,9 +529,6 @@ export class DatabaseStorage implements IStorage {
       .select({
         id: users.id,
         username: users.username,
-        firstName: users.firstName,
-        lastName: users.lastName,
-        profilePicUrl: users.profilePicUrl,
         createdAt: friends.createdAt,
       })
       .from(friends)

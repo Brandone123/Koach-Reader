@@ -10,9 +10,7 @@ import {
   ScrollView
 } from 'react-native';
 import { TextInput, Button, HelperText } from 'react-native-paper';
-import { useDispatch, useSelector } from 'react-redux';
-import { login, selectIsLoading, selectError, selectIsLoggedIn } from '../slices/authSlice';
-import { AppDispatch } from '../store';
+import { useAuth } from '../hooks/useAuth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 
@@ -31,17 +29,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [usernameError, setUsernameError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   
-  const dispatch = useDispatch<AppDispatch>();
-  const isLoading = useSelector(selectIsLoading);
-  const error = useSelector(selectError);
-  const isLoggedIn = useSelector(selectIsLoggedIn);
+  const { login, user, isLoading, error } = useAuth();
   
   useEffect(() => {
     // Redirect to Home if already logged in
-    if (isLoggedIn) {
+    if (user) {
       navigation.replace('Home');
     }
-  }, [isLoggedIn, navigation]);
+  }, [user, navigation]);
   
   const validateForm = (): boolean => {
     let isValid = true;
@@ -65,9 +60,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     return isValid;
   };
   
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (validateForm()) {
-      dispatch(login({ username, password }));
+      try {
+        await login({ username, password });
+      } catch (err) {
+        // Error will be handled by the useAuth hook
+        console.error('Login failed:', err);
+      }
     }
   };
   

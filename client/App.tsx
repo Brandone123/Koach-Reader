@@ -11,9 +11,7 @@ import BookDetailScreen from './src/screens/BookDetailScreen';
 import ReadingPlanScreen from './src/screens/ReadingPlanScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchCurrentUser, selectIsLoggedIn } from './src/slices/authSlice';
-import { AppDispatch } from './src/store';
+import { AuthProvider, useAuth } from './src/hooks/useAuth';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -54,14 +52,9 @@ const AuthNavigator = () => {
 
 // Main app navigation wrapper
 const AppNavigator = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const isLoggedIn = useSelector(selectIsLoggedIn);
+  const { user } = useAuth();
   
-  useEffect(() => {
-    dispatch(fetchCurrentUser());
-  }, [dispatch]);
-  
-  if (!isLoggedIn) {
+  if (!user) {
     return <AuthNavigator />;
   }
   
@@ -129,9 +122,11 @@ export default function App() {
   return (
     <ReduxProvider store={store}>
       <PaperProvider theme={theme}>
-        <NavigationContainer>
-          <AppNavigator />
-        </NavigationContainer>
+        <AuthProvider>
+          <NavigationContainer>
+            <AppNavigator />
+          </NavigationContainer>
+        </AuthProvider>
       </PaperProvider>
     </ReduxProvider>
   );

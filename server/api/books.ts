@@ -27,7 +27,7 @@ export function setupBooksRoutes(app: Express, verifyJWT: any) {
   });
 
   // Get a specific book by ID
-  app.get("/api/books/:id", verifyJWT, async (req, res) => {
+  app.get("/api/books/:id", verifyJWT, async (req: any, res: any) => {
     try {
       const bookId = parseInt(req.params.id);
       if (isNaN(bookId)) {
@@ -54,7 +54,7 @@ export function setupBooksRoutes(app: Express, verifyJWT: any) {
   });
 
   // Get all books uploaded by the current user
-  app.get("/api/my-books", verifyJWT, async (req, res) => {
+  app.get("/api/my-books", verifyJWT, async (req: any, res: any) => {
     try {
       const userId = req.user!.id;
       const books = await storage.getBooksByUser(userId);
@@ -67,7 +67,7 @@ export function setupBooksRoutes(app: Express, verifyJWT: any) {
   });
 
   // Upload a new book (premium users only)
-  app.post("/api/books", [verifyJWT, isPremiumUser], async (req, res) => {
+  app.post("/api/books", [verifyJWT, isPremiumUser], async (req: any, res: any) => {
     try {
       // Validate request body
       const { title, author, description, pageCount, category, language, isPublic, fileUrl, audioUrl } = req.body;
@@ -99,7 +99,7 @@ export function setupBooksRoutes(app: Express, verifyJWT: any) {
   });
 
   // Update a book (only by uploader)
-  app.put("/api/books/:id", verifyJWT, async (req, res) => {
+  app.put("/api/books/:id", verifyJWT, async (req: any, res: any) => {
     try {
       const bookId = parseInt(req.params.id);
       if (isNaN(bookId)) {
@@ -121,14 +121,16 @@ export function setupBooksRoutes(app: Express, verifyJWT: any) {
       const updatedBook = await storage.updateBook(bookId, req.body);
       
       res.status(200).json(updatedBook);
+      return;
     } catch (error) {
       console.error("Error updating book:", error);
       res.status(500).json({ message: "Error updating book" });
+      return;
     }
   });
 
   // Add a comment to a book
-  app.post("/api/books/:id/comments", verifyJWT, async (req, res) => {
+  app.post("/api/books/:id/comments", verifyJWT, async (req: any, res: any) => {
     try {
       const bookId = parseInt(req.params.id);
       if (isNaN(bookId)) {
@@ -158,9 +160,11 @@ export function setupBooksRoutes(app: Express, verifyJWT: any) {
         message: "Comment added successfully",
         koachEarned: 20
       });
+      return;
     } catch (error) {
       console.error("Error adding comment:", error);
       res.status(500).json({ message: "Error adding comment" });
+      return;
     }
   });
 

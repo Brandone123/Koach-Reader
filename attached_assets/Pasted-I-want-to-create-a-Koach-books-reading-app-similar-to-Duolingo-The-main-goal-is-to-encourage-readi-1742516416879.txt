@@ -1,0 +1,183 @@
+I want to  create a Koach books reading app similar to Duolingo. The main goal is to encourage reading through gamification with points called Koach, social interactions, challenges, and personalized reading plans.
+
+Starting with the frontend, they specified React Native with Expo 52+, TypeScript, and Redux. So, put the necessary screens and components. The onboarding process includes several questions to personalize the user experience. Each of these should be separate screens, probably using a stack navigator. Then, the home screen needs to display categories the user selected, with options to filter others. Icons and animations are important here for a polished look.
+
+Next, the book details screen should show summaries, author info, comments, and ratings. Implementing a reader for both PDF and audio will require third-party libraries. Maybe react-native-pdf for PDFs and react-native-video for audio. The reading plan setup is crucial—users select duration, frequency, and time, then the app calculates pages per session. This logic needs to be solid, handling different time frames and frequencies.
+
+Social features: adding friends, messaging, challenges. This will need a friends list, profile screens, and challenge creation. Notifications are key here, so integrating push notifications via Expo's services makes sense. Also, badges and leaderboards for Koach points to drive engagement.
+
+Backend structure with PostgreSQL. Let's list out the entities: users, books, categories, reading plans, comments, notes, friends, challenges, badges, user_books, notifications. Each table needs appropriate columns. For example, the user table has personal info, preferences, stats. The reading_plans table will track each user's current book progress.
+
+API endpoints must cover all functionalities. Auth endpoints for login/register, books for fetching and searching, reading plans to start and update progress, social for friends and challenges, user for profiles and stats. Securing endpoints with JWT tokens is a must, especially for premium features.
+
+State management with Redux. Slices for user, books, readingPlans, social, notifications. Async thunks will handle API calls. Keeping the state updated ensures smooth UI interactions, like real-time Koach points updates.
+
+Challenges I foresee: calculating daily pages accurately based on user inputs. Need to handle different durations and frequencies, considering the book's total pages. Also, handling audio and PDF rendering in React Native might have performance issues, so choosing the right libraries is important.
+
+Another point is the premium features. Differentiating access between free and premium users on the backend, ensuring only premium can upload books.
+
+Testing is crucial. Unit tests for the calculation logic, integration tests for API endpoints, and thorough UI testing on different devices. Expo's tools can help with that.
+
+Overall, breaking down each feature into manageable components, ensuring the database schema supports all relationships, and planning the API structure carefully will be key. Prioritizing user experience with smooth animations and notifications will make the app engaging, similar to Duolingo's success.
+
+
+Structure Globale du Projet
+Frontend (React Native Expo 52+)
+
+Backend (Node.js/Express)
+
+Base de Données PostgreSQL (Koach_BD)
+
+1. Exigences Fonctionnelles Détaillées
+A. Onboarding Personnalisé
+Écrans de Questionnaire (5 écrans) :
+
+Fréquence de lecture (quotidien/semaine/mois)
+
+Tranche d’âge (enfant/ado/adulte)
+
+Catégories préférées (liste des 16 catégories)
+
+Objectifs spirituels (améliorer la prière, etc.)
+
+Préférences de lecture (audio/texte, moment de la journée)
+
+B. Lecture Gamifiée
+Calcul Automatique des Pages/Jour :
+
+Si livre de 100 pages sur 10 jours → 10 pages/jour
+
+Ajusté selon la fréquence (ex: tous les 3 jours → 30 pages/session)
+
+Système de Koach :
+
+Points pour actions (lecture, notes, commentaires)
+
+Badges pour accomplissements (ex: "Lecteur Assidu" après 7 jours consécutifs)
+
+C. Fonctionnalités Sociales
+Amis :
+
+Recherche par email/nom
+
+Envoyer/acceptation de demandes
+
+Défis :
+
+Créer un défi de lecture (ex: "Lire 5 livres en 1 mois")
+
+Tableau de classement des amis
+
+Notifications :
+
+Rappels de lecture
+
+Progression des amis (dépassement de Koach)
+
+D. Gestion des Livres
+Premium vs Gratuit :
+
+Gratuit : accès limité (3 livres/mois)
+
+Premium : upload de livres personnels, partage privé
+
+Lecture In-App :
+
+Blocage du téléchargement (PDF viewer intégré)
+
+Mode audio (utiliser un outil pour ca)
+
+2. Architecture Technique
+A. Frontend (Expo)
+Navigation :
+
+Stack Navigation (écrans principaux)
+
+Tab Navigation (Home, Profile, Social)
+
+Composants Clés :
+
+ReadingProgressBar : Barre de progression animée
+
+KoachCounter : Affichage des points avec animations
+
+BookCarousel : Liste horizontale des livres par catégorie
+
+B. Backend (Node.js)
+API Endpoints :
+
+/auth/login, /auth/register
+
+/books/list, /books/upload (Premium)
+
+/reading/start, /reading/update
+
+/social/friends, /social/challenges
+
+C. Base de Données (PostgreSQL)
+Tables Principales :
+
+Users : id, email, password_hash, preferences (JSON), koach_points, is_premium
+
+Books : id, title, author, category, page_count, is_public, uploaded_by
+
+ReadingSessions : user_id, book_id, pages_read, session_date
+
+Friends : user_id, friend_id, status (pending/accepted)
+
+Comments : book_id, user_id, content, rating (1-5)
+
+Badges : user_id, badge_name, date_earned
+
+3. Workflow des Fonctionnalités
+A. Démarrage d’une Lecture
+Utilisateur choisit un livre
+
+Sélectionne durée (1 semaine/mois) et fréquence (quotidien/3 jours)
+
+L’app calcule les pages/jour : total_pages / duration_days
+
+Notification planifiée selon l’heure préférée
+
+B. Gain de Koach
+Événements :
+
+Lecture de page  (Gere cela de maniere automatique en fonction du nombre de page total du livre) : +.... Koach
+
+Note ajoutée : +5 Koach
+
+Commentaire publié : +20 Koach
+
+Badge gagné : +100 Koach
+
+Stockage : Mise à jour en temps réel via Redux
+
+C. Défis entre Amis
+Création d’un défi (ex: "500 Koach en 1 semaine")
+
+Invitation des amis
+
+Suivi en temps réel via un classement
+
+Notification du gagnant
+suivre un ami
+
+Integrer le changement de langue (Anglais/francais)
+integrer le changement de theme
+
+4. Sécurité et Contrôles
+Authentification : JWT avec refresh tokens
+
+Permissions :
+
+Seuls les Premium peuvent uploader des livres
+
+Les livres personnels sont privés par défaut
+
+Validation :
+
+Vérification du format des fichiers uploadés (PDF uniquement)
+
+Limite de taille des fichiers (ex: 20MB)
+
+Je precise bien c'est une application mobile avec React Native et Expo 52+, Typescript, Redux. et  pour le backend pour le moment utilise PostgreSQL pr la base de donnee. cree une BD koachs_bd et ajoute tout les tables et variables neccessaire. ajoute les end point et tout et connecte bien le front et le backend

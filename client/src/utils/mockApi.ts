@@ -612,6 +612,218 @@ export async function mockFetchApi(
       }
       return {};
       
+    // === Challenges API ===
+    case '/api/challenges':
+      if (method === 'GET') {
+        return [
+          {
+            id: 1,
+            title: "30-Day Reading Challenge",
+            description: "Read every day for 30 days and track your progress!",
+            creatorId: 2,
+            startDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+            endDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+            goal: 500,
+            goalType: "pages",
+            isPrivate: false,
+            participantCount: 8,
+            myProgress: currentUser ? 220 : undefined,
+            status: currentUser ? "active" : undefined,
+            createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+            updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 2,
+            title: "Summer Book Club",
+            description: "Read 3 books from our summer reading list",
+            creatorId: 3,
+            startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+            endDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+            goal: 3,
+            goalType: "books",
+            isPrivate: false,
+            participantCount: 12,
+            createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+            updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 3,
+            title: "Speed Reading Practice",
+            description: "Track your reading speed and improve over time",
+            creatorId: 5,
+            startDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+            endDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+            goal: 1000,
+            goalType: "minutes",
+            isPrivate: false,
+            participantCount: 5,
+            createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+            updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+          }
+        ];
+      } else if (method === 'POST' && currentUser) {
+        // Create a new challenge
+        return {
+          id: 4,
+          title: body.title,
+          description: body.description,
+          creatorId: currentUser.id,
+          startDate: body.startDate,
+          endDate: body.endDate,
+          goal: body.goal,
+          goalType: body.goalType,
+          isPrivate: !!body.isPrivate,
+          participantCount: 1,
+          myProgress: 0,
+          status: "active",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      break;
+      
+    // Get challenge details by ID
+    case `/api/challenges/${idFromUrl}`:
+      if (method === 'GET' && idFromUrl) {
+        return {
+          id: idFromUrl,
+          title: "30-Day Reading Challenge",
+          description: "Read every day for 30 days and track your progress!",
+          creatorId: 2,
+          creatorName: "bookworm42",
+          startDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+          endDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+          goal: 500,
+          goalType: "pages",
+          isPrivate: false,
+          participantCount: 8,
+          myProgress: currentUser ? 220 : undefined,
+          status: currentUser ? "active" : undefined,
+          createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+        };
+      }
+      break;
+      
+    // Get challenge participants
+    case `/api/challenges/${idFromUrl}/participants`:
+      if (method === 'GET' && idFromUrl) {
+        return [
+          {
+            id: 1,
+            userId: currentUser ? currentUser.id : 1,
+            username: currentUser ? currentUser.username : "demo",
+            challengeId: idFromUrl,
+            progress: 220,
+            progressPercentage: 44,
+            status: "active",
+            joinedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 2,
+            userId: 2,
+            username: "bookworm42",
+            challengeId: idFromUrl,
+            progress: 350,
+            progressPercentage: 70,
+            status: "active",
+            joinedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 3,
+            userId: 3,
+            username: "readaholic",
+            challengeId: idFromUrl,
+            progress: 500,
+            progressPercentage: 100,
+            status: "completed",
+            joinedAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 4,
+            userId: 4,
+            username: "bibliophile",
+            challengeId: idFromUrl,
+            progress: 320,
+            progressPercentage: 64,
+            status: "active",
+            joinedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 5,
+            userId: 5,
+            username: "kindlemaster",
+            challengeId: idFromUrl,
+            progress: 180,
+            progressPercentage: 36,
+            status: "active",
+            joinedAt: new Date(Date.now() - 11 * 24 * 60 * 60 * 1000).toISOString()
+          }
+        ];
+      }
+      break;
+      
+    // Update challenge progress
+    case `/api/challenges/${idFromUrl}/progress`:
+      if (method === 'POST' && idFromUrl && currentUser) {
+        return {
+          success: true,
+          message: "Progress updated successfully"
+        };
+      }
+      break;
+      
+    // Join a challenge
+    case `/api/challenges/${idFromUrl}/join`:
+      if (method === 'POST' && idFromUrl && currentUser) {
+        return {
+          success: true,
+          message: "Joined challenge successfully"
+        };
+      }
+      break;
+      
+    // Challenge comments
+    case `/api/challenges/${idFromUrl}/comments`:
+      if (method === 'GET' && idFromUrl) {
+        return [
+          {
+            id: 1,
+            userId: 2,
+            username: "bookworm42",
+            challengeId: idFromUrl,
+            content: "Let's all try to read daily and support each other!",
+            createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 2,
+            userId: 3,
+            username: "readaholic",
+            challengeId: idFromUrl,
+            content: "Just finished! It was a great challenge, thanks for organizing!",
+            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 3,
+            userId: 5,
+            username: "kindlemaster",
+            challengeId: idFromUrl,
+            content: "I'm finding it harder than expected, but I'm not giving up!",
+            createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+          }
+        ];
+      } else if (method === 'POST' && idFromUrl && currentUser) {
+        return {
+          id: 4,
+          userId: currentUser.id,
+          username: currentUser.username,
+          challengeId: idFromUrl,
+          content: body.content,
+          createdAt: new Date().toISOString()
+        };
+      }
+      break;
+      
     default:
       console.log(`Mock API endpoint not implemented: ${path}`);
       return [];

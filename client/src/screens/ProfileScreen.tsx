@@ -246,6 +246,24 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           >
             My Badges
           </Button>
+          
+          <Button 
+            mode="outlined" 
+            onPress={() => navigation.navigate('Leaderboard')}
+            style={styles.accountButton}
+            icon="trophy-award"
+          >
+            Leaderboard
+          </Button>
+          
+          <Button 
+            mode="outlined" 
+            onPress={() => navigation.navigate('Challenges')}
+            style={styles.accountButton}
+            icon="flag-checkered"
+          >
+            Reading Challenges
+          </Button>
         </Card.Content>
       </Card>
       

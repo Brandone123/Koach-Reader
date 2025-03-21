@@ -3,6 +3,7 @@ import authReducer from './slices/authSlice';
 import booksReducer from './slices/booksSlice';
 import readingPlansReducer from './slices/readingPlansSlice';
 import koachReducer from './slices/koachSlice';
+import challengesReducer from './slices/challengesSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     books: booksReducer,
     readingPlans: readingPlansReducer,
     koach: koachReducer,
+    challenges: challengesReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

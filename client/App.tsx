@@ -14,6 +14,9 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import ReadingSessionScreen from './src/screens/ReadingSessionScreen';
 import BadgesScreen from './src/screens/BadgesScreen';
 import StatsScreen from './src/screens/StatsScreen';
+import LeaderboardScreen from './src/screens/LeaderboardScreen';
+import ChallengesScreen from './src/screens/ChallengesScreen';
+import ChallengeDetailScreen from './src/screens/ChallengeDetailScreen';
 import { AuthProvider, useAuth } from './src/hooks/useAuth';
 
 export type RootStackParamList = {
@@ -26,6 +29,9 @@ export type RootStackParamList = {
   ReadingSession: { bookId: number; planId?: number };
   Badges: undefined;
   Stats: undefined;
+  Leaderboard: undefined;
+  Challenges: undefined;
+  ChallengeDetail: { challengeId: number };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -128,6 +134,27 @@ const AppNavigator = () => {
         component={StatsScreen} 
         options={{
           title: 'Reading Statistics',
+        }}
+      />
+      <Stack.Screen 
+        name="Leaderboard" 
+        component={LeaderboardScreen} 
+        options={{
+          title: 'Leaderboard',
+        }}
+      />
+      <Stack.Screen 
+        name="Challenges" 
+        component={ChallengesScreen} 
+        options={{
+          title: 'Reading Challenges',
+        }}
+      />
+      <Stack.Screen 
+        name="ChallengeDetail" 
+        component={ChallengeDetailScreen} 
+        options={{
+          title: 'Challenge Details',
         }}
       />
     </Stack.Navigator>

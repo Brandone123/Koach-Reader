@@ -13,10 +13,10 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Koach Server"
+args = "Koach Simple Server"
 
 [[workflows.workflow]]
-name = "Koach Server"
+name = "Koach Simple Server"
 author = "agent"
 
 [workflows.workflow.metadata]
@@ -27,8 +27,12 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd server && npx ts-node index.ts"
-waitForPort = 8000
+args = "cd server && npx ts-node index-new.ts"
+waitForPort = 5000
 
 [deployment]
 run = ["sh", "-c", "cd server && npx ts-node index.ts"]
+
+[[ports]]
+localPort = 5000
+externalPort = 80

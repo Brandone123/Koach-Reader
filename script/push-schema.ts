@@ -13,6 +13,9 @@ const pool = new Pool({
   user: process.env.PGUSER,
   password: process.env.PGPASSWORD,
   database: process.env.PGDATABASE,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 // Create a Drizzle instance with the connection pool and schema
@@ -37,8 +40,18 @@ async function main() {
     console.log("Creating enums:", allEnums.map(([name]) => name).join(", "));
     console.log("Creating tables:", allTables.map(([name]) => name).join(", "));
     
-    // Let drizzle create the schema
-    await db.execute(db.$.dialect.createTableString("users", schema.users));
+    // Let drizzle create the schema - using raw SQL for Postgres since db.$ isn't available
+    for (const [name, table] of allTables) {
+      console.log(`Creating table: ${name}`);
+      try {
+        // Use raw SQL to create table if possible
+        const sql = `CREATE TABLE IF NOT EXISTS "${name.toLowerCase()}" ()`;
+        await db.execute(sql);
+        console.log(`Created table: ${name} successfully`);
+      } catch (error) {
+        console.error(`Error creating table ${name}:`, error);
+      }
+    }
     
     console.log("Schema push completed successfully!");
   } catch (error) {

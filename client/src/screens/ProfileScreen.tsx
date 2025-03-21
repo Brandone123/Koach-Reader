@@ -227,6 +227,30 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       
       <Card style={styles.card}>
         <Card.Content>
+          <Title style={styles.sectionTitle}>Reading Progress</Title>
+          
+          <Button 
+            mode="outlined" 
+            onPress={() => navigation.navigate('Stats')}
+            style={styles.accountButton}
+            icon="chart-bar"
+          >
+            View Statistics
+          </Button>
+          
+          <Button 
+            mode="outlined" 
+            onPress={() => navigation.navigate('Badges')}
+            style={styles.accountButton}
+            icon="trophy"
+          >
+            My Badges
+          </Button>
+        </Card.Content>
+      </Card>
+      
+      <Card style={styles.card}>
+        <Card.Content>
           <Title style={styles.sectionTitle}>Account Options</Title>
           
           <Button 

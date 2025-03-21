@@ -11,6 +11,9 @@ import BookDetailScreen from './src/screens/BookDetailScreen';
 import ReadingPlanScreen from './src/screens/ReadingPlanScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
+import ReadingSessionScreen from './src/screens/ReadingSessionScreen';
+import BadgesScreen from './src/screens/BadgesScreen';
+import StatsScreen from './src/screens/StatsScreen';
 import { AuthProvider, useAuth } from './src/hooks/useAuth';
 
 export type RootStackParamList = {
@@ -20,6 +23,9 @@ export type RootStackParamList = {
   BookDetail: { bookId: number };
   ReadingPlan: { planId?: number; bookId?: number; isEdit?: boolean };
   Profile: undefined;
+  ReadingSession: { bookId: number; planId?: number };
+  Badges: undefined;
+  Stats: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -52,9 +58,10 @@ const AuthNavigator = () => {
 
 // Main app navigation wrapper
 const AppNavigator = () => {
-  const { user } = useAuth();
+  const auth = useAuth();
   
-  if (!user) {
+  // If not authenticated, show auth screens
+  if (!auth.user) {
     return <AuthNavigator />;
   }
   
@@ -82,9 +89,9 @@ const AppNavigator = () => {
       <Stack.Screen 
         name="BookDetail" 
         component={BookDetailScreen} 
-        options={({ route }) => ({
+        options={{
           title: 'Book Details',
-        })}
+        }}
       />
       <Stack.Screen 
         name="ReadingPlan" 
@@ -102,17 +109,43 @@ const AppNavigator = () => {
           title: 'My Profile',
         }}
       />
+      <Stack.Screen 
+        name="ReadingSession" 
+        component={ReadingSessionScreen} 
+        options={{
+          title: 'Log Reading Session',
+        }}
+      />
+      <Stack.Screen 
+        name="Badges" 
+        component={BadgesScreen} 
+        options={{
+          title: 'Badges & Achievements',
+        }}
+      />
+      <Stack.Screen 
+        name="Stats" 
+        component={StatsScreen} 
+        options={{
+          title: 'Reading Statistics',
+        }}
+      />
     </Stack.Navigator>
   );
 };
 
-function ProfileButton({ navigation }) {
+type ProfileButtonProps = {
+  navigation: any; // Ideally we would use StackNavigationProp<RootStackParamList>
+};
+
+function ProfileButton({ navigation }: ProfileButtonProps) {
   return (
     <IconButton
       icon="account-circle"
       size={24}
       onPress={() => navigation.navigate('Profile')}
       style={{ marginRight: 10 }}
+      // @ts-ignore - IconButton from react-native-paper should accept color
       color="white"
     />
   );

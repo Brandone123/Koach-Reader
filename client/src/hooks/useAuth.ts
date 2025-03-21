@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useState, useEffect } from 'react';
+import React, { createContext, ReactNode, useContext, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
   login as loginAction, 
@@ -22,16 +22,35 @@ interface RegisterData {
   password: string;
 }
 
+export interface AuthUser {
+  id: number;
+  username: string;
+  email: string;
+  isPremium: boolean;
+  koachPoints: number;
+  readingStreak: number;
+  preferences?: any;
+  createdAt: string;
+}
+
 interface AuthContextType {
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
-  user: any | null;
+  user: AuthUser | null;
   isLoading: boolean;
   error: string | null;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+// Create the context with a default value
+const AuthContext = createContext<AuthContextType>({
+  login: async () => {},
+  register: async () => {},
+  logout: async () => {},
+  user: null,
+  isLoading: false,
+  error: null
+});
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const dispatch = useDispatch<AppDispatch>();
@@ -56,26 +75,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await dispatch(logoutAction()).unwrap();
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        login,
-        register,
-        logout,
-        user,
-        isLoading,
-        error,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const contextValue: AuthContextType = {
+    login,
+    register,
+    logout,
+    user,
+    isLoading,
+    error,
+  };
+
+  // Return the context provider with children
+  return React.createElement(
+    AuthContext.Provider,
+    { value: contextValue },
+    children
   );
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === null) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
   return context;
 }

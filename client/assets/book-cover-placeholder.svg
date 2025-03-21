@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="240px" height="360px" viewBox="0 0 240 360" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Book Cover Placeholder</title>
+    <g id="Book-Cover" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect id="Background" fill="#E0E0E0" x="0" y="0" width="240" height="360" rx="4"></rect>
+        <g id="Book" transform="translate(60.000000, 90.000000)">
+            <rect id="Cover" fill="#BDBDBD" x="0" y="0" width="120" height="180" rx="2"></rect>
+            <rect id="Spine" fill="#9E9E9E" x="0" y="0" width="10" height="180"></rect>
+            <g id="Text" transform="translate(30.000000, 60.000000)" fill="#FFFFFF">
+                <rect id="Title" x="0" y="0" width="60" height="8" rx="4"></rect>
+                <rect id="Title-2" x="0" y="16" width="40" height="8" rx="4"></rect>
+                <rect id="Author" x="10" y="40" width="40" height="6" rx="3"></rect>
+            </g>
+        </g>
+        <text id="No-Cover" font-family="Arial-BoldMT, Arial" font-size="20" font-weight="bold" fill="#757575">
+            <tspan x="72" y="310">No Cover</tspan>
+        </text>
+    </g>
+</svg>

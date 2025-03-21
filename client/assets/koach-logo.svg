@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Koach Logo</title>
+    <g id="Logo" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <circle id="Background" fill="#6200EE" cx="100" cy="100" r="100"></circle>
+        <g id="Book" transform="translate(50.000000, 50.000000)">
+            <path d="M90,10 C90,4.477 85.523,0 80,0 L20,0 C14.477,0 10,4.477 10,10 L10,90 C10,95.523 14.477,100 20,100 L80,100 C85.523,100 90,95.523 90,90 L90,10 Z" id="Cover" fill="#FFFFFF"></path>
+            <path d="M80,0 L50,0 L50,100 L80,100 C85.523,100 90,95.523 90,90 L90,10 C90,4.477 85.523,0 80,0 Z" id="Page-Right" fill="#F5F5F5"></path>
+            <path d="M20,0 L15,0 C9.477,0 5,4.477 5,10 L5,90 C5,95.523 9.477,100 15,100 L20,100 L20,0 Z" id="Spine" fill="#D1C4E9"></path>
+            <text id="K" font-family="Arial-BoldMT, Arial" font-size="60" font-weight="bold" fill="#6200EE">
+                <tspan x="30" y="70">K</tspan>
+            </text>
+        </g>
+    </g>
+</svg>

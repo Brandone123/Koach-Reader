@@ -239,6 +239,49 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return plan;
   }
+  
+  // Méthode alternative qui utilise uniquement les colonnes existantes
+  async createReadingPlanSimple(planData: {
+    userId: number;
+    bookId: number;
+    startDate: Date;
+    endDate: Date;
+    frequency: string;
+    pagesPerSession: number;
+    title?: string;
+    total_pages?: number;
+    current_page?: number;
+    notes?: string;
+  }): Promise<any> {
+    // Construction de la requête SQL directe pour éviter les problèmes de schéma
+    const query = `
+      INSERT INTO reading_plans (
+        user_id, book_id, start_date, end_date, frequency, 
+        pages_per_session, title, total_pages, current_page, notes,
+        created_at, updated_at
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()
+      ) RETURNING *
+    `;
+    
+    const values = [
+      planData.userId,
+      planData.bookId,
+      planData.startDate,
+      planData.endDate,
+      planData.frequency,
+      planData.pagesPerSession,
+      planData.title || `Plan de lecture: ${planData.bookId}`,
+      planData.total_pages || 100,
+      planData.current_page || 0,
+      planData.notes || ''
+    ];
+    
+    // Importer le pool depuis db.ts
+    const { pool } = await import('./db');
+    const { rows } = await pool.query(query, values);
+    return rows[0];
+  }
 
   async updateReadingPlan(
     id: number,

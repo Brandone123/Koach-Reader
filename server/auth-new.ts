@@ -1,6 +1,5 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -28,7 +27,7 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
-export function setupAuth(app: Express) {
+export function setupAuth(app: any) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "koach-app-session-secret",
     resave: false,
@@ -80,7 +79,8 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/register", async (req, res, next) => {
+  // Register route
+  app.post("/api/register", async (req: any, res: any, next: any) => {
     try {
       // Check for required fields
       if (!req.body.username || !req.body.email || !req.body.password) {
@@ -107,7 +107,7 @@ export function setupAuth(app: Express) {
       });
 
       // Login the user
-      req.login(user, (err) => {
+      req.login(user, (err: any) => {
         if (err) return next(err);
         
         // Remove password from response
@@ -121,34 +121,38 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
+  // Login route
+  app.post("/api/login", passport.authenticate("local"), (req: any, res: any) => {
     // Remove password from response
-    const { password, ...userWithoutPassword } = req.user!;
+    const { password, ...userWithoutPassword } = req.user;
     res.status(200).json(userWithoutPassword);
   });
 
-  app.post("/api/logout", (req, res, next) => {
-    req.logout((err) => {
+  // Logout route
+  app.post("/api/logout", (req: any, res: any, next: any) => {
+    req.logout((err: any) => {
       if (err) return next(err);
       res.sendStatus(200);
     });
   });
 
-  app.get("/api/user", (req, res) => {
+  // Get current user
+  app.get("/api/user", (req: any, res: any) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     // Remove password from response
-    const { password, ...userWithoutPassword } = req.user!;
+    const { password, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
   });
 
-  app.put("/api/user/preferences", async (req, res) => {
+  // Update user preferences
+  app.put("/api/user/preferences", async (req: any, res: any) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
     try {
-      const userId = req.user!.id;
+      const userId = req.user.id;
       const preferences = req.body;
 
       const updatedUser = await storage.updateUser(userId, {

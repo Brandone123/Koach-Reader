@@ -2,9 +2,11 @@ import { Express } from "express";
 import { storage } from "../storage";
 import { InsertReadingPlan } from "../../shared/schema";
 
+import { Request, Response } from "express";
+
 export function setupReadingPlansRoutes(app: Express, verifyJWT: any) {
   // Get all reading plans for the authenticated user
-  app.get("/api/reading-plans", verifyJWT, async (req, res) => {
+  app.get("/api/reading-plans", verifyJWT, async (req: Request, res: Response): Promise<void> => {
     try {
       const userId = req.user!.id;
       const readingPlans = await storage.getReadingPlansByUser(userId);
@@ -28,22 +30,25 @@ export function setupReadingPlansRoutes(app: Express, verifyJWT: any) {
   });
 
   // Get a specific reading plan
-  app.get("/api/reading-plans/:id", verifyJWT, async (req, res) => {
+  app.get("/api/reading-plans/:id", verifyJWT, async (req: Request, res: Response): Promise<void> => {
     try {
       const planId = parseInt(req.params.id);
       if (isNaN(planId)) {
-        return res.status(400).json({ message: "Invalid reading plan ID" });
+        res.status(400).json({ message: "Invalid reading plan ID" });
+        return;
       }
       
       const readingPlan = await storage.getReadingPlan(planId);
       
       if (!readingPlan) {
-        return res.status(404).json({ message: "Reading plan not found" });
+        res.status(404).json({ message: "Reading plan not found" });
+        return;
       }
       
       // Ensure the user owns this reading plan
       if (readingPlan.userId !== req.user!.id) {
-        return res.status(403).json({ message: "Not authorized to access this reading plan" });
+        res.status(403).json({ message: "Not authorized to access this reading plan" });
+        return;
       }
       
       // Get book data
@@ -60,7 +65,7 @@ export function setupReadingPlansRoutes(app: Express, verifyJWT: any) {
   });
 
   // Create a new reading plan
-  app.post("/api/reading-plans", verifyJWT, async (req, res) => {
+  app.post("/api/reading-plans", verifyJWT, async (req: Request, res: Response): Promise<void> => {
     try {
       const {
         bookId,
@@ -74,13 +79,15 @@ export function setupReadingPlansRoutes(app: Express, verifyJWT: any) {
       
       // Validate required fields
       if (!bookId || !startDate || !endDate || !frequency) {
-        return res.status(400).json({ message: "Missing required fields" });
+        res.status(400).json({ message: "Missing required fields" });
+        return;
       }
       
       // Get the book to calculate pages per session
       const book = await storage.getBook(parseInt(bookId));
       if (!book) {
-        return res.status(404).json({ message: "Book not found" });
+        res.status(404).json({ message: "Book not found" });
+        return;
       }
       
       // Calculate days between start and end dates
@@ -89,7 +96,8 @@ export function setupReadingPlansRoutes(app: Express, verifyJWT: any) {
       const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
       
       if (totalDays <= 0) {
-        return res.status(400).json({ message: "End date must be after start date" });
+        res.status(400).json({ message: "End date must be after start date" });
+        return;
       }
       
       // Calculate reading sessions based on frequency
@@ -160,29 +168,33 @@ export function setupReadingPlansRoutes(app: Express, verifyJWT: any) {
   });
 
   // Update reading progress
-  app.post("/api/reading-plans/:id/progress", verifyJWT, async (req, res) => {
+  app.post("/api/reading-plans/:id/progress", verifyJWT, async (req: Request, res: Response): Promise<void> => {
     try {
       const planId = parseInt(req.params.id);
       if (isNaN(planId)) {
-        return res.status(400).json({ message: "Invalid reading plan ID" });
+        res.status(400).json({ message: "Invalid reading plan ID" });
+        return;
       }
       
       const { pagesRead, minutesSpent } = req.body;
       
       if (!pagesRead || pagesRead <= 0) {
-        return res.status(400).json({ message: "Pages read must be greater than 0" });
+        res.status(400).json({ message: "Pages read must be greater than 0" });
+        return;
       }
       
       // Get the reading plan
       const readingPlan = await storage.getReadingPlan(planId);
       
       if (!readingPlan) {
-        return res.status(404).json({ message: "Reading plan not found" });
+        res.status(404).json({ message: "Reading plan not found" });
+        return;
       }
       
       // Ensure the user owns this reading plan
       if (readingPlan.userId !== req.user!.id) {
-        return res.status(403).json({ message: "Not authorized to update this reading plan" });
+        res.status(403).json({ message: "Not authorized to update this reading plan" });
+        return;
       }
       
       // Record the reading session and update Koach points
@@ -226,23 +238,26 @@ export function setupReadingPlansRoutes(app: Express, verifyJWT: any) {
   });
 
   // Delete a reading plan
-  app.delete("/api/reading-plans/:id", verifyJWT, async (req, res) => {
+  app.delete("/api/reading-plans/:id", verifyJWT, async (req: Request, res: Response): Promise<void> => {
     try {
       const planId = parseInt(req.params.id);
       if (isNaN(planId)) {
-        return res.status(400).json({ message: "Invalid reading plan ID" });
+        res.status(400).json({ message: "Invalid reading plan ID" });
+        return;
       }
       
       // Get the reading plan
       const readingPlan = await storage.getReadingPlan(planId);
       
       if (!readingPlan) {
-        return res.status(404).json({ message: "Reading plan not found" });
+        res.status(404).json({ message: "Reading plan not found" });
+        return;
       }
       
       // Ensure the user owns this reading plan
       if (readingPlan.userId !== req.user!.id) {
-        return res.status(403).json({ message: "Not authorized to delete this reading plan" });
+        res.status(403).json({ message: "Not authorized to delete this reading plan" });
+        return;
       }
       
       // TODO: Delete the reading plan

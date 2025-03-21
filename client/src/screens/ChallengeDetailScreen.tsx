@@ -7,7 +7,8 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Alert,
-  FlatList
+  FlatList,
+  Share
 } from 'react-native';
 import {
   Card,
@@ -93,6 +94,7 @@ const ChallengeDetailScreen: React.FC<ChallengeDetailScreenProps> = ({ navigatio
   const [newProgress, setNewProgress] = useState('');
   const [newComment, setNewComment] = useState('');
   const [activeTab, setActiveTab] = useState<'details' | 'participants' | 'comments'>('details');
+  const [isShareLoading, setIsShareLoading] = useState(false);
   
   useEffect(() => {
     fetchChallengeDetails();
@@ -393,6 +395,37 @@ const ChallengeDetailScreen: React.FC<ChallengeDetailScreenProps> = ({ navigatio
     return userIndex + 1;
   };
   
+  // Function to share challenge
+  const shareChallenge = async () => {
+    if (!challenge) return;
+    
+    setIsShareLoading(true);
+    
+    try {
+      const message = `Join me in the "${challenge.title}" reading challenge on Koach! Goal: ${challenge.goal} ${getGoalTypeLabel(challenge.goalType)}. ${getTimeRemaining()}!`;
+      
+      const result = await Share.share({
+        message,
+        title: `Koach Reading Challenge: ${challenge.title}`,
+      });
+      
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          console.log(`Shared via ${result.activityType}`);
+        } else {
+          console.log('Shared successfully');
+        }
+      } else if (result.action === Share.dismissedAction) {
+        console.log('Share dismissed');
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+      Alert.alert('Share Error', 'There was a problem sharing this challenge');
+    } finally {
+      setIsShareLoading(false);
+    }
+  };
+  
   const renderParticipant = ({ item, index }: { item: Participant, index: number }) => {
     const isCurrentUser = item.userId === user?.id;
     
@@ -483,7 +516,18 @@ const ChallengeDetailScreen: React.FC<ChallengeDetailScreenProps> = ({ navigatio
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Title style={styles.title}>{challenge.title}</Title>
+        <View style={styles.titleContainer}>
+          <Title style={styles.title}>{challenge.title}</Title>
+          <IconButton
+            icon="share"
+            color="white"
+            size={22}
+            onPress={shareChallenge}
+            disabled={isShareLoading}
+            loading={isShareLoading}
+            style={styles.shareButton}
+          />
+        </View>
         
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
@@ -751,10 +795,19 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 0,
   },
+  titleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   title: {
     color: 'white',
     fontSize: 20,
     fontWeight: 'bold',
+    flex: 1,
+  },
+  shareButton: {
+    margin: 0,
   },
   statsContainer: {
     flexDirection: 'row',

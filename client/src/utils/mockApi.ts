@@ -377,6 +377,38 @@ export async function mockFetchApi(
         }
       }
       break;
+      
+    // Get book PDF file
+    case `/api/books/${idFromUrl}/file`:
+      if (method === 'GET' && idFromUrl) {
+        const book = mockBooks.find(b => b.id === idFromUrl);
+        if (book) {
+          return {
+            fileUrl: 'https://www.africau.edu/images/default/sample.pdf',
+            title: book.title,
+            author: book.author
+          };
+        } else {
+          throw new Error('Book file not found');
+        }
+      }
+      break;
+      
+    // Get book audio file
+    case `/api/books/${idFromUrl}/audio`:
+      if (method === 'GET' && idFromUrl) {
+        const book = mockBooks.find(b => b.id === idFromUrl);
+        if (book) {
+          return {
+            fileUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+            title: book.title,
+            author: book.author
+          };
+        } else {
+          throw new Error('Book audio not found');
+        }
+      }
+      break;
 
     // === Reading Plans API ===
     case '/api/reading-plans':

@@ -1,9 +1,9 @@
 import { Express } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth, hashPassword } from "./auth";
-import { verifyJWT } from "./utils/auth";
+import { setupAuth, hashPassword } from "./auth-new";
+import { verifyJWT } from "./utils/auth-new";
 import { setupBooksRoutes } from "./api/books";
-import { setupReadingPlansRoutes } from "./api/readingPlans";
+import { setupReadingPlansRoutes } from "./api/readingPlans-new";
 import { setupSocialRoutes } from "./api/social";
 import { setupKoachRoutes } from "./api/koach";
 import { setupNotificationsRoutes } from "./api/notifications";

@@ -142,6 +142,17 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
     );
   };
   
+  // Handlers for the media viewer
+  const handleReadBook = () => {
+    if (!book) return;
+    navigation.navigate('MediaViewer', { bookId: book.id, mediaType: 'pdf' });
+  };
+  
+  const handleListenAudio = () => {
+    if (!book) return;
+    navigation.navigate('MediaViewer', { bookId: book.id, mediaType: 'audio' });
+  };
+  
   const renderComment = ({ item }) => (
     <Card style={styles.commentCard}>
       <Card.Content>
@@ -230,6 +241,28 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
                     disabled={isPlansLoading}
                   >
                     Log Reading
+                  </Button>
+                </View>
+                
+                <Divider style={styles.divider} />
+                
+                <Title style={styles.sectionTitle}>Media</Title>
+                <View style={styles.mediaButtons}>
+                  <Button 
+                    mode="contained" 
+                    icon="file-pdf-box"
+                    onPress={handleReadBook}
+                    style={[styles.mediaButton, { marginRight: 8, backgroundColor: '#f44336' }]}
+                  >
+                    Read PDF
+                  </Button>
+                  <Button 
+                    mode="contained" 
+                    icon="headphones"
+                    onPress={handleListenAudio}
+                    style={[styles.mediaButton, { backgroundColor: '#4caf50' }]}
+                  >
+                    Listen
                   </Button>
                 </View>
               </Card.Content>
@@ -378,6 +411,13 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   actionButton: {
+    flex: 1,
+  },
+  mediaButtons: {
+    flexDirection: 'row',
+    marginTop: 8,
+  },
+  mediaButton: {
     flex: 1,
   },
   commentsCard: {

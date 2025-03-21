@@ -6,7 +6,8 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  Image
+  Image,
+  Modal
 } from 'react-native';
 import {
   Card,
@@ -17,7 +18,11 @@ import {
   Avatar,
   Chip,
   Searchbar,
-  Divider
+  Divider,
+  Portal,
+  Surface,
+  IconButton,
+  RadioButton
 } from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../App';
@@ -59,6 +64,8 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ navigation }) => 
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredLeaderboard, setFilteredLeaderboard] = useState(leaderboard);
   const [showFriendsOnly, setShowFriendsOnly] = useState(false);
+  const [sortOption, setSortOption] = useState<'points' | 'streak' | 'books'>('points');
+  const [showFiltersModal, setShowFiltersModal] = useState(false);
 
   useEffect(() => {
     dispatch(fetchLeaderboard());
@@ -84,10 +91,21 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ navigation }) => 
         // For demo, just show top 5 as "friends"
         filtered = filtered.filter(item => item.rank <= 5);
       }
+
+      // Apply sorting based on selected option
+      if (sortOption === 'points') {
+        filtered = filtered.sort((a, b) => b.points - a.points);
+      } else if (sortOption === 'streak') {
+        // Simulate streak sorting - in a real app, you'd have actual streak data
+        filtered = filtered.sort((a, b) => (b.points % 7) - (a.points % 7));
+      } else if (sortOption === 'books') {
+        // Simulate books completed sorting
+        filtered = filtered.sort((a, b) => (b.points / 100) - (a.points / 100));
+      }
       
       setFilteredLeaderboard(filtered);
     }
-  }, [leaderboard, searchQuery, showFriendsOnly, period]);
+  }, [leaderboard, searchQuery, showFriendsOnly, period, sortOption]);
 
   const getUserRank = () => {
     if (!currentUser || !leaderboard) return null;
@@ -206,16 +224,96 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ navigation }) => 
             </TouchableOpacity>
           </View>
           
-          <Chip
-            selected={showFriendsOnly}
-            onPress={() => setShowFriendsOnly(!showFriendsOnly)}
-            style={styles.friendsFilterChip}
-            icon="account-group"
-          >
-            Friends Only
-          </Chip>
+          <View style={styles.filterActionsRow}>
+            <Chip
+              selected={showFriendsOnly}
+              onPress={() => setShowFriendsOnly(!showFriendsOnly)}
+              style={styles.friendsFilterChip}
+              icon="account-group"
+            >
+              Friends Only
+            </Chip>
+            
+            <IconButton
+              icon="tune-vertical"
+              color="white"
+              size={24}
+              onPress={() => setShowFiltersModal(true)}
+              style={styles.filterButton}
+            />
+          </View>
         </View>
       </View>
+      
+      <Portal>
+        <Modal
+          visible={showFiltersModal}
+          onDismiss={() => setShowFiltersModal(false)}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <Surface style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Title style={styles.modalTitle}>Advanced Filters</Title>
+              <IconButton 
+                icon="close" 
+                size={24} 
+                onPress={() => setShowFiltersModal(false)} 
+              />
+            </View>
+            
+            <Divider style={styles.modalDivider} />
+            
+            <View style={styles.sortOptionSection}>
+              <Text style={styles.modalSectionTitle}>Sort By</Text>
+              <RadioButton.Group 
+                onValueChange={value => setSortOption(value as 'points' | 'streak' | 'books')} 
+                value={sortOption}
+              >
+                <RadioButton.Item 
+                  label="Points (Default)" 
+                  value="points" 
+                  style={styles.radioItem}
+                />
+                <RadioButton.Item 
+                  label="Reading Streak" 
+                  value="streak" 
+                  style={styles.radioItem}
+                />
+                <RadioButton.Item 
+                  label="Books Completed" 
+                  value="books" 
+                  style={styles.radioItem}
+                />
+              </RadioButton.Group>
+            </View>
+            
+            <Divider style={styles.modalDivider} />
+            
+            <View style={styles.modalActions}>
+              <Button 
+                mode="outlined" 
+                onPress={() => {
+                  setSortOption('points');
+                  setShowFriendsOnly(false);
+                  setSearchQuery('');
+                  setShowFiltersModal(false);
+                }}
+                style={styles.modalButton}
+              >
+                Reset All Filters
+              </Button>
+              
+              <Button 
+                mode="contained" 
+                onPress={() => setShowFiltersModal(false)}
+                style={styles.modalButton}
+              >
+                Apply
+              </Button>
+            </View>
+          </Surface>
+        </Modal>
+      </Portal>
       
       {getUserRank() && (
         <Card style={styles.yourRankCard}>
@@ -454,6 +552,58 @@ const styles = StyleSheet.create({
   },
   resetButton: {
     marginTop: 8,
+  },
+  // Nouveaux styles pour les filtres et la modal
+  filterActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  filterButton: {
+    margin: 0,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '90%',
+    borderRadius: 12,
+    padding: 24,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+  },
+  modalDivider: {
+    marginVertical: 16,
+  },
+  modalSectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  sortOptionSection: {
+    marginBottom: 16,
+  },
+  radioItem: {
+    paddingVertical: 4,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 16,
+  },
+  modalButton: {
+    marginLeft: 12,
   },
 });
 

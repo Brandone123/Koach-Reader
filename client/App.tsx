@@ -17,6 +17,7 @@ import StatsScreen from './src/screens/StatsScreen';
 import LeaderboardScreen from './src/screens/LeaderboardScreen';
 import ChallengesScreen from './src/screens/ChallengesScreen';
 import ChallengeDetailScreen from './src/screens/ChallengeDetailScreen';
+import MediaViewerScreen from './src/screens/MediaViewerScreen';
 import { AuthProvider, useAuth } from './src/hooks/useAuth';
 
 export type RootStackParamList = {
@@ -27,6 +28,7 @@ export type RootStackParamList = {
   ReadingPlan: { planId?: number; bookId?: number; isEdit?: boolean };
   Profile: undefined;
   ReadingSession: { bookId: number; planId?: number };
+  MediaViewer: { bookId: number; mediaType: 'pdf' | 'audio' };
   Badges: undefined;
   Stats: undefined;
   Leaderboard: undefined;
@@ -81,6 +83,31 @@ const AppNavigator = () => {
         headerTintColor: '#fff',
         headerTitleStyle: {
           fontWeight: 'bold',
+        },
+        // Ajouter des animations de transition entre les écrans
+        cardStyleInterpolator: ({ current, layouts }) => {
+          return {
+            cardStyle: {
+              transform: [
+                {
+                  translateX: current.progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [layouts.screen.width, 0],
+                  }),
+                },
+              ],
+              opacity: current.progress.interpolate({
+                inputRange: [0, 0.5, 0.9, 1],
+                outputRange: [0, 0.25, 0.7, 1],
+              }),
+            },
+            overlayStyle: {
+              opacity: current.progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 0.5],
+              }),
+            },
+          };
         },
       }}
     >
@@ -155,6 +182,14 @@ const AppNavigator = () => {
         component={ChallengeDetailScreen} 
         options={{
           title: 'Challenge Details',
+        }}
+      />
+      <Stack.Screen 
+        name="MediaViewer" 
+        component={MediaViewerScreen} 
+        options={{
+          title: 'Media Viewer',
+          headerShown: false, // Hide header for full-screen experience
         }}
       />
     </Stack.Navigator>

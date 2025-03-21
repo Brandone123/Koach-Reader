@@ -33,18 +33,16 @@ export const friendStatusEnum = pgEnum("friend_status", [
 ]);
 
 export const challengeStatusEnum = pgEnum("challenge_status", [
-  "pending",
   "active",
   "completed",
-  "failed",
+  "abandoned",
 ]);
 
 export const notificationTypeEnum = pgEnum("notification_type", [
-  "reminder",
-  "friend_request",
-  "challenge_invite",
-  "challenge_update",
-  "koach_milestone",
+  "achievement",
+  "challenge",
+  "friend",
+  "reading",
   "system",
 ]);
 
@@ -338,7 +336,7 @@ export const challengeParticipants = pgTable(
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    status: challengeStatusEnum("status").default("pending").notNull(),
+    status: challengeStatusEnum("status").default("active").notNull(),
     progress: integer("progress").default(0).notNull(),
     joinedAt: timestamp("joined_at").default(sql`NOW()`).notNull(),
     completedAt: timestamp("completed_at"),

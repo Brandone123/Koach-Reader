@@ -408,7 +408,7 @@ export class DatabaseStorage implements IStorage {
         // Create notification
         await this.createNotification({
           userId,
-          type: "koach_milestone",
+          type: "achievement",
           title: "New Badge Earned!",
           message: `You've earned the "${badge.name}" badge and ${badge.koachReward} Koach points!`,
           relatedId: badgeId,
@@ -530,7 +530,7 @@ export class DatabaseStorage implements IStorage {
       // Create a notification for the friend
       await this.createNotification({
         userId: friendId,
-        type: "friend_request",
+        type: "friend",
         title: "New Friend Request",
         message: `You have a new friend request.`,
         relatedId: userId,
@@ -573,7 +573,7 @@ export class DatabaseStorage implements IStorage {
         // Create a notification for the original requester
         await this.createNotification({
           userId: friendId,
-          type: "friend_request",
+          type: "friend",
           title: "Friend Request Accepted",
           message: `Your friend request has been accepted.`,
           relatedId: userId,
@@ -687,7 +687,7 @@ export class DatabaseStorage implements IStorage {
         // Notify challenge creator
         await this.createNotification({
           userId: challenge.creatorId,
-          type: "challenge_update",
+          type: "challenge",
           title: "New Challenge Participant",
           message: `Someone has joined your challenge "${challenge.name}".`,
           relatedId: challengeId,
@@ -745,7 +745,7 @@ export class DatabaseStorage implements IStorage {
         // Create notification
         await this.createNotification({
           userId,
-          type: "challenge_update",
+          type: "challenge",
           title: "Challenge Completed!",
           message: `You've completed the "${challenge.name}" challenge!`,
           relatedId: challengeId,
@@ -755,7 +755,7 @@ export class DatabaseStorage implements IStorage {
         if (challenge.creatorId !== userId) {
           await this.createNotification({
             userId: challenge.creatorId,
-            type: "challenge_update",
+            type: "challenge",
             title: "Challenge Update",
             message: `Someone has completed your challenge "${challenge.name}".`,
             relatedId: challengeId,

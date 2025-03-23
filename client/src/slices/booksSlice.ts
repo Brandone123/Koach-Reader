@@ -212,10 +212,13 @@ const booksAPI = {
 // Async thunks
 export const fetchBooks = createAsyncThunk(
   'books/fetchBooks',
-  async (params: GetBooksParams = {}, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const books = await booksAPI.getBooks(params);
-      return books;
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Simulated API response
+      return booksAPI.getBooks({});
     } catch (error: any) {
       return rejectWithValue(error.message);
     }

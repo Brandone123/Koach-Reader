@@ -20,6 +20,7 @@ interface User {
     theme?: 'light' | 'dark' | 'system';
   };
   createdAt: string;
+  hasCompletedOnboarding?: boolean;
 }
 
 interface AuthState {
@@ -44,10 +45,15 @@ interface UpdateProfileData {
   username?: string;
   email?: string;
   preferences?: User['preferences'];
+  hasCompletedOnboarding?: boolean;
 }
 
 interface UpdatePreferencesData {
   preferences: User['preferences'];
+}
+
+interface UpdateLanguageData {
+  language: string;
 }
 
 // Initial state
@@ -110,6 +116,7 @@ const authAPI = {
           theme: 'light',
         },
         createdAt: new Date().toISOString(),
+        hasCompletedOnboarding: false,
       },
       token: 'mock-token-67890',
     };
@@ -220,6 +227,22 @@ export const updatePreferences = createAsyncThunk(
   }
 );
 
+export const updateLanguage = createAsyncThunk(
+  'auth/updateLanguage',
+  async (data: UpdateLanguageData, { rejectWithValue }) => {
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Here you would make an actual API call to update language
+      // For now, we'll just return the updated language
+      return data.language;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update language');
+    }
+  }
+);
+
 // Auth slice
 const authSlice = createSlice({
   name: 'auth',
@@ -228,6 +251,18 @@ const authSlice = createSlice({
     // Add any synchronous actions here
     clearError: (state) => {
       state.error = null;
+    },
+    setOnboardingCompleted: (state, action: PayloadAction<boolean>) => {
+      if (state.user) {
+        state.user.hasCompletedOnboarding = action.payload;
+      }
+    },
+    setLanguage: (state, action: PayloadAction<string>) => {
+      if (state.user && state.user.preferences) {
+        state.user.preferences.language = action.payload;
+      } else if (state.user) {
+        state.user.preferences = { language: action.payload };
+      }
     },
   },
   extraReducers: (builder) => {
@@ -305,12 +340,30 @@ const authSlice = createSlice({
       .addCase(updatePreferences.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
+      })
+      // Update language
+      .addCase(updateLanguage.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(updateLanguage.fulfilled, (state, action: PayloadAction<string>) => {
+        state.isLoading = false;
+        if (state.user) {
+          if (!state.user.preferences) {
+            state.user.preferences = {};
+          }
+          state.user.preferences.language = action.payload;
+        }
+      })
+      .addCase(updateLanguage.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
       });
   },
 });
 
 // Export actions
-export const { clearError } = authSlice.actions;
+export const { clearError, setOnboardingCompleted, setLanguage } = authSlice.actions;
 
 // Export selectors
 export const selectUser = (state: RootState) => state.auth.user;

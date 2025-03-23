@@ -1,91 +1,66 @@
-# Koach Books - Application de lecture gamifiée
+# Koach-Reader
 
-Koach Books est une application mobile qui transforme la lecture en une expérience d'apprentissage engageante et personnalisée grâce à la gamification. Inspirée par des applications comme Duolingo, Koach encourage les utilisateurs à maintenir des habitudes de lecture régulières tout en suivant leurs progrès et en gagnant des récompenses.
+A beautiful reading tracking and book discovery app built with React Native and Expo.
 
-## Fonctionnalités principales
+## Features
 
-- **Bibliothèque personnalisée**: Ajoutez et organisez vos livres.
-- **Plans de lecture**: Créez des programmes de lecture adaptés à votre emploi du temps.
-- **Gamification**: Gagnez des badges et des points Koach pour chaque session de lecture.
-- **Suivi des progrès**: Visualisez vos statistiques de lecture avec des graphiques détaillés.
-- **Fonctionnalités sociales**: Participez à des défis, suivez vos amis et comparez vos progrès.
+- **Personalized Onboarding**: Tailored reading experience based on user preferences
+- **Reading Tracking**: Track your reading progress, sessions, and streaks
+- **Badges & Achievements**: Earn badges based on your reading habits
+- **Reading Statistics**: Visualize your reading data with beautiful charts
+- **Profile Management**: Customize your profile and track your achievements
+- **Challenges**: Participate in reading challenges to boost your motivation
+- **Bottom Navigation**: Easy navigation between app sections
 
-## Prérequis
+## Screenshots
 
-- Node.js (v18 ou supérieur)
-- Expo CLI (`npm install -g expo-cli`)
-- Expo Go sur [Android](https://play.google.com/store/apps/details?id=host.exp.exponent) ou [iOS](https://apps.apple.com/app/expo-go/id982107779)
-- PostgreSQL (pour le développement local)
+![App Screenshots](./screenshots.png)
 
-## Exécuter l'application sur votre appareil mobile
+## Installation
 
-### 1. Cloner et configurer le projet
-
+1. Clone the repository:
 ```bash
-# Cloner le dépôt
-git clone https://github.com/votre-username/koach-books.git
-cd koach-books
+git clone https://github.com/yourusername/Koach-Reader.git
+cd Koach-Reader
+```
 
-# Installer les dépendances
+2. Install dependencies:
+```bash
+cd client
 npm install
 ```
 
-### 2. Configuration de la base de données
-
-Créez un fichier `.env` à la racine du projet et ajoutez les informations de connexion à votre base de données PostgreSQL:
-
-```env
-DATABASE_URL=postgres://username:password@localhost:5432/koach_books
-```
-
-### 3. Démarrer le serveur backend
-
+3. Start the development server:
 ```bash
-cd server
-npm run dev
-```
-
-Le serveur backend sera accessible à l'adresse `http://localhost:5000`.
-
-### 4. Démarrer l'application Expo
-
-Dans un autre terminal:
-
-```bash
-cd client
 npx expo start
 ```
 
-### 5. Se connecter depuis votre appareil mobile
+## Technology Stack
 
-Une fois que l'application Expo est en cours d'exécution, vous verrez un QR code dans le terminal. Pour vous connecter:
+- React Native
+- Expo
+- Redux for state management
+- React Navigation for routing
+- React Native Paper for UI components
+- Expo-Linear-Gradient for gradient effects
 
-- **Sur Android**: Ouvrez l'application Expo Go et scannez le QR code
-- **Sur iOS**: Scannez le QR code avec l'appareil photo de votre iPhone, puis appuyez sur la notification qui apparaît
+## Project Structure
 
-## Mode développement sans serveur
+- `/client` - React Native application
+  - `/src`
+    - `/assets` - Images and other assets
+    - `/components` - Reusable UI components
+    - `/hooks` - Custom React hooks
+    - `/navigation` - Navigation configuration
+    - `/redux` - Redux store setup
+    - `/screens` - Application screens
+    - `/slices` - Redux slices
+    - `/utils` - Utility functions
 
-L'application peut fonctionner en mode "mock" lorsque le serveur n'est pas disponible. Pour cela, modifiez le fichier `client/src/utils/api.ts` et définissez `USE_MOCK_API = true`.
+## Contributing
 
-## Structure du projet
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-- `client/` - Application frontend (React Native + Expo)
-- `server/` - API backend (Node.js + TypeScript)
-- `shared/` - Types et schémas partagés entre le client et le serveur
+## License
 
-## Technologies utilisées
-
-- **Frontend**: React Native, Expo, TypeScript, Redux
-- **Backend**: Node.js, TypeScript, PostgreSQL
-- **ORM**: Drizzle ORM
-- **UI**: React Native Paper, React Native Vector Icons
-
-## Contribuer au projet
-
-1. Créez une branche pour votre fonctionnalité
-2. Effectuez vos modifications
-3. Soumettez une pull request
-
-## Licence
-
-MIT
+This project is licensed under the MIT License - see the LICENSE file for details.

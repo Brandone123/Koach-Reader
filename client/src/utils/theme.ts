@@ -1,13 +1,12 @@
 import { DefaultTheme } from 'react-native-paper';
 
-// Couleurs principales basées sur une palette similaire à Duolingo (vert, blanc, bleu clair)
 export const colors = {
-  primary: '#58CC02', // Vert Duolingo
-  secondary: '#1CB0F6', // Bleu Duolingo
-  accent: '#CE82FF', // Violet Duolingo
-  error: '#FF4B4B', // Rouge pour les erreurs
-  success: '#58CC02', // Vert pour les succès
-  warning: '#FFC800', // Jaune pour les avertissements
+  primary: '#58CC02',
+  secondary: '#1CB0F6',
+  accent: '#CE82FF',
+  error: '#FF4B4B',
+  success: '#58CC02',
+  warning: '#FFC800',
   background: '#FFFFFF',
   surface: '#F7F7F7',
   text: '#3C3C3C',

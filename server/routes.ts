@@ -13,7 +13,7 @@ export function registerRoutes(app: Express): Server {
   setupAuth(app);
 
   // Set up other API routes with JWT verification
-  setupBooksRoutes(app, verifyJWT);
+  setupBooksRoutes(app, verifyJWT, hashPassword);
   setupReadingPlansRoutes(app, verifyJWT);
   setupSocialRoutes(app, verifyJWT);
   setupKoachRoutes(app, verifyJWT);

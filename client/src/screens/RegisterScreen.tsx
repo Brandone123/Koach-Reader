@@ -8,18 +8,23 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
-  Alert
+  ImageBackground,
+  Dimensions,
+  StatusBar
 } from 'react-native';
 import { TextInput, Button, HelperText } from 'react-native-paper';
 import { useAuth } from '../hooks/useAuth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type RegisterScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Register'>;
 
 interface RegisterScreenProps {
   navigation: RegisterScreenNavigationProp;
 }
+
+const { width, height } = Dimensions.get('window');
 
 const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   const [username, setUsername] = useState('');
@@ -99,6 +104,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     if (validateForm()) {
       try {
         await register({ username, email, password });
+        // After successful registration, navigate to onboarding
+        navigation.replace('Onboarding');
       } catch (err) {
         // Error will be handled by the useAuth hook
         console.error('Registration failed:', err);
@@ -107,240 +114,245 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   };
   
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <ImageBackground
+        source={require('../../assets/splash.png')}
+        style={styles.backgroundImage}
+        resizeMode="cover"
       >
-        <View style={styles.contentContainer}>
-          <View style={styles.formContainer}>
-            <Image
-              source={require('../../assets/book-cover-placeholder.svg')}
-              style={styles.logo}
-            />
-            <Text style={styles.title}>Koach Reading</Text>
-            <Text style={styles.subtitle}>Create a new account</Text>
-            
-            {error && (
-              <Text style={styles.errorText}>{error}</Text>
-            )}
-            
-            <TextInput
-              label="Username"
-              value={username}
-              onChangeText={setUsername}
-              style={styles.input}
-              autoCapitalize="none"
-              error={!!usernameError}
-            />
-            {usernameError ? (
-              <HelperText type="error" visible={!!usernameError}>
-                {usernameError}
-              </HelperText>
-            ) : null}
-            
-            <TextInput
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              style={styles.input}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              error={!!emailError}
-            />
-            {emailError ? (
-              <HelperText type="error" visible={!!emailError}>
-                {emailError}
-              </HelperText>
-            ) : null}
-            
-            <TextInput
-              label="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={secureTextEntry}
-              style={styles.input}
-              error={!!passwordError}
-              right={
-                <TextInput.Icon 
-                  icon={secureTextEntry ? "eye" : "eye-off"} 
-                  onPress={() => setSecureTextEntry(!secureTextEntry)} 
-                />
-              }
-            />
-            {passwordError ? (
-              <HelperText type="error" visible={!!passwordError}>
-                {passwordError}
-              </HelperText>
-            ) : null}
-            
-            <TextInput
-              label="Confirm Password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry={confirmSecureTextEntry}
-              style={styles.input}
-              error={!!confirmPasswordError}
-              right={
-                <TextInput.Icon 
-                  icon={confirmSecureTextEntry ? "eye" : "eye-off"} 
-                  onPress={() => setConfirmSecureTextEntry(!confirmSecureTextEntry)} 
-                />
-              }
-            />
-            {confirmPasswordError ? (
-              <HelperText type="error" visible={!!confirmPasswordError}>
-                {confirmPasswordError}
-              </HelperText>
-            ) : null}
-            
-            <Button 
-              mode="contained" 
-              onPress={handleRegister} 
-              loading={isLoading}
-              disabled={isLoading}
-              style={styles.registerButton}
+        <LinearGradient
+          colors={['rgba(0,0,0,0.6)', 'rgba(0,0,0,0.8)']}
+          style={styles.gradient}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.keyboardView}
+          >
+            <ScrollView
+              contentContainerStyle={styles.scrollContainer}
+              keyboardShouldPersistTaps="handled"
             >
-              Sign Up
-            </Button>
-            
-            <View style={styles.loginContainer}>
-              <Text style={styles.loginText}>Already have an account? </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                <Text style={styles.loginLink}>Sign In</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          
-          <View style={styles.heroContainer}>
-            <Text style={styles.heroTitle}>Join Koach Reading</Text>
-            <Text style={styles.heroText}>
-              Koach Reading is a gamified reading experience that helps you build
-              and maintain consistent reading habits. Track your progress, earn rewards,
-              and join a community of readers on a similar journey.
-            </Text>
-            <View style={styles.features}>
-              <Text style={styles.featureItem}>✓ Create personalized reading plans</Text>
-              <Text style={styles.featureItem}>✓ Track your daily reading streak</Text>
-              <Text style={styles.featureItem}>✓ Earn Koach points and unlock badges</Text>
-              <Text style={styles.featureItem}>✓ Join reading challenges with friends</Text>
-              <Text style={styles.featureItem}>✓ Build a lifelong reading habit</Text>
-            </View>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </ScrollView>
+              <View style={styles.logoContainer}>
+                <Image
+                  source={require('../../assets/icon.png')}
+                  style={styles.logo}
+                />
+                <Text style={styles.appName}>Koach Reader</Text>
+                <Text style={styles.tagline}>Join our reading community</Text>
+              </View>
+              
+              <View style={styles.formContainer}>
+                {error && (
+                  <Text style={styles.errorText}>{error}</Text>
+                )}
+                
+                <TextInput
+                  label="Username"
+                  value={username}
+                  onChangeText={setUsername}
+                  style={styles.input}
+                  autoCapitalize="none"
+                  error={!!usernameError}
+                  theme={{ colors: { primary: '#8A2BE2' } }}
+                  left={<TextInput.Icon icon="account" color="#8A2BE2" />}
+                  mode="outlined"
+                />
+                {usernameError ? (
+                  <HelperText type="error" visible={!!usernameError}>
+                    {usernameError}
+                  </HelperText>
+                ) : null}
+                
+                <TextInput
+                  label="Email"
+                  value={email}
+                  onChangeText={setEmail}
+                  style={styles.input}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  error={!!emailError}
+                  theme={{ colors: { primary: '#8A2BE2' } }}
+                  left={<TextInput.Icon icon="email" color="#8A2BE2" />}
+                  mode="outlined"
+                />
+                {emailError ? (
+                  <HelperText type="error" visible={!!emailError}>
+                    {emailError}
+                  </HelperText>
+                ) : null}
+                
+                <TextInput
+                  label="Password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={secureTextEntry}
+                  style={styles.input}
+                  error={!!passwordError}
+                  theme={{ colors: { primary: '#8A2BE2' } }}
+                  mode="outlined"
+                  left={<TextInput.Icon icon="lock" color="#8A2BE2" />}
+                  right={
+                    <TextInput.Icon 
+                      icon={secureTextEntry ? "eye" : "eye-off"} 
+                      onPress={() => setSecureTextEntry(!secureTextEntry)}
+                      color="#8A2BE2"
+                    />
+                  }
+                />
+                {passwordError ? (
+                  <HelperText type="error" visible={!!passwordError}>
+                    {passwordError}
+                  </HelperText>
+                ) : null}
+                
+                <TextInput
+                  label="Confirm Password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={confirmSecureTextEntry}
+                  style={styles.input}
+                  error={!!confirmPasswordError}
+                  theme={{ colors: { primary: '#8A2BE2' } }}
+                  mode="outlined"
+                  left={<TextInput.Icon icon="lock-check" color="#8A2BE2" />}
+                  right={
+                    <TextInput.Icon 
+                      icon={confirmSecureTextEntry ? "eye" : "eye-off"} 
+                      onPress={() => setConfirmSecureTextEntry(!confirmSecureTextEntry)}
+                      color="#8A2BE2"
+                    />
+                  }
+                />
+                {confirmPasswordError ? (
+                  <HelperText type="error" visible={!!confirmPasswordError}>
+                    {confirmPasswordError}
+                  </HelperText>
+                ) : null}
+                
+                <Button 
+                  mode="contained" 
+                  onPress={handleRegister} 
+                  loading={isLoading}
+                  disabled={isLoading}
+                  style={styles.registerButton}
+                  labelStyle={styles.registerButtonText}
+                  contentStyle={styles.registerButtonContent}
+                  color="#8A2BE2"
+                >
+                  Sign Up
+                </Button>
+                
+                <View style={styles.loginContainer}>
+                  <Text style={styles.loginText}>Already have an account? </Text>
+                  <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                    <Text style={styles.loginLink}>Sign In</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
+              <View style={styles.termsContainer}>
+                <Text style={styles.termsText}>
+                  By signing up, you agree to our Terms of Service and Privacy Policy.
+                </Text>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </LinearGradient>
+      </ImageBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
-  contentContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    paddingVertical: 20,
-    paddingHorizontal: 16,
+  backgroundImage: {
+    width: '100%',
+    height: '100%',
   },
-  formContainer: {
+  gradient: {
     flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-    backgroundColor: 'white',
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    maxWidth: 450,
+    width: '100%',
+    height: '100%',
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 40,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
   },
   logo: {
     width: 80,
     height: 80,
-    alignSelf: 'center',
-    marginBottom: 16,
+    resizeMode: 'contain',
   },
-  title: {
-    fontSize: 28,
+  appName: {
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#6200ee',
-    textAlign: 'center',
-    marginBottom: 8,
+    color: 'white',
+    marginTop: 16,
   },
-  subtitle: {
+  tagline: {
     fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 24,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 8,
+  },
+  formContainer: {
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center',
   },
   input: {
-    marginBottom: 8,
-    backgroundColor: 'white',
+    marginBottom: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
   registerButton: {
-    marginTop: 16,
+    borderRadius: 30,
+    marginTop: 8,
+    marginBottom: 24,
+    elevation: 4,
+  },
+  registerButtonContent: {
     paddingVertical: 8,
   },
+  registerButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   errorText: {
-    color: '#B00020',
+    color: '#FF6B6B',
     marginBottom: 16,
     textAlign: 'center',
   },
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    marginVertical: 16,
   },
   loginText: {
-    color: '#666',
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   loginLink: {
-    color: '#6200ee',
+    color: '#8A2BE2',
     fontWeight: 'bold',
   },
-  heroContainer: {
-    flex: 1,
-    padding: 32,
-    justifyContent: 'center',
-    backgroundColor: '#6200ee',
-    borderRadius: 10,
-    marginLeft: 16,
-    display: 'none', // Hide on mobile, will be shown on larger screens via media queries
+  termsContainer: {
+    marginTop: 24,
+    paddingHorizontal: 16,
   },
-  heroTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 16,
-  },
-  heroText: {
-    fontSize: 16,
-    color: 'white',
-    marginBottom: 24,
-    lineHeight: 24,
-  },
-  features: {
-    marginTop: 16,
-  },
-  featureItem: {
-    fontSize: 16,
-    color: 'white',
-    marginBottom: 12,
-  },
-  '@media (min-width: 768px)': {
-    formContainer: {
-      flex: 1,
-    },
-    heroContainer: {
-      display: 'flex',
-      flex: 1,
-    },
+  termsText: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    textAlign: 'center',
+    fontSize: 12,
   },
 });
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { 
   StyleSheet, 
   View, 
@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   RefreshControl,
   FlatList,
-  Image
+  Image,
+  Dimensions
 } from 'react-native';
 import { 
   Card, 
@@ -18,10 +19,16 @@ import {
   Searchbar,
   ProgressBar,
   Divider,
-  FAB
+  FAB,
+  Avatar,
+  useTheme
 } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchBooks, selectBooks, selectBooksLoading } from '../slices/booksSlice';
+import { 
+  fetchBooks, 
+  selectBooks, 
+  selectBooksLoading 
+} from '../slices/booksSlice';
 import { 
   fetchReadingPlans, 
   selectReadingPlans, 
@@ -31,6 +38,10 @@ import { selectUser } from '../slices/authSlice';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { AppDispatch } from '../store';
+import { Book } from '../slices/booksSlice';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+const { width } = Dimensions.get('window');
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -38,7 +49,79 @@ interface HomeScreenProps {
   navigation: HomeScreenNavigationProp;
 }
 
+// Define categories for books
+const categories = [
+  { id: 'all', name: 'All Books', icon: 'book-open-variant' },
+  { id: 'bible_studies', name: 'Bible et études bibliques', icon: 'book-open-variant' },
+  { id: 'theology', name: 'Théologie et doctrine', icon: 'book-cross' },
+  { id: 'spirituality', name: 'Spiritualité et vie chrétienne', icon: 'candle' },
+  { id: 'jesus', name: 'Livres sur Jésus Christ', icon: 'cross' },
+  { id: 'evangelism', name: 'Évangélisation et mission', icon: 'earth' },
+  { id: 'marriage_family', name: 'Mariage et famille', icon: 'account-group' },
+  { id: 'youth', name: 'Jeunesse et enfants', icon: 'human-child' },
+  { id: 'testimonies', name: 'Témoignages et biographies', icon: 'account-voice' },
+  { id: 'prophecy', name: 'Prophétie et fin des temps', icon: 'clock-end' },
+  { id: 'ethics', name: 'Éthique chrétienne', icon: 'scale-balance' },
+  { id: 'healing', name: 'Guérison et délivrance', icon: 'medical-bag' },
+  { id: 'ministry', name: 'Ministère et leadership', icon: 'account-group' },
+  { id: 'worship', name: 'Louange et adoration', icon: 'music' },
+  { id: 'fiction', name: 'Fictions chrétiennes', icon: 'book' },
+  { id: 'church_history', name: 'Histoire de l\'Église', icon: 'church' },
+  { id: 'encouragement', name: 'Encouragement et motivation', icon: 'hand-heart' },
+];
+
+const BookCard = ({ book, onPress }: { book: Book; onPress: () => void }) => {
+  const theme = useTheme();
+  
+  return (
+    <TouchableOpacity 
+      style={[styles.bookCard, { backgroundColor: theme.colors.surface }]} 
+      onPress={onPress}
+    >
+      <Image 
+        source={{ uri: book.coverImageUrl || 'https://via.placeholder.com/150' }} 
+        style={styles.bookCover} 
+      />
+      <Text style={[styles.bookTitle, { color: '#333333' }]} numberOfLines={2}>
+        {book.title}
+      </Text>
+      <Text style={[styles.bookAuthor, { color: '#666666' }]} numberOfLines={1}>
+        {book.author}
+      </Text>
+    </TouchableOpacity>
+  );
+};
+
+const CategorySection = ({ category, books, navigation }: { 
+  category: string; 
+  books: Book[]; 
+  navigation: any;
+}) => {
+  const theme = useTheme();
+  
+  return (
+    <View style={styles.categorySection}>
+      <Text style={[styles.categoryTitle, { color: theme.colors.primary }]}>
+        {category}
+      </Text>
+      <FlatList
+        data={books}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <BookCard 
+            book={item} 
+            onPress={() => navigation.navigate('BookDetails', { bookId: item.id })}
+          />
+        )}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+      />
+    </View>
+  );
+};
+
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+  const theme = useTheme();
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector(selectUser);
   const books = useSelector(selectBooks);
@@ -48,21 +131,25 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  
+  // Extract user's preferred categories from profile if available
+  const userPreferredCategories = user?.preferences?.preferredCategories || [];
   
   useEffect(() => {
     // Fetch initial data
-    dispatch(fetchBooks({}));
-    dispatch(fetchReadingPlans({}));
+    dispatch(fetchBooks());
+    dispatch(fetchReadingPlans());
   }, [dispatch]);
   
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([
-      dispatch(fetchBooks({})),
-      dispatch(fetchReadingPlans({}))
+      dispatch(fetchBooks()),
+      dispatch(fetchReadingPlans())
     ]);
     setRefreshing(false);
-  };
+  }, [dispatch]);
   
   const calculateProgress = (plan: any) => {
     return (plan.currentPage / plan.totalPages) * 100;
@@ -88,6 +175,53 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     </Card>
   );
   
+  const renderFeaturedBookItem = ({ item }: { item: any }) => (
+    <TouchableOpacity
+      style={styles.featuredBookContainer}
+      onPress={() => navigation.navigate('BookDetail', { bookId: item.id })}
+    >
+      <Image 
+        source={{ uri: item.coverImageUrl || 'https://via.placeholder.com/300x450' }} 
+        style={styles.featuredBookCover}
+      />
+      <View style={styles.featuredBookOverlay}>
+        <Text style={styles.featuredBookTitle}>{item.title}</Text>
+        <Text style={styles.featuredBookAuthor}>{item.author}</Text>
+        <View style={styles.ratingContainer}>
+          <Text style={styles.ratingText}>{item.rating || '4.5'} ★</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+  
+  const renderCategoryItem = ({ item }: { item: any }) => (
+    <TouchableOpacity
+      style={[
+        styles.categoryItem,
+        selectedCategory === item.id && styles.selectedCategoryItem
+      ]}
+      onPress={() => setSelectedCategory(item.id)}
+    >
+      <Avatar.Icon 
+        size={32} 
+        icon={item.icon}
+        style={[
+          styles.categoryIcon,
+          selectedCategory === item.id && styles.selectedCategoryIcon
+        ]}
+        color={selectedCategory === item.id ? '#FFFFFF' : '#8A2BE2'}
+      />
+      <Text 
+        style={[
+          styles.categoryText,
+          selectedCategory === item.id && styles.selectedCategoryText
+        ]}
+      >
+        {item.name}
+      </Text>
+    </TouchableOpacity>
+  );
+  
   const renderPlanItem = ({ item }: { item: any }) => (
     <Card 
       style={styles.planCard}
@@ -109,7 +243,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           </View>
           <ProgressBar 
             progress={item.currentPage / item.totalPages} 
-            color="#6200ee"
+            color="#8A2BE2"
             style={styles.progressBar}
           />
         </View>
@@ -121,6 +255,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             mode="text" 
             compact 
             onPress={() => navigation.navigate('ReadingPlan', { planId: item.id })}
+            color="#8A2BE2"
           >
             Log Progress
           </Button>
@@ -129,13 +264,43 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     </Card>
   );
   
-  const filteredBooks = searchQuery
+  // Filter books based on search query and selected category
+  const filteredBooks = books.filter(book => {
+    const matchesSearch = !searchQuery || 
+      book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      book.category.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesCategory = selectedCategory === 'all' || 
+      book.category.toLowerCase() === selectedCategory.toLowerCase();
+    
+    return matchesSearch && matchesCategory;
+  });
+  
+  // Get books from user's preferred categories for the featured section
+  const featuredBooks = userPreferredCategories.length > 0
     ? books.filter(book => 
-        book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        book.category.toLowerCase().includes(searchQuery.toLowerCase())
+        userPreferredCategories.some(
+          category => book.category.toLowerCase() === category.toLowerCase()
+        )
       )
-    : books;
+    : books.slice(0, 5); // If no preferences, just show first 5 books
+  
+  // Function to filter books by category
+  const filterBooksByCategory = (category: string) => {
+    // For now, return all books since we don't have enough mock data
+    // In a real app, we'd filter: return books.filter(b => b.category === category);
+    return books;
+  };
+  
+  // Loading state
+  if (isBooksLoading && books.length === 0) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: '#FFFFFF' }]}>
+        <Text style={{ color: '#333333' }}>Loading...</Text>
+      </View>
+    );
+  }
   
   return (
     <View style={styles.container}>
@@ -147,6 +312,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           />
         }
         style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
           <Text style={styles.welcomeText}>
@@ -164,12 +330,24 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           </View>
         </View>
         
-        <Searchbar
-          placeholder="Search books..."
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={styles.searchbar}
-        />
+        {/* Featured Books Section */}
+        {featuredBooks.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              {userPreferredCategories.length > 0 
+                ? "Recommended For You" 
+                : "Featured Books"}
+            </Text>
+            <FlatList
+              data={featuredBooks.slice(0, 5)}
+              renderItem={renderFeaturedBookItem}
+              keyExtractor={item => `featured-${item.id}`}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.featuredBooksList}
+            />
+          </View>
+        )}
         
         {/* Reading Plans Section */}
         <View style={styles.section}>
@@ -179,6 +357,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               mode="text" 
               onPress={() => navigation.navigate('ReadingPlan', {})}
               disabled={isPlansLoading}
+              color="#8A2BE2"
             >
               New Plan
             </Button>
@@ -194,6 +373,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   mode="contained" 
                   onPress={() => navigation.navigate('ReadingPlan', {})}
                   style={styles.emptyButton}
+                  color="#8A2BE2"
                 >
                   Create Reading Plan
                 </Button>
@@ -203,7 +383,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             <FlatList
               data={readingPlans}
               renderItem={renderPlanItem}
-              keyExtractor={item => item.id.toString()}
+              keyExtractor={item => `plan-${item.id.toString()}`}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.plansList}
@@ -218,13 +398,38 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         
         <Divider style={styles.divider} />
         
+        {/* Browse by Category Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Browse by Category</Text>
+          <FlatList
+            data={categories}
+            renderItem={renderCategoryItem}
+            keyExtractor={item => `category-${item.id}`}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoriesList}
+          />
+        </View>
+        
         {/* Books Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
-              {searchQuery ? 'Search Results' : 'Discover Books'}
+              {searchQuery 
+                ? 'Search Results' 
+                : (selectedCategory === 'all' 
+                    ? 'All Books' 
+                    : categories.find(c => c.id === selectedCategory)?.name || 'Books')}
             </Text>
           </View>
+          
+          <Searchbar
+            placeholder="Search books..."
+            onChangeText={setSearchQuery}
+            value={searchQuery}
+            style={styles.searchbar}
+            iconColor="#8A2BE2"
+          />
           
           {filteredBooks.length === 0 ? (
             <Card style={styles.emptyCard}>
@@ -232,7 +437,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 <Text style={styles.emptyText}>
                   {searchQuery 
                     ? 'No books found matching your search.' 
-                    : 'No books available at the moment.'}
+                    : 'No books available in this category.'}
                 </Text>
               </Card.Content>
             </Card>
@@ -240,7 +445,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             <FlatList
               data={filteredBooks}
               renderItem={renderBookItem}
-              keyExtractor={item => item.id.toString()}
+              keyExtractor={item => `book-${item.id.toString()}`}
               horizontal={false}
               numColumns={2}
               columnWrapperStyle={styles.bookGrid}
@@ -259,8 +464,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       <FAB
         style={styles.fab}
         icon="plus"
-        label="Add Book"
-        onPress={() => navigation.navigate('BookDetail', { bookId: 0 })}
+        onPress={() => navigation.navigate('ReadingPlan', {})}
+        color="#FFFFFF"
       />
     </View>
   );
@@ -269,32 +474,55 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FFFFFF',
   },
   scrollView: {
     flex: 1,
+    paddingBottom: 80, // Space for bottom navigation
   },
   header: {
-    padding: 16,
-    backgroundColor: '#6200ee',
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
+    backgroundColor: '#8A2BE2',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    padding: 24,
+    marginBottom: 20,
+    marginTop: 0,
+    // Ajout d'une ombre pour donner du relief
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 5,
   },
   welcomeText: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   statsContainer: {
     flexDirection: 'row',
+    marginTop: 10,
   },
   statItem: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 8,
-    padding: 12,
-    marginRight: 12,
-    minWidth: 100,
+    borderRadius: 15,
+    padding: 14,
+    marginRight: 18,
+    minWidth: 110,
+    alignItems: 'center',
+    // Ajout d'une ombre légère
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   statValue: {
     fontSize: 20,
@@ -302,51 +530,93 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   statLabel: {
-    fontSize: 12,
-    color: 'white',
-    opacity: 0.8,
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginTop: 4,
   },
   searchbar: {
-    margin: 16,
+    marginBottom: 20,
     elevation: 2,
+    borderRadius: 15,
+    backgroundColor: 'white',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   section: {
-    padding: 16,
+    marginBottom: 28,
+    paddingHorizontal: 18,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-  },
-  emptyCard: {
-    marginVertical: 8,
-    elevation: 2,
-  },
-  emptyText: {
-    textAlign: 'center',
-    margin: 16,
-    color: '#666',
-  },
-  emptyButton: {
-    marginTop: 16,
-  },
-  loadingText: {
-    textAlign: 'center',
-    margin: 16,
-    color: '#666',
+    color: '#333',
+    marginBottom: 14,
   },
   plansList: {
-    paddingEnd: 16,
+    paddingRight: 16,
+  },
+  bookGrid: {
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
   planCard: {
-    width: 280,
-    marginRight: 16,
-    elevation: 2,
+    width: 300,
+    marginRight: 18,
+    borderRadius: 16,
+    // Ajout d'une ombre
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  bookCard: {
+    width: (width - 52) / 2,
+    marginBottom: 18,
+    borderRadius: 16,
+    // Ajout d'une ombre
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  bookCover: {
+    height: 160,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  bookTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  chipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 4,
+  },
+  chip: {
+    marginRight: 4,
+    marginTop: 4,
+    height: 24,
   },
   progressContainer: {
     marginVertical: 8,
@@ -358,12 +628,10 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 12,
-    color: '#666',
   },
   progressPercent: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#6200ee',
   },
   progressBar: {
     height: 8,
@@ -379,40 +647,184 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
   },
-  bookGrid: {
-    justifyContent: 'space-between',
+  emptyCard: {
+    padding: 8,
+    marginVertical: 8,
+    borderRadius: 10,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
     marginBottom: 16,
   },
-  bookCard: {
-    width: '48%',
-    marginBottom: 16,
-    elevation: 2,
+  emptyButton: {
+    borderRadius: 10,
   },
-  bookCover: {
-    height: 150,
-  },
-  bookTitle: {
-    fontSize: 16,
-  },
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 8,
-  },
-  chip: {
-    marginRight: 8,
-    marginTop: 8,
-    height: 24,
+  loadingText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    padding: 16,
   },
   divider: {
     marginVertical: 8,
+    backgroundColor: '#e0e0e0',
+    height: 1,
   },
   fab: {
     position: 'absolute',
-    margin: 16,
-    right: 0,
+    right: 20,
+    bottom: 90, // Adjusted to account for bottom navigation
+    backgroundColor: '#8A2BE2',
+    // Ajout d'une ombre
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 6,
+  },
+  // Category styles
+  categoriesList: {
+    paddingVertical: 8,
+  },
+  categoryItem: {
+    marginRight: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: 'rgba(138, 43, 226, 0.1)',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  selectedCategoryItem: {
+    backgroundColor: '#8A2BE2',
+  },
+  categoryIcon: {
+    backgroundColor: 'rgba(138, 43, 226, 0.1)',
+    marginRight: 8,
+  },
+  selectedCategoryIcon: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  categoryText: {
+    color: '#8A2BE2',
+    fontWeight: '500',
+  },
+  selectedCategoryText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  // Featured books styles
+  featuredBooksList: {
+    paddingVertical: 8,
+  },
+  featuredBookContainer: {
+    width: 180,
+    height: 280,
+    marginRight: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    // Ajout d'une ombre
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  featuredBookCover: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 16,
+  },
+  featuredBookOverlay: {
+    position: 'absolute',
     bottom: 0,
-    backgroundColor: '#6200ee',
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    padding: 12,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+  },
+  featuredBookTitle: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  featuredBookAuthor: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+  },
+  ratingContainer: {
+    position: 'absolute',
+    top: -30,
+    right: 10,
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  ratingText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  featuredSection: {
+    marginBottom: 28,
+    paddingHorizontal: 18,
+  },
+  categorySection: {
+    marginBottom: 28,
+    paddingHorizontal: 18,
+  },
+  categoryTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 14,
+  },
+  featuredCover: {
+    width: 300,
+    height: 150,
+    borderRadius: 16,
+  },
+  featuredOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    padding: 12,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+  },
+  featuredTitle: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  featuredAuthor: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+  },
+  bookAuthor: {
+    fontSize: 14,
+    color: '#666666',
+    marginTop: 2,
   },
 });
 

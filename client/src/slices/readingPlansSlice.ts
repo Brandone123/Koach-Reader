@@ -85,7 +85,7 @@ const initialState: ReadingPlansState = {
 
 // Mock API functions (to be replaced with real API calls)
 const readingPlansAPI = {
-  getReadingPlans: async (): Promise<ReadingPlan[]> => {
+  getReadingPlans: async (params: {} = {}): Promise<ReadingPlan[]> => {
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     
@@ -300,8 +300,11 @@ export const fetchReadingPlans = createAsyncThunk(
   'readingPlans/fetchReadingPlans',
   async (_, { rejectWithValue }) => {
     try {
-      const plans = await readingPlansAPI.getReadingPlans();
-      return plans;
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Simulated API response
+      return readingPlansAPI.getReadingPlans();
     } catch (error: any) {
       return rejectWithValue(error.message);
     }

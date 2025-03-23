@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "koach-app-jwt-secret-key";
+const JWT_SECRET = process.env.JWT_SECRET || "koach-reader-jwt-secret-key";
 
 // JWT verification middleware
 export function verifyJWT(req: any, res: any, next: any) {

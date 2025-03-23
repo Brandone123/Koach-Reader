@@ -17,7 +17,7 @@ import {
   Avatar
 } from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../App';
+import { RootStackParamList } from '../../App';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch } from '../store';
 import { selectUser } from '../slices/authSlice';
@@ -305,7 +305,9 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ navigation }) => {
             </View>
             <View style={styles.patternItem}>
               <Text style={styles.patternLabel}>Avg. Pages/Day:</Text>
-              <Text style={styles.patternValue}>{stats.averagePagesPerDay.toFixed(1)}</Text>
+              <Text style={styles.patternValue}>
+                {stats.averagePagesPerDay ? stats.averagePagesPerDay.toFixed(1) : '0'}
+              </Text>
             </View>
             <View style={styles.patternItem}>
               <Text style={styles.patternLabel}>Avg. Time/Day:</Text>

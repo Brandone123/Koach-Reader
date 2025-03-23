@@ -44,6 +44,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "friend",
   "reading",
   "system",
+  "reminder",
 ]);
 
 // Users table

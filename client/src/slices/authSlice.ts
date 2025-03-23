@@ -46,6 +46,10 @@ interface UpdateProfileData {
   preferences?: User['preferences'];
 }
 
+interface UpdatePreferencesData {
+  preferences: User['preferences'];
+}
+
 // Initial state
 const initialState: AuthState = {
   user: null,
@@ -200,6 +204,22 @@ export const updateProfile = createAsyncThunk(
   }
 );
 
+export const updatePreferences = createAsyncThunk(
+  'auth/updatePreferences',
+  async (data: UpdatePreferencesData, { rejectWithValue }) => {
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Here you would make an actual API call to update preferences
+      // For now, we'll just return the updated preferences
+      return data.preferences;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update preferences');
+    }
+  }
+);
+
 // Auth slice
 const authSlice = createSlice({
   name: 'auth',
@@ -270,6 +290,21 @@ const authSlice = createSlice({
       .addCase(updateProfile.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string || 'Failed to update profile';
+      })
+      // Update preferences
+      .addCase(updatePreferences.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(updatePreferences.fulfilled, (state, action: PayloadAction<User['preferences']>) => {
+        state.isLoading = false;
+        if (state.user) {
+          state.user.preferences = action.payload;
+        }
+      })
+      .addCase(updatePreferences.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
       });
   },
 });

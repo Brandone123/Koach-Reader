@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -9,17 +9,8 @@ import {
   ActivityIndicator
 } from 'react-native';
 import Slider from '@react-native-community/slider';
-import TrackPlayer, {
-  Capability,
-  Event,
-  RepeatMode,
-  State,
-  useTrackPlayerEvents,
-  usePlaybackState,
-  useProgress,
-  Track
-} from 'react-native-track-player';
 import { IconButton } from 'react-native-paper';
+import { Audio } from 'expo-av';
 
 interface AudioPlayerProps {
   uri: string;
@@ -31,38 +22,22 @@ interface AudioPlayerProps {
   artwork?: string;
 }
 
-// Initialize TrackPlayer
-const setupPlayer = async () => {
-  try {
-    await TrackPlayer.setupPlayer();
-    await TrackPlayer.updateOptions({
-      capabilities: [
-        Capability.Play,
-        Capability.Pause,
-        Capability.SkipToNext,
-        Capability.SkipToPrevious,
-        Capability.Stop,
-        Capability.SeekTo,
-      ],
-      compactCapabilities: [
-        Capability.Play,
-        Capability.Pause,
-        Capability.SkipToNext,
-        Capability.SkipToPrevious,
-      ],
-    });
-    return true;
-  } catch (error) {
-    console.error('Error setting up TrackPlayer:', error);
-    return false;
-  }
-};
-
 // Format seconds to MM:SS format
 const formatTime = (seconds: number): string => {
   const min = Math.floor(seconds / 60);
   const sec = Math.floor(seconds % 60);
   return `${min < 10 ? '0' + min : min}:${sec < 10 ? '0' + sec : sec}`;
+};
+
+// Type pour le statut de lecture Audio
+type PlaybackStatus = {
+  isLoaded: boolean;
+  isBuffering?: boolean;
+  isPlaying?: boolean;
+  durationMillis?: number;
+  positionMillis?: number;
+  rate?: number;
+  error?: string;
 };
 
 const AudioPlayer: React.FC<AudioPlayerProps> = ({
@@ -74,88 +49,118 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   bookId,
   artwork
 }) => {
-  const [isPlayerReady, setIsPlayerReady] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isBuffering, setIsBuffering] = useState(true);
+  const [duration, setDuration] = useState(0);
+  const [position, setPosition] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekValue, setSeekValue] = useState(0);
   const [speed, setSpeed] = useState(1);
   
-  const playbackState = usePlaybackState();
-  const progress = useProgress(200);
-  
-  // Set up player when component mounts
+  const soundRef = useRef<Audio.Sound | null>(null);
+  const statusUpdateIntervalRef = useRef<number | null>(null);
+
+  // Set up audio when component mounts
   useEffect(() => {
-    let mounted = true;
+    let isMounted = true;
     
-    (async () => {
-      const setup = await setupPlayer();
-      if (mounted && setup) {
-        const track: Track = {
-          url: uri,
-          title: title,
-          artist: artist,
-          artwork: artwork,
-        };
-
-        try {
-          await TrackPlayer.reset();
-          await TrackPlayer.add([track]);
-          setIsPlayerReady(true);
-        } catch (error) {
-          console.error('Error adding track:', error);
-          if (onError) onError(error as Error);
-          Alert.alert('Error', 'Could not load the audio file. Please try again later.');
+    const setupAudio = async () => {
+      try {
+        // Set audio mode for playback
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          staysActiveInBackground: true,
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+        
+        // Load the audio file
+        const { sound } = await Audio.Sound.createAsync(
+          { uri },
+          { shouldPlay: false, positionMillis: 0, progressUpdateIntervalMillis: 200 },
+          onPlaybackStatusUpdate
+        );
+        
+        if (isMounted) {
+          soundRef.current = sound;
+          setIsReady(true);
+          setIsBuffering(false);
         }
+      } catch (error) {
+        console.error('Error loading audio:', error);
+        if (onError && isMounted) onError(error as Error);
+        Alert.alert('Error', 'Could not load the audio file. Please try again later.');
       }
-    })();
-
-    return () => {
-      mounted = false;
-      TrackPlayer.reset(); // Use reset instead of destroy which might not be available in current version
     };
-  }, [uri, title, artist, artwork]);
+    
+    setupAudio();
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      if (statusUpdateIntervalRef.current !== null) {
+        clearInterval(statusUpdateIntervalRef.current);
+      }
+      if (soundRef.current) {
+        soundRef.current.unloadAsync();
+      }
+    };
+  }, [uri]);
 
-  // Listen for player events
-  useTrackPlayerEvents([Event.PlaybackState, Event.PlaybackError], async (event) => {
-    if (event.type === Event.PlaybackError) {
-      console.error('An error occurred', event.message);
-      if (onError) onError(new Error(event.message));
-      Alert.alert('Playback Error', 'An error occurred during playback.');
+  const onPlaybackStatusUpdate = (status: PlaybackStatus) => {
+    if (!status.isLoaded) return;
+    
+    setIsBuffering(status.isBuffering || false);
+    setIsPlaying(status.isPlaying || false);
+    
+    if (status.durationMillis) {
+      setDuration(status.durationMillis / 1000);
     }
     
-    if (event.type === Event.PlaybackState) {
-      if (event.state === State.Buffering) {
-        setIsBuffering(true);
-      } else {
-        setIsBuffering(false);
-      }
+    if (status.positionMillis) {
+      setPosition(status.positionMillis / 1000);
     }
-  });
+  };
 
   const togglePlayback = async () => {
-    if (!isPlayerReady) return;
+    if (!isReady || !soundRef.current) return;
     
-    const currentState = await TrackPlayer.getState();
-    
-    if (currentState === State.Playing) {
-      await TrackPlayer.pause();
-    } else {
-      await TrackPlayer.play();
+    try {
+      if (isPlaying) {
+        await soundRef.current.pauseAsync();
+      } else {
+        await soundRef.current.playAsync();
+      }
+    } catch (error) {
+      console.error('Error toggling playback:', error);
+      if (onError) onError(error as Error);
     }
   };
 
   const skipForward = async () => {
-    if (!isPlayerReady) return;
-    await TrackPlayer.seekTo(progress.position + 10);
+    if (!isReady || !soundRef.current) return;
+    
+    try {
+      await soundRef.current.setPositionAsync(Math.min((position + 10) * 1000, duration * 1000));
+    } catch (error) {
+      console.error('Error skipping forward:', error);
+    }
   };
 
   const skipBackward = async () => {
-    if (!isPlayerReady) return;
-    await TrackPlayer.seekTo(Math.max(0, progress.position - 10));
+    if (!isReady || !soundRef.current) return;
+    
+    try {
+      await soundRef.current.setPositionAsync(Math.max(0, (position - 10) * 1000));
+    } catch (error) {
+      console.error('Error skipping backward:', error);
+    }
   };
 
   const changePlaybackSpeed = async () => {
-    if (!isPlayerReady) return;
+    if (!isReady || !soundRef.current) return;
     
     // Cycle through speeds: 1x -> 1.25x -> 1.5x -> 2x -> 0.75x -> 1x
     let newSpeed;
@@ -165,8 +170,12 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     else if (speed === 2) newSpeed = 0.75;
     else newSpeed = 1;
     
-    await TrackPlayer.setRate(newSpeed);
-    setSpeed(newSpeed);
+    try {
+      await soundRef.current.setRateAsync(newSpeed, true);
+      setSpeed(newSpeed);
+    } catch (error) {
+      console.error('Error changing playback speed:', error);
+    }
   };
 
   const onSliderValueChange = (value: number) => {
@@ -175,21 +184,26 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   };
 
   const onSlidingComplete = async (value: number) => {
-    await TrackPlayer.seekTo(value);
-    setIsSeeking(false);
+    if (!isReady || !soundRef.current) return;
+    
+    try {
+      await soundRef.current.setPositionAsync(value * 1000);
+      setIsSeeking(false);
+    } catch (error) {
+      console.error('Error seeking:', error);
+    }
   };
 
   const getPlaybackStateIcon = () => {
     if (isBuffering) return 'loading';
-    if (playbackState && playbackState.state === State.Playing) return 'pause';
+    if (isPlaying) return 'pause';
     return 'play';
   };
 
   const getPlaybackStateText = () => {
     if (isBuffering) return 'Buffering...';
-    if (playbackState && playbackState.state === State.Playing) return 'Playing';
-    if (playbackState && playbackState.state === State.Paused) return 'Paused';
-    if (playbackState && playbackState.state === State.Stopped) return 'Stopped';
+    if (isPlaying) return 'Playing';
+    if (!isPlaying && isReady) return 'Paused';
     return 'Loading...';
   };
 
@@ -200,7 +214,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
           icon="close"
           size={24}
           onPress={onClose}
-          style={styles.closeButton}
+          iconColor="white"
         />
         <Text style={styles.headerTitle}>Audio Player</Text>
         <View style={styles.spacer} />
@@ -208,15 +222,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
       <View style={styles.content}>
         <View style={styles.artwork}>
-          {artwork ? (
-            <View style={styles.artworkPlaceholder}>
-              <Text style={styles.artworkPlaceholderText}>📚</Text>
-            </View>
-          ) : (
-            <View style={styles.artworkPlaceholder}>
-              <Text style={styles.artworkPlaceholderText}>📚</Text>
-            </View>
-          )}
+          <View style={styles.artworkPlaceholder}>
+            <Text style={styles.artworkPlaceholderText}>📚</Text>
+          </View>
         </View>
 
         <View style={styles.info}>
@@ -227,21 +235,21 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
         <View style={styles.sliderContainer}>
           <Text style={styles.time}>
-            {isSeeking ? formatTime(seekValue) : formatTime(progress.position)}
+            {isSeeking ? formatTime(seekValue) : formatTime(position)}
           </Text>
           <Slider
-            value={isSeeking ? seekValue : progress.position}
+            value={isSeeking ? seekValue : position}
             minimumValue={0}
-            maximumValue={progress.duration > 0 ? progress.duration : 100}
+            maximumValue={duration > 0 ? duration : 100}
             onValueChange={onSliderValueChange}
             onSlidingComplete={onSlidingComplete}
-            disabled={!isPlayerReady}
+            disabled={!isReady}
             style={styles.slider}
             minimumTrackTintColor="#6200ee"
             maximumTrackTintColor="#d8d8d8"
             thumbTintColor="#6200ee"
           />
-          <Text style={styles.time}>{formatTime(progress.duration)}</Text>
+          <Text style={styles.time}>{formatTime(duration)}</Text>
         </View>
 
         <View style={styles.controls}>
@@ -253,27 +261,29 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
             icon="rewind-10"
             size={36}
             onPress={skipBackward}
-            disabled={!isPlayerReady}
+            disabled={!isReady}
             style={styles.controlButton}
           />
 
           <IconButton
             icon={getPlaybackStateIcon()}
-            size={56}
+            size={64}
             onPress={togglePlayback}
-            disabled={!isPlayerReady}
-            style={styles.playButton}
+            disabled={!isReady || isBuffering}
+            style={[styles.controlButton, styles.playButton]}
           />
 
           <IconButton
             icon="fast-forward-10"
             size={36}
             onPress={skipForward}
-            disabled={!isPlayerReady}
+            disabled={!isReady}
             style={styles.controlButton}
           />
 
-          <View style={styles.speedButton} />
+          <TouchableOpacity style={styles.spacerSmall}>
+            {/* Empty space for balance */}
+          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
@@ -294,99 +304,101 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   closeButton: {
-    // Style for the button container
+    // Removed tintColor property
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
-    flex: 1,
-    textAlign: 'center',
   },
   spacer: {
     width: 40,
   },
+  spacerSmall: {
+    width: 24,
+  },
   content: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    justifyContent: 'center',
+    padding: 20,
   },
   artwork: {
-    width: 220,
-    height: 220,
-    marginBottom: 24,
+    width: 200,
+    height: 200,
+    marginBottom: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
   },
   artworkPlaceholder: {
-    width: '100%',
-    height: '100%',
+    width: 200,
+    height: 200,
     backgroundColor: '#e1e1e1',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: 4,
   },
   artworkPlaceholderText: {
-    fontSize: 80,
+    fontSize: 64,
   },
   info: {
     alignItems: 'center',
-    marginBottom: 36,
+    marginBottom: 30,
+    width: '100%',
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
     marginBottom: 8,
+    textAlign: 'center',
   },
   artist: {
     fontSize: 16,
     color: '#666',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   status: {
     fontSize: 14,
-    color: '#6200ee',
-    fontWeight: '500',
+    color: '#888',
   },
   sliderContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    marginBottom: 24,
+    marginBottom: 30,
   },
   slider: {
     flex: 1,
     height: 40,
-    marginHorizontal: 8,
   },
   time: {
     fontSize: 12,
-    color: '#666',
-    width: 45,
+    color: '#888',
+    width: 50,
     textAlign: 'center',
   },
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     width: '100%',
   },
   controlButton: {
     margin: 0,
   },
   playButton: {
-    backgroundColor: '#6200ee',
-    borderRadius: 30,
-    margin: 0,
+    backgroundColor: 'rgba(98, 0, 238, 0.1)',
+    borderRadius: 32,
+    marginHorizontal: 10,
   },
   speedButton: {
-    width: 50,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 15,
-    backgroundColor: '#f0f0f0',
+    padding: 8,
+    backgroundColor: 'rgba(98, 0, 238, 0.1)',
+    borderRadius: 16,
+    marginRight: 10,
   },
   speedText: {
     fontSize: 14,

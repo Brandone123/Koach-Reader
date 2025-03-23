@@ -144,7 +144,7 @@ wheels = [
 ]
 
 [[package]]
-name = "repl-nix-workspace"
+name = "repl-nix-koach-reader-server"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

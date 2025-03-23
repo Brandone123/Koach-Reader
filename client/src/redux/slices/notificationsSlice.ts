@@ -5,7 +5,7 @@ import { RootState } from '../store';
 export interface Notification {
   id: number;
   userId: number;
-  type: 'achievement' | 'challenge' | 'friend' | 'reading' | 'system';
+  type: 'achievement' | 'challenge' | 'friend' | 'reading' | 'system' | 'reminder';
   title: string;
   message: string;
   read: boolean;
@@ -35,11 +35,11 @@ export const fetchNotifications = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       // Mock data - will connect to server later
-      return [
+      const mockNotifications: Notification[] = [
         {
           id: 1,
           userId: 1,
-          type: 'achievement',
+          type: 'achievement' as const,
           title: 'Badge Earned!',
           message: 'You earned the Bookworm badge for reading 7 days in a row!',
           read: false,
@@ -51,7 +51,7 @@ export const fetchNotifications = createAsyncThunk(
         {
           id: 2,
           userId: 1,
-          type: 'challenge',
+          type: 'challenge' as const,
           title: 'Challenge Update',
           message: 'You\'re halfway through the Summer Reading Challenge!',
           read: true,
@@ -64,7 +64,7 @@ export const fetchNotifications = createAsyncThunk(
         {
           id: 3,
           userId: 1,
-          type: 'friend',
+          type: 'friend' as const,
           title: 'Friend Request',
           message: 'User2 sent you a friend request',
           read: false,
@@ -74,7 +74,35 @@ export const fetchNotifications = createAsyncThunk(
           },
           createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
         },
+        {
+          id: 4,
+          userId: 1,
+          type: 'reading' as const,
+          title: 'Reading Activity',
+          message: 'You read 30 pages of "The Great Book"',
+          read: false,
+          data: {
+            bookId: 3,
+            bookTitle: 'The Great Book',
+            pagesRead: 30
+          },
+          createdAt: new Date(Date.now() - 30000).toISOString(), // 30 seconds ago
+        },
+        {
+          id: 5,
+          userId: 1,
+          type: 'reminder' as const,
+          title: 'Reading Reminder',
+          message: 'Time to continue reading "The Great Book"',
+          read: false,
+          data: {
+            bookId: 3,
+            bookTitle: 'The Great Book'
+          },
+          createdAt: new Date(Date.now() - 10000).toISOString(), // 10 seconds ago
+        },
       ];
+      return mockNotifications;
     } catch (error) {
       return rejectWithValue('Failed to fetch notifications.');
     }
@@ -159,6 +187,8 @@ export const { addNotification, clearAllNotifications } = notificationsSlice.act
 
 // Selectors
 export const selectAllNotifications = (state: RootState) => state.notifications.notifications;
+export const selectNotifications = (state: RootState) => state.notifications.notifications;
+export const selectNotificationsLoading = (state: RootState) => state.notifications.isLoading;
 export const selectUnreadCount = (state: RootState) => state.notifications.unreadCount;
 export const selectIsLoading = (state: RootState) => state.notifications.isLoading;
 export const selectError = (state: RootState) => state.notifications.error;

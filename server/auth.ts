@@ -30,7 +30,7 @@ async function comparePasswords(supplied: string, stored: string) {
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "koach-app-session-secret",
+    secret: process.env.SESSION_SECRET || "koach-reader-session-secret",
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,

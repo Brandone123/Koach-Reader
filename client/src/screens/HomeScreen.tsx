@@ -51,24 +51,24 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   
   useEffect(() => {
     // Fetch initial data
-    dispatch(fetchBooks());
-    dispatch(fetchReadingPlans());
+    dispatch(fetchBooks({}));
+    dispatch(fetchReadingPlans({}));
   }, [dispatch]);
   
   const onRefresh = async () => {
     setRefreshing(true);
     await Promise.all([
-      dispatch(fetchBooks()),
-      dispatch(fetchReadingPlans())
+      dispatch(fetchBooks({})),
+      dispatch(fetchReadingPlans({}))
     ]);
     setRefreshing(false);
   };
   
-  const calculateProgress = (plan) => {
+  const calculateProgress = (plan: any) => {
     return (plan.currentPage / plan.totalPages) * 100;
   };
   
-  const renderBookItem = ({ item }) => (
+  const renderBookItem = ({ item }: { item: any }) => (
     <Card 
       style={styles.bookCard}
       onPress={() => navigation.navigate('BookDetail', { bookId: item.id })}
@@ -88,7 +88,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     </Card>
   );
   
-  const renderPlanItem = ({ item }) => (
+  const renderPlanItem = ({ item }: { item: any }) => (
     <Card 
       style={styles.planCard}
       onPress={() => navigation.navigate('ReadingPlan', { planId: item.id })}

@@ -1,8 +1,11 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+// import 'react-native-get-random-values'; // Déplacé dans index.js
+import { LogBox, StyleSheet } from 'react-native';
+import React from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Provider as PaperProvider, DefaultTheme, IconButton } from 'react-native-paper';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createStackNavigator, StackNavigationProp } from '@react-navigation/stack';
 import { Provider as ReduxProvider } from 'react-redux';
 import { store } from './src/store';
 import HomeScreen from './src/screens/HomeScreen';
@@ -19,6 +22,10 @@ import ChallengesScreen from './src/screens/ChallengesScreen';
 import ChallengeDetailScreen from './src/screens/ChallengeDetailScreen';
 import MediaViewerScreen from './src/screens/MediaViewerScreen';
 import { AuthProvider, useAuth } from './src/hooks/useAuth';
+import NotificationsScreen from './src/screens/NotificationsScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
+
+LogBox.ignoreLogs(['Require cycle:']);
 
 export type RootStackParamList = {
   Login: undefined;
@@ -34,6 +41,8 @@ export type RootStackParamList = {
   Leaderboard: undefined;
   Challenges: undefined;
   ChallengeDetail: { challengeId: number };
+  Settings: undefined;
+  Notifications: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -192,12 +201,26 @@ const AppNavigator = () => {
           headerShown: false, // Hide header for full-screen experience
         }}
       />
+      <Stack.Screen 
+        name="Notifications" 
+        component={NotificationsScreen} 
+        options={{
+          title: 'Notifications',
+        }}
+      />
+      <Stack.Screen 
+        name="Settings" 
+        component={SettingsScreen} 
+        options={{
+          title: 'Settings',
+        }}
+      />
     </Stack.Navigator>
   );
 };
 
 type ProfileButtonProps = {
-  navigation: any; // Ideally we would use StackNavigationProp<RootStackParamList>
+  navigation: StackNavigationProp<RootStackParamList, 'Home'>;
 };
 
 function ProfileButton({ navigation }: ProfileButtonProps) {
@@ -215,14 +238,17 @@ function ProfileButton({ navigation }: ProfileButtonProps) {
 
 export default function App() {
   return (
-    <ReduxProvider store={store}>
-      <PaperProvider theme={theme}>
+    <SafeAreaProvider>
+      <ReduxProvider store={store}>
         <AuthProvider>
-          <NavigationContainer>
-            <AppNavigator />
-          </NavigationContainer>
+          <PaperProvider theme={theme}>
+            <NavigationContainer>
+              <AppNavigator />
+              <StatusBar style="auto" />
+            </NavigationContainer>
+          </PaperProvider>
         </AuthProvider>
-      </PaperProvider>
-    </ReduxProvider>
+      </ReduxProvider>
+    </SafeAreaProvider>
   );
-}
+} 

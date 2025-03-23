@@ -1,8 +1,9 @@
 {
-  "name": "workspace",
+  "name": "koach-reader-server",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "dev": "ts-node ./server/index-new.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -39,14 +40,11 @@
     "passport-local": "^1.0.0",
     "pg": "^8.14.1",
     "react-native": "^0.78.1",
-    "react-native-blob-util": "^0.21.2",
-    "react-native-fs": "^2.20.0",
-    "react-native-gesture-handler": "^2.24.0",
+    "react-native-gesture-handler": "~2.12.0",
     "react-native-paper": "^5.13.1",
-    "react-native-pdf": "^6.7.7",
-    "react-native-reanimated": "^3.17.1",
+    "react-native-reanimated": "~3.3.0",
     "react-native-safe-area-context": "^5.3.0",
-    "react-native-track-player": "^4.1.1",
+    "react-native-screens": "^4.9.2",
     "react-native-vector-icons": "^10.2.0",
     "react-navigation": "^5.0.0",
     "react-redux": "^9.2.0",

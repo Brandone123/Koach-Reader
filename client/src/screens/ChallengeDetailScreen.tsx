@@ -25,7 +25,7 @@ import {
 } from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList } from '../App';
+import { RootStackParamList } from '../../App';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch } from '../store';
 import { selectUser } from '../slices/authSlice';
@@ -35,7 +35,7 @@ import { mockFetchApi } from '../utils/mockApi';
 type ChallengeDetailScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ChallengeDetail'>;
 type ChallengeDetailScreenRouteProp = RouteProp<RootStackParamList, 'ChallengeDetail'>;
 
-interface ChallengeDetailScreenProps {
+export interface ChallengeDetailScreenProps {
   navigation: ChallengeDetailScreenNavigationProp;
   route: ChallengeDetailScreenRouteProp;
 }
@@ -81,7 +81,7 @@ interface Comment {
   createdAt: string;
 }
 
-const ChallengeDetailScreen: React.FC<ChallengeDetailScreenProps> = ({ navigation, route }) => {
+const ChallengeDetailScreen = ({ navigation, route }: ChallengeDetailScreenProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector(selectUser);
   const { challengeId } = route.params;

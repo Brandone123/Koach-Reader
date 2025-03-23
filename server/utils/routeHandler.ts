@@ -1,9 +1,23 @@
+import { Request, Response, NextFunction } from 'express';
+
+// Define a type for async request handlers that properly handles return types
+type AsyncRequestHandler = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => Promise<any>;
+
 /**
- * A utility wrapper for Express route handlers to properly handle async functions
- * This solves TypeScript "Promise<void>" return type issues
+ * Wraps an async route handler to avoid try/catch blocks in every handler
+ * @param fn The async function to wrap
+ * @returns A wrapped function that handles errors
  */
-export function asyncHandler(fn: Function) {
-  return function(req: any, res: any, next: any) {
-    Promise.resolve(fn(req, res, next)).catch(next);
+export const asyncHandler = (fn: AsyncRequestHandler) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await fn(req, res, next);
+    } catch (error) {
+      next(error);
+    }
   };
-}
+};

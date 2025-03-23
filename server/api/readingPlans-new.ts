@@ -2,6 +2,9 @@ import { Express } from "express";
 import { storage } from "../storage";
 import { InsertReadingPlan } from "../../shared/schema";
 import { asyncHandler } from "../utils/routeHandler";
+import { db } from "../db";
+import { and, eq } from "drizzle-orm";
+import { userBooks } from "../db/schema";
 
 export function setupReadingPlansRoutes(app: Express, verifyJWT: any) {
   // Get all reading plans for the authenticated user
@@ -109,7 +112,7 @@ export function setupReadingPlansRoutes(app: Express, verifyJWT: any) {
         book: {
           title: book.title,
           author: book.author,
-          coverImageUrl: book.coverImageUrl
+          coverImageUrl: book.coverUrl
         }
       });
     } catch (error) {
@@ -141,6 +144,25 @@ export function setupReadingPlansRoutes(app: Express, verifyJWT: any) {
         return res.status(403).json({ message: "Unauthorized access to reading plan" });
       }
       
+      // Get the last page from userBooks instead
+      const userBook = await db.query.userBooks.findFirst({
+        where: (ub) => and(
+          eq(ub.userId, userId),
+          eq(ub.bookId, readingPlan.bookId)
+        )
+      });
+      
+      const currentPage = userBook?.lastPageRead || 0;
+      const book = await db.query.books.findFirst({
+        where: (b) => eq(b.id, readingPlan.bookId)
+      });
+      
+      const totalPages = book?.pageCount || 0;
+      const newCurrentPage = Math.min(
+        totalPages,
+        currentPage + parseInt(pagesRead)
+      );
+      
       // Create reading session
       const koachEarned = await storage.createReadingSession(
         userId,
@@ -150,11 +172,25 @@ export function setupReadingPlansRoutes(app: Express, verifyJWT: any) {
         minutesSpent ? parseInt(minutesSpent) : undefined
       );
       
-      // Update reading plan currentPage
-      const newCurrentPage = Math.min(
-        readingPlan.totalPages,
-        readingPlan.currentPage + parseInt(pagesRead)
-      );
+      // Update reading plan
+      await db.update(readingPlans)
+        .set({
+          // Update lastReadDate instead
+          lastReadDate: new Date()
+        })
+
+      // Update userBook instead for page tracking
+      if (userBook) {
+        await db.update(userBooks)
+          .set({
+            lastPageRead: newCurrentPage,
+            completionPercentage: Math.floor((newCurrentPage / totalPages) * 100)
+          })
+          .where(and(
+            eq(userBooks.userId, userId),
+            eq(userBooks.bookId, readingPlan.bookId)
+          ));
+      }
       
       const updatedPlan = await storage.updateReadingPlan(planId, {
         currentPage: newCurrentPage,

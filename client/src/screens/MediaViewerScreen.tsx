@@ -10,7 +10,7 @@ import {
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { Button } from 'react-native-paper';
-import { RootStackParamList } from '../App';
+import { RootStackParamList } from '../../App';
 import PDFViewer from '../components/PDFViewer';
 import AudioPlayer from '../components/AudioPlayer';
 import { useDispatch, useSelector } from 'react-redux';
@@ -22,7 +22,7 @@ import { mockFetchApi } from '../utils/mockApi';
 type MediaViewerScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MediaViewer'>;
 type MediaViewerScreenRouteProp = RouteProp<RootStackParamList, 'MediaViewer'>;
 
-interface MediaViewerScreenProps {
+export interface MediaViewerScreenProps {
   navigation: MediaViewerScreenNavigationProp;
   route: MediaViewerScreenRouteProp;
 }
@@ -40,7 +40,7 @@ interface MediaInfo {
   creator?: string;
 }
 
-const MediaViewerScreen: React.FC<MediaViewerScreenProps> = ({ navigation, route }) => {
+const MediaViewerScreen = ({ navigation, route }: MediaViewerScreenProps) => {
   const { bookId, mediaType } = route.params;
   const [mediaInfo, setMediaInfo] = useState<MediaInfo | null>(null);
   const [loading, setLoading] = useState(true);

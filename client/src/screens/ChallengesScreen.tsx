@@ -25,7 +25,7 @@ import {
   RadioButton,
 } from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../App';
+import { RootStackParamList } from '../../App';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch } from '../store';
 import { selectUser } from '../slices/authSlice';

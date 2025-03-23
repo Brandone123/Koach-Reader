@@ -4,7 +4,7 @@ import { promisify } from "util";
 import jwt from "jsonwebtoken";
 
 const scryptAsync = promisify(scrypt);
-const JWT_SECRET = process.env.JWT_SECRET || "koach-app-jwt-secret-key";
+const JWT_SECRET = process.env.JWT_SECRET || "koach-reader-jwt-secret-key";
 
 // Hash password with scrypt
 export async function hashPassword(password: string): Promise<string> {

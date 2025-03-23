@@ -9,9 +9,9 @@ import {
   SafeAreaView,
   Alert 
 } from 'react-native';
-import Pdf from 'react-native-pdf';
+import { WebView } from 'react-native-webview';
 import { IconButton } from 'react-native-paper';
-import RNFS from 'react-native-fs';
+import * as FileSystem from 'expo-file-system';
 
 interface PDFViewerProps {
   uri: string;
@@ -33,15 +33,14 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const source = { uri, cache: true };
-
+  
   // Function to check if file exists and is accessible
   const checkFileExists = async () => {
     try {
       // For remote URLs, we can't check directly, but we can check for local files
       if (uri.startsWith('file://')) {
-        const exists = await RNFS.exists(uri.replace('file://', ''));
-        if (!exists) {
+        const fileInfo = await FileSystem.getInfoAsync(uri);
+        if (!fileInfo.exists) {
           throw new Error('File does not exist');
         }
       }
@@ -59,16 +58,10 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     checkFileExists();
   }, [uri]);
 
-  const handleLoadComplete = (numberOfPages: number) => {
-    setTotalPages(numberOfPages);
+  const handleLoadComplete = () => {
     setLoading(false);
-  };
-
-  const handlePageChanged = (page: number) => {
-    setCurrentPage(page);
-    if (onPageChange) {
-      onPageChange(page, totalPages);
-    }
+    // Note: WebView doesn't provide page count information directly
+    setTotalPages(1); // Default to 1 since we can't get total pages easily
   };
 
   const handleError = (error: any) => {
@@ -81,19 +74,13 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   };
 
   const goToNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-      // Note: This doesn't actually change the page in the PDF view
-      // You would need to use a ref to the PDF component and call a method
-    }
+    // This is a placeholder - WebView doesn't directly support page navigation for PDFs
+    Alert.alert("Info", "Next page functionality not available in this viewer");
   };
 
   const goToPreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-      // Note: This doesn't actually change the page in the PDF view
-      // You would need to use a ref to the PDF component and call a method
-    }
+    // This is a placeholder - WebView doesn't directly support page navigation for PDFs
+    Alert.alert("Info", "Previous page functionality not available in this viewer");
   };
 
   return (
@@ -101,9 +88,9 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
       <View style={styles.header}>
         <IconButton
           icon="close"
+          style={styles.closeButton as any}
           size={24}
           onPress={onClose}
-          style={styles.closeButton}
         />
         <Text style={styles.title}>{title}</Text>
         <View style={styles.spacer} />
@@ -117,14 +104,16 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
           </View>
         )}
         
-        <Pdf
-          source={source}
-          onLoadComplete={handleLoadComplete}
-          onPageChanged={handlePageChanged}
-          onError={handleError}
+        <WebView
+          source={{ uri }}
           style={styles.pdf}
-          enablePaging={true}
-          renderActivityIndicator={() => null} // We handle loading state ourselves
+          onLoadEnd={() => handleLoadComplete()}
+          onError={(event) => handleError(event.nativeEvent.description)}
+          originWhitelist={['*']}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          startInLoadingState={true}
+          renderLoading={() => <ActivityIndicator size="large" color="#6200ee" />}
         />
       </View>
 
@@ -139,7 +128,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
         </TouchableOpacity>
         
         <Text style={styles.pageInfo}>
-          Page {currentPage} of {totalPages}
+          PDF Viewer
         </Text>
         
         <TouchableOpacity 

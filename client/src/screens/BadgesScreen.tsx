@@ -19,7 +19,7 @@ import {
 } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../App';
+import { RootStackParamList } from '../../App';
 import { AppDispatch } from '../store';
 import { 
   fetchBadges, 
@@ -73,10 +73,10 @@ const BadgesScreen: React.FC<BadgesScreenProps> = ({ navigation }) => {
     }
     
     // Apply earned/unearned filter
-    if (filter === 'earned') {
+    if (filter === 'earned' && userBadges) {
       const earnedBadgeIds = userBadges.map(ub => ub.badgeId);
       filtered = filtered.filter(badge => earnedBadgeIds.includes(badge.id));
-    } else if (filter === 'unearned') {
+    } else if (filter === 'unearned' && userBadges) {
       const earnedBadgeIds = userBadges.map(ub => ub.badgeId);
       filtered = filtered.filter(badge => !earnedBadgeIds.includes(badge.id));
     }
@@ -85,10 +85,11 @@ const BadgesScreen: React.FC<BadgesScreenProps> = ({ navigation }) => {
   };
 
   const isEarned = (badgeId: number) => {
-    return userBadges.some(ub => ub.badgeId === badgeId);
+    return userBadges && userBadges.some(ub => ub.badgeId === badgeId);
   };
 
   const getEarnedDate = (badgeId: number) => {
+    if (!userBadges) return null;
     const userBadge = userBadges.find(ub => ub.badgeId === badgeId);
     if (userBadge) {
       return new Date(userBadge.dateEarned).toLocaleDateString();
@@ -140,7 +141,7 @@ const BadgesScreen: React.FC<BadgesScreenProps> = ({ navigation }) => {
       <View style={styles.header}>
         <Title style={styles.title}>My Badges</Title>
         <Text style={styles.subtitle}>
-          {userBadges.length} earned out of {badges.length} total badges
+          {userBadges?.length || 0} earned out of {badges?.length || 0} total badges
         </Text>
         
         <Searchbar

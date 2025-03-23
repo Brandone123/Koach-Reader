@@ -19,7 +19,6 @@ import {
   Searchbar,
   ProgressBar,
   Divider,
-  FAB,
   Avatar,
   useTheme
 } from 'react-native-paper';
@@ -318,7 +317,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <Text style={styles.welcomeText}>
             Welcome back, {user?.username || 'Reader'}!
           </Text>
-          <View style={styles.statsContainer}>
+          {/* <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{user?.koachPoints || 0}</Text>
               <Text style={styles.statLabel}>Koach Points</Text>
@@ -327,7 +326,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               <Text style={styles.statValue}>{user?.readingStreak || 0}</Text>
               <Text style={styles.statLabel}>Day Streak</Text>
             </View>
-          </View>
+          </View> */}
         </View>
         
         {/* Featured Books Section */}
@@ -460,13 +459,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           )}
         </View>
       </ScrollView>
-      
-      <FAB
-        style={styles.fab}
-        icon="plus"
-        onPress={() => navigation.navigate('ReadingPlan', {})}
-        color="#FFFFFF"
-      />
     </View>
   );
 };
@@ -671,21 +663,6 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     backgroundColor: '#e0e0e0',
     height: 1,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 90, // Adjusted to account for bottom navigation
-    backgroundColor: '#8A2BE2',
-    // Ajout d'une ombre
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    elevation: 6,
   },
   // Category styles
   categoriesList: {

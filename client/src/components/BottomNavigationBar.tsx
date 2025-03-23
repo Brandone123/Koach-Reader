@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Platform, TouchableOpacity } from 'react-native';
-import { BottomNavigation, Text, Badge, IconButton } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { BottomNavigation, Text } from 'react-native-paper';
+import { useNavigation, useNavigationState } from '@react-navigation/native';
 import { RootStackParamList } from '../../App';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
@@ -9,43 +9,77 @@ import { selectUser } from '../slices/authSlice';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
+type IconProps = { color: string; size: number };
 
-interface BottomBarProps {
-  hideForRoutes?: string[];
-}
-
-const BottomNavigationBar: React.FC<BottomBarProps> = ({ hideForRoutes = ['Onboarding'] }) => {
+const BottomNavigationBar: React.FC = () => {
   const [index, setIndex] = useState(2); // Home index par défaut
   const navigation = useNavigation<NavigationProp>();
   const user = useSelector(selectUser);
+
+  // Utiliser useNavigationState pour vérifier la route actuelle de façon sûre
+  const currentRouteName = useNavigationState(
+    state => state?.routes[state?.index]?.name
+  );
   
-  // Le contrôle d'affichage est maintenant géré par le composant parent
+  // Ne pas afficher sur l'écran d'onboarding
+  if (currentRouteName === 'Onboarding') {
+    return null;
+  }
   
   const isPremium = user?.isPremium || false;
 
-  const routes = [
-    { key: 'leaderboard', title: 'Leaderboard', icon: 'trophy-award', color: '#FFC107' },
-    { key: 'challenges', title: 'Challenges', icon: 'flag-checkered', color: '#FF6B6B' },
-    { key: 'home', title: 'Home', icon: 'home', color: '#8A2BE2' },
-    { key: 'profile', title: 'Profile', icon: 'account-circle', color: '#2980B9' },
-    { key: 'stats', title: 'Stats', icon: 'chart-line', color: '#00CEC9' },
-  ];
-
   // Define empty component for each scene
-  const LeaderboardScene = () => null;
-  const ChallengesScene = () => null;
-  const HomeScene = () => null;
-  const ProfileScene = () => null;
-  const StatsScene = () => null;
+  const renderEmptyScene = () => null;
   
   // Map the components to keys
-  const renderScene = BottomNavigation.SceneMap({
-    leaderboard: LeaderboardScene,
-    challenges: ChallengesScene,
-    home: HomeScene,
-    profile: ProfileScene,
-    stats: StatsScene,
-  });
+  const renderScene = {
+    leaderboard: renderEmptyScene,
+    challenges: renderEmptyScene,
+    home: renderEmptyScene,
+    profile: renderEmptyScene,
+    stats: renderEmptyScene,
+  };
+
+  // Custom render icon function with larger icons and active state indicator
+  const renderIcon = ({ route, focused, color }: { route: any; focused: boolean; color: string }) => {
+    return (
+      <View style={focused ? styles.activeIconContainer : styles.iconContainer}>
+        <MaterialCommunityIcons
+          name={route.icon}
+          size={37}
+          color={color}
+        />
+      </View>
+    );
+  };
+
+  const routes = [
+    { 
+      key: 'leaderboard', 
+      title: '', 
+      icon: 'trophy-award',
+    },
+    { 
+      key: 'challenges', 
+      title: '', 
+      icon: 'flag-checkered',
+    },
+    { 
+      key: 'home', 
+      title: '', 
+      icon: 'home',
+    },
+    { 
+      key: 'profile', 
+      title: '', 
+      icon: 'account-circle',
+    },
+    { 
+      key: 'stats', 
+      title: '', 
+      icon: 'chart-line',
+    },
+  ];
 
   const handleIndexChange = (newIndex: number) => {
     setIndex(newIndex);
@@ -71,41 +105,39 @@ const BottomNavigationBar: React.FC<BottomBarProps> = ({ hideForRoutes = ['Onboa
 
   // Gérer le clic sur le bouton d'ajout de livre
   const handleAddBook = () => {
-    if (isPremium) {
-      navigation.navigate('ReadingPlan', {});
-    } else {
-      // Rediriger vers une page demandant à l'utilisateur de devenir premium
-      // À implémenter plus tard: navigation.navigate('PremiumPlans');
-      alert('Cette fonctionnalité est réservée aux utilisateurs premium');
-    }
+    navigation.navigate('ReadingPlan', {});
   };
 
   return (
     <View style={styles.container}>
-      <BottomNavigation
-        navigationState={{ index, routes }}
-        onIndexChange={handleIndexChange}
-        renderScene={renderScene}
-        shifting={true}
-        labeled={true}
-        activeColor="#FFFFFF"
-        inactiveColor="rgba(255,255,255,0.7)"
-        sceneAnimationEnabled={true}
-        barStyle={styles.bar}
-        theme={{
-          colors: {
-            secondaryContainer: 'transparent',
-          }
-        }}
-      />
-      <TouchableOpacity 
-        style={styles.fabContainer}
-        onPress={handleAddBook}
-      >
-        <View style={styles.fab}>
-          <MaterialCommunityIcons name="plus-circle" size={56} color="#8A2BE2" />
-        </View>
-      </TouchableOpacity>
+      <View style={styles.barContainer}>
+        <BottomNavigation
+          navigationState={{ index, routes }}
+          onIndexChange={handleIndexChange}
+          renderScene={BottomNavigation.SceneMap(renderScene)}
+          barStyle={styles.bar}
+          activeColor="#FFFFFF"
+          inactiveColor="rgba(255,255,255,0.7)"
+          labeled={false}
+          shifting={false}
+          renderIcon={renderIcon}
+          sceneAnimationType="opacity"
+          sceneAnimationEnabled={true}
+          theme={{
+            colors: {
+              secondaryContainer: 'transparent',
+            }
+          }}
+        />
+        {/* <TouchableOpacity 
+          style={styles.fabContainer}
+          onPress={handleAddBook}
+        >
+          <View style={styles.fab}>
+            <MaterialCommunityIcons name="plus" size={30} color="#FFFFFF" />
+          </View>
+        </TouchableOpacity> */}
+      </View>
     </View>
   );
 };
@@ -119,10 +151,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     zIndex: 999,
   },
+  barContainer: {
+    position: 'relative',
+  },
   bar: {
     backgroundColor: '#8A2BE2',
-    height: Platform.OS === 'ios' ? 80 : 64,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 0,
+    height: 70,
     borderTopWidth: 0,
     elevation: 8,
     shadowColor: '#000',
@@ -133,11 +167,11 @@ const styles = StyleSheet.create({
   fabContainer: {
     position: 'absolute',
     alignSelf: 'center',
-    bottom: Platform.OS === 'ios' ? 60 : 44,
+    bottom: 30,
     zIndex: 1000,
   },
   fab: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FF6B6B',
     borderRadius: 28,
     elevation: 5,
     shadowColor: '#000',
@@ -148,7 +182,25 @@ const styles = StyleSheet.create({
     height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-  }
+  },
+  iconContainer: {
+    width: 35,
+    height: 35,
+    bottom: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  activeIconContainer: {
+    width: 55,
+    height: 55,
+    bottom: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    borderRadius: 15,
+    backgroundColor: 'transparent',
+  },
 });
 
 export default BottomNavigationBar; 

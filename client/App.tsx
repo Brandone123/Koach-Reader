@@ -1,6 +1,6 @@
 // import 'react-native-get-random-values'; // Déplacé dans index.js
 import { LogBox, StyleSheet, Platform, View, Text, TouchableOpacity } from 'react-native';
-import React from 'react';
+import React, { useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Provider as PaperProvider, DefaultTheme, IconButton, Badge } from 'react-native-paper';
@@ -160,6 +160,7 @@ function HomeTitle() {
 // Main app navigation wrapper
 const AppNavigator = () => {
   const { user, needsOnboarding } = useAuth();
+  const [currentRoute, setCurrentRoute] = useState<string>('');
   
   // Show auth screens if no user
   if (!user) {
@@ -325,8 +326,8 @@ const AppNavigator = () => {
           }}
         />
       </Stack.Navigator>
-      {/* Afficher le BottomNavigationBar uniquement si l'utilisateur a complété l'onboarding */}
-      {hasCompletedOnboarding && <BottomNavigationBar />}
+      {/* Toujours afficher le BottomNavigationBar (sa logique interne gèrera sa visibilité) */}
+      <BottomNavigationBar />
     </>
   );
 };

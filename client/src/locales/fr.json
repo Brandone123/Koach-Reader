@@ -1,0 +1,141 @@
+{
+  "common": {
+    "home": "Accueil",
+    "profile": "Profil",
+    "challenges": "Défis",
+    "leaderboard": "Classement",
+    "stats": "Statistiques",
+    "settings": "Paramètres",
+    "logout": "Déconnexion",
+    "back": "Retour",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "search": "Rechercher",
+    "loading": "Chargement...",
+    "language": "Langue",
+    "appTitle": "Koach Reader"
+  },
+  "auth": {
+    "login": "Connexion",
+    "signup": "Inscription",
+    "email": "Email",
+    "password": "Mot de passe",
+    "forgotPassword": "Mot de passe oublié?",
+    "name": "Nom",
+    "confirmPassword": "Confirmer le mot de passe",
+    "alreadyHaveAccount": "Vous avez déjà un compte?",
+    "dontHaveAccount": "Vous n'avez pas de compte?"
+  },
+  "home": {
+    "welcomeBack": "Bienvenue",
+    "todaysReading": "Lecture du jour",
+    "continueReading": "Continuer la lecture",
+    "finishBook": "Terminer le livre",
+    "startReading": "Commencer la lecture",
+    "dailyGoal": "Objectif quotidien",
+    "weeklyGoal": "Objectif hebdomadaire",
+    "recommendedBooks": "Recommandé pour vous",
+    "viewAll": "Voir tout",
+    "addBook": "Ajouter un livre"
+  },
+  "profile": {
+    "title": "Mon Profil",
+    "editProfile": "Modifier le profil",
+    "achievements": "Réussites",
+    "completedBooks": "Livres terminés",
+    "readingGoals": "Objectifs de lecture",
+    "favoriteGenres": "Genres préférés",
+    "changePassword": "Changer le mot de passe",
+    "setPremium": "Passer à Premium"
+  },
+  "book": {
+    "details": "Détails du livre",
+    "author": "Auteur",
+    "genre": "Genre",
+    "pages": "Pages",
+    "publishedDate": "Publié le",
+    "description": "Description",
+    "addToList": "Ajouter à mes livres",
+    "markAsRead": "Marquer comme lu",
+    "rateBook": "Noter ce livre",
+    "shareBook": "Partager",
+    "reviewBook": "Écrire un avis",
+    "readingProgress": "Progression de lecture"
+  },
+  "challenges": {
+    "title": "Défis de lecture",
+    "details": "Détails du défi",
+    "active": "Défis actifs",
+    "completed": "Défis terminés",
+    "joinChallenge": "Rejoindre le défi",
+    "createChallenge": "Créer un défi",
+    "participants": "Participants",
+    "duration": "Durée",
+    "progress": "Progression",
+    "reward": "Récompense"
+  },
+  "stats": {
+    "title": "Statistiques de lecture",
+    "booksRead": "Livres lus",
+    "pagesRead": "Pages lues",
+    "readingTime": "Temps de lecture",
+    "dailyAverage": "Moyenne quotidienne",
+    "longestStreak": "Plus longue série",
+    "currentStreak": "Série actuelle",
+    "mostReadGenre": "Genre le plus lu",
+    "readingHabits": "Habitudes de lecture"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "appearance": "Apparence",
+    "darkMode": "Mode sombre",
+    "fontSize": "Taille de police",
+    "notifications": "Notifications",
+    "reminderTime": "Heure de rappel",
+    "dataUsage": "Utilisation des données",
+    "language": "Langue",
+    "english": "Anglais",
+    "french": "Français",
+    "about": "À propos",
+    "terms": "Conditions d'utilisation",
+    "privacy": "Politique de confidentialité",
+    "appVersion": "Version de l'application"
+  },
+  "readingPlan": {
+    "title": "Plan de lecture",
+    "edit": "Modifier le plan",
+    "create": "Créer un plan",
+    "createPlan": "Créer un plan de lecture",
+    "dailyGoal": "Objectif quotidien",
+    "weeklyGoal": "Objectif hebdomadaire",
+    "setReminder": "Définir un rappel",
+    "selectBooks": "Sélectionner des livres",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "estimatedCompletion": "Achèvement estimé"
+  },
+  "readingSession": {
+    "title": "Enregistrer une session de lecture",
+    "pagesRead": "Pages lues",
+    "timeSpent": "Temps passé",
+    "date": "Date",
+    "notes": "Notes",
+    "save": "Enregistrer la session"
+  },
+  "badges": {
+    "title": "Badges et réussites",
+    "unlocked": "Badges débloqués",
+    "locked": "Badges verrouillés",
+    "progress": "Progression"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Marquer tout comme lu",
+    "clear": "Tout effacer"
+  },
+  "mediaViewer": {
+    "title": "Visionneuse de médias"
+  }
+} 

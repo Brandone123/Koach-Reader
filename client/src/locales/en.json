@@ -1,0 +1,141 @@
+{
+  "common": {
+    "home": "Home",
+    "profile": "Profile",
+    "challenges": "Challenges",
+    "leaderboard": "Leaderboard",
+    "stats": "Statistics",
+    "settings": "Settings",
+    "logout": "Logout",
+    "back": "Back",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "loading": "Loading...",
+    "language": "Language",
+    "appTitle": "Koach Reader"
+  },
+  "auth": {
+    "login": "Login",
+    "signup": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "name": "Name",
+    "confirmPassword": "Confirm Password",
+    "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Don't have an account?"
+  },
+  "home": {
+    "welcomeBack": "Welcome back",
+    "todaysReading": "Today's Reading",
+    "continueReading": "Continue Reading",
+    "finishBook": "Finish Book",
+    "startReading": "Start Reading",
+    "dailyGoal": "Daily Goal",
+    "weeklyGoal": "Weekly Goal",
+    "recommendedBooks": "Recommended for you",
+    "viewAll": "View All",
+    "addBook": "Add Book"
+  },
+  "profile": {
+    "title": "My Profile",
+    "editProfile": "Edit Profile",
+    "achievements": "Achievements",
+    "completedBooks": "Completed Books",
+    "readingGoals": "Reading Goals",
+    "favoriteGenres": "Favorite Genres",
+    "changePassword": "Change Password",
+    "setPremium": "Upgrade to Premium"
+  },
+  "book": {
+    "details": "Book Details",
+    "author": "Author",
+    "genre": "Genre",
+    "pages": "Pages",
+    "publishedDate": "Published",
+    "description": "Description",
+    "addToList": "Add to My Books",
+    "markAsRead": "Mark as Read",
+    "rateBook": "Rate this Book",
+    "shareBook": "Share",
+    "reviewBook": "Write a Review",
+    "readingProgress": "Reading Progress"
+  },
+  "challenges": {
+    "title": "Reading Challenges",
+    "details": "Challenge Details",
+    "active": "Active Challenges",
+    "completed": "Completed Challenges",
+    "joinChallenge": "Join Challenge",
+    "createChallenge": "Create Challenge",
+    "participants": "Participants",
+    "duration": "Duration",
+    "progress": "Progress",
+    "reward": "Reward"
+  },
+  "stats": {
+    "title": "Reading Statistics",
+    "booksRead": "Books Read",
+    "pagesRead": "Pages Read",
+    "readingTime": "Reading Time",
+    "dailyAverage": "Daily Average",
+    "longestStreak": "Longest Streak",
+    "currentStreak": "Current Streak",
+    "mostReadGenre": "Most Read Genre",
+    "readingHabits": "Reading Habits"
+  },
+  "settings": {
+    "title": "Settings",
+    "appearance": "Appearance",
+    "darkMode": "Dark Mode",
+    "fontSize": "Font Size",
+    "notifications": "Notifications",
+    "reminderTime": "Reminder Time",
+    "dataUsage": "Data Usage",
+    "language": "Language",
+    "english": "English",
+    "french": "French",
+    "about": "About",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "appVersion": "App Version"
+  },
+  "readingPlan": {
+    "title": "Reading Plan",
+    "edit": "Edit Plan",
+    "create": "Create Plan",
+    "createPlan": "Create Reading Plan",
+    "dailyGoal": "Daily Goal",
+    "weeklyGoal": "Weekly Goal",
+    "setReminder": "Set Reminder",
+    "selectBooks": "Select Books",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "estimatedCompletion": "Estimated Completion"
+  },
+  "readingSession": {
+    "title": "Log Reading Session",
+    "pagesRead": "Pages Read",
+    "timeSpent": "Time Spent",
+    "date": "Date",
+    "notes": "Notes",
+    "save": "Save Session"
+  },
+  "badges": {
+    "title": "Badges & Achievements",
+    "unlocked": "Unlocked Badges",
+    "locked": "Locked Badges",
+    "progress": "Progress"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark All as Read",
+    "clear": "Clear All"
+  },
+  "mediaViewer": {
+    "title": "Media Viewer"
+  }
+} 

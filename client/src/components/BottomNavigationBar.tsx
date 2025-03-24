@@ -7,11 +7,13 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../slices/authSlice';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 type IconProps = { color: string; size: number };
 
 const BottomNavigationBar: React.FC = () => {
+  const { t } = useTranslation();
   const [index, setIndex] = useState(2); // Home index par défaut
   const navigation = useNavigation<NavigationProp>();
   const user = useSelector(selectUser);
@@ -56,27 +58,27 @@ const BottomNavigationBar: React.FC = () => {
   const routes = [
     { 
       key: 'leaderboard', 
-      title: '', 
+      title: t('common.leaderboard'), 
       icon: 'trophy-award',
     },
     { 
       key: 'challenges', 
-      title: '', 
+      title: t('common.challenges'), 
       icon: 'flag-checkered',
     },
     { 
       key: 'home', 
-      title: '', 
+      title: t('common.home'), 
       icon: 'home',
     },
     { 
       key: 'profile', 
-      title: '', 
+      title: t('common.profile'), 
       icon: 'account-circle',
     },
     { 
       key: 'stats', 
-      title: '', 
+      title: t('common.stats'), 
       icon: 'chart-line',
     },
   ];

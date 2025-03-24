@@ -16,6 +16,8 @@ import {
   Checkbox
 } from 'react-native-paper';
 import { selectUser, updatePreferences } from '../slices/authSlice';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 // Add preference type definitions
 interface NotificationPreferences {
@@ -39,6 +41,7 @@ interface SettingsScreenProps {
 }
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector(selectUser);
   
@@ -90,22 +93,22 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
     <ScrollView style={styles.container}>
       <Card style={styles.section}>
         <Card.Content>
-          <Title>Appearance</Title>
+          <Title>{t('settings.appearance')}</Title>
           <Divider style={styles.divider} />
           
           <View style={styles.settingRow}>
             <View style={styles.settingTextContainer}>
-              <Subheading>Theme</Subheading>
-              <Text style={styles.settingDescription}>Choose your preferred app theme</Text>
+              <Subheading>{t('settings.darkMode')}</Subheading>
+              <Text style={styles.settingDescription}>{t('Choose your preferred app theme')}</Text>
             </View>
             <RadioButton.Group 
               onValueChange={(value) => updatePreference('theme', value)} 
               value={preferences.theme}
             >
               <View style={styles.radioContainer}>
-                <RadioButton.Item label="Light" value="light" />
-                <RadioButton.Item label="Dark" value="dark" />
-                <RadioButton.Item label="System" value="system" />
+                <RadioButton.Item label={t('Light')} value="light" />
+                <RadioButton.Item label={t('Dark')} value="dark" />
+                <RadioButton.Item label={t('System')} value="system" />
               </View>
             </RadioButton.Group>
           </View>
@@ -114,8 +117,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           
           <View style={styles.settingRow}>
             <View style={styles.settingTextContainer}>
-              <Subheading>Text Size</Subheading>
-              <Text style={styles.settingDescription}>Adjust reading text size</Text>
+              <Subheading>{t('settings.fontSize')}</Subheading>
+              <Text style={styles.settingDescription}>{t('Adjust reading text size')}</Text>
             </View>
             <View style={styles.sliderContainer}>
               <Text style={styles.sliderLabel}>A</Text>
@@ -131,15 +134,24 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         </Card.Content>
       </Card>
       
+      {/* Language Settings Card */}
       <Card style={styles.section}>
         <Card.Content>
-          <Title>Notifications</Title>
+          <Title>{t('common.language')}</Title>
+          <Divider style={styles.divider} />
+          <LanguageSwitcher />
+        </Card.Content>
+      </Card>
+      
+      <Card style={styles.section}>
+        <Card.Content>
+          <Title>{t('settings.notifications')}</Title>
           <Divider style={styles.divider} />
           
           <List.Section>
             <List.Item
-              title="Reading Reminders"
-              description="Get reminders for your reading plans"
+              title={t('Reading Reminders')}
+              description={t('Get reminders for your reading plans')}
               right={() => (
                 <Switch
                   value={preferences.notifications.readingReminders}
@@ -151,8 +163,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             />
             
             <List.Item
-              title="Achievements"
-              description="Get notified when you earn badges"
+              title={t('Achievements')}
+              description={t('Get notified when you earn badges')}
               right={() => (
                 <Switch
                   value={preferences.notifications.achievements}
@@ -164,8 +176,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             />
             
             <List.Item
-              title="Friend Activity"
-              description="Get updates on friend activities"
+              title={t('Friend Activity')}
+              description={t('Get updates on friend activities')}
               right={() => (
                 <Switch
                   value={preferences.notifications.friendActivity}
@@ -177,8 +189,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             />
             
             <List.Item
-              title="Challenges"
-              description="Get updates on challenges"
+              title={t('Challenges')}
+              description={t('Get updates on challenges')}
               right={() => (
                 <Switch
                   value={preferences.notifications.challenges}
@@ -194,18 +206,18 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       
       <Card style={styles.section}>
         <Card.Content>
-          <Title>Reading Preferences</Title>
+          <Title>{t('Reading Preferences')}</Title>
           <Divider style={styles.divider} />
           
           <List.Section>
-            <Subheading>Default Reading Frequency</Subheading>
+            <Subheading>{t('Default Reading Frequency')}</Subheading>
             <RadioButton.Group 
               onValueChange={(value) => updatePreference('readingFrequency', value)} 
               value={preferences.readingFrequency}
             >
-              <RadioButton.Item label="Daily" value="daily" />
-              <RadioButton.Item label="Weekly" value="weekly" />
-              <RadioButton.Item label="Monthly" value="monthly" />
+              <RadioButton.Item label={t('Daily')} value="daily" />
+              <RadioButton.Item label={t('Weekly')} value="weekly" />
+              <RadioButton.Item label={t('Monthly')} value="monthly" />
             </RadioButton.Group>
           </List.Section>
         </Card.Content>
@@ -218,7 +230,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           disabled={!hasUnsavedChanges}
           style={styles.saveButton}
         >
-          Save Changes
+          {t('common.save')}
         </Button>
       </View>
     </ScrollView>

@@ -31,6 +31,11 @@ import { selectUser } from './src/slices/authSlice';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigationState } from '@react-navigation/native';
 import { Animated } from 'react-native';
+import './src/utils/i18n'; // Import i18n configuration
+import { LanguageProvider } from './src/context/LanguageContext';
+import LanguageSwitcher from './src/components/LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
+import AppWithLanguage from './src/components/AppWithLanguage';
 
 
 LogBox.ignoreLogs(['Require cycle:']);
@@ -138,29 +143,27 @@ function HeaderRight({ navigation }: HeaderRightProps) {
         <Text style={styles.statText}>{koachPoints}</Text>
       </View>
       
-      {/* Bouton de langue */}
-      <TouchableOpacity
-        onPress={() => navigation.navigate('Settings')}
-        style={styles.langButton}
-      >
-        <MaterialCommunityIcons name="translate" size={22} color="#FFFFFF" />
-      </TouchableOpacity>
+      {/* Language Switcher */}
+      <LanguageSwitcher isHeader={true} />
     </View>
   );
 }
 
 // Fonction pour personnaliser le titre de la page d'accueil
 function HomeTitle() {
+  const { t } = useTranslation();
   return (
-    <Text style={styles.appTitle}>Koach Reader</Text>
+    <Text style={styles.appTitle}>{t('common.appTitle')}</Text>
   );
 }
 
 
 // Main app navigation wrapper
 const AppNavigator = () => {
-  const { user, needsOnboarding } = useAuth();
-  const [currentRoute, setCurrentRoute] = useState<string>('');
+  const { user } = useAuth();
+  const { t } = useTranslation();
+  const [isAppReady, setIsAppReady] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   
   // Show auth screens if no user
   if (!user) {
@@ -222,14 +225,16 @@ const AppNavigator = () => {
           },
         }}
       >
-        <Stack.Screen 
-          name="Onboarding" 
-          component={OnboardingScreen} 
-          options={{
-            headerShown: false,
-            gestureEnabled: false
-          }}
-        />
+        {showOnboarding ? (
+          <Stack.Screen 
+            name="Onboarding" 
+            component={OnboardingScreen} 
+            options={{
+              headerShown: false,
+              gestureEnabled: false
+            }}
+          />
+        ) : null}
         <Stack.Screen 
           name="Home" 
           component={HomeScreen} 
@@ -242,7 +247,7 @@ const AppNavigator = () => {
           name="BookDetail" 
           component={BookDetailScreen} 
           options={{
-            title: 'Book Details',
+            title: t('book.details', 'Book Details'),
           }}
         />
         <Stack.Screen 
@@ -250,64 +255,64 @@ const AppNavigator = () => {
           component={ReadingPlanScreen} 
           options={({ route }) => ({
             title: route.params?.planId && !route.params?.isEdit 
-              ? 'Reading Plan' 
-              : (route.params?.isEdit ? 'Edit Plan' : 'Create Plan'),
+              ? t('readingPlan.title', 'Reading Plan') 
+              : (route.params?.isEdit ? t('readingPlan.edit', 'Edit Plan') : t('readingPlan.create', 'Create Plan')),
           })}
         />
         <Stack.Screen 
           name="Profile" 
           component={ProfileScreen} 
           options={{
-            title: 'My Profile',
+            title: t('profile.title', 'My Profile'),
           }}
         />
         <Stack.Screen 
           name="ReadingSession" 
           component={ReadingSessionScreen} 
           options={{
-            title: 'Log Reading Session',
+            title: t('readingSession.title', 'Log Reading Session'),
           }}
         />
         <Stack.Screen 
           name="Badges" 
           component={BadgesScreen} 
           options={{
-            title: 'Badges & Achievements',
+            title: t('badges.title', 'Badges & Achievements'),
           }}
         />
         <Stack.Screen 
           name="Stats" 
           component={StatsScreen} 
           options={{
-            title: 'Reading Statistics',
+            title: t('stats.title', 'Reading Statistics'),
           }}
         />
         <Stack.Screen 
           name="Leaderboard" 
           component={LeaderboardScreen} 
           options={{
-            title: 'Leaderboard',
+            title: t('common.leaderboard', 'Leaderboard'),
           }}
         />
         <Stack.Screen 
           name="Challenges" 
           component={ChallengesScreen} 
           options={{
-            title: 'Reading Challenges',
+            title: t('challenges.title', 'Reading Challenges'),
           }}
         />
         <Stack.Screen 
           name="ChallengeDetail" 
           component={ChallengeDetailScreen} 
           options={{
-            title: 'Challenge Details',
+            title: t('challenges.details', 'Challenge Details'),
           }}
         />
         <Stack.Screen 
           name="MediaViewer" 
           component={MediaViewerScreen} 
           options={{
-            title: 'Media Viewer',
+            title: t('mediaViewer.title', 'Media Viewer'),
             headerShown: false, // Hide header for full-screen experience
           }}
         />
@@ -315,18 +320,17 @@ const AppNavigator = () => {
           name="Notifications" 
           component={NotificationsScreen} 
           options={{
-            title: 'Notifications',
+            title: t('notifications.title', 'Notifications'),
           }}
         />
         <Stack.Screen 
           name="Settings" 
           component={SettingsScreen} 
           options={{
-            title: 'Settings',
+            title: t('settings.title', 'Settings'),
           }}
         />
       </Stack.Navigator>
-      {/* Toujours afficher le BottomNavigationBar (sa logique interne gèrera sa visibilité) */}
       <BottomNavigationBar />
     </>
   );
@@ -368,12 +372,16 @@ export default function App() {
     <SafeAreaProvider>
       <ReduxProvider store={store}>
         <PaperProvider theme={theme}>
-          <AuthProvider>
-            <NavigationContainer>
-              <AppNavigator />
-              <StatusBar style="auto" />
-            </NavigationContainer>
-          </AuthProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <AppWithLanguage>
+                <NavigationContainer>
+                  <AppNavigator />
+                  <StatusBar style="auto" />
+                </NavigationContainer>
+              </AppWithLanguage>
+            </AuthProvider>
+          </LanguageProvider>
         </PaperProvider>
       </ReduxProvider>
     </SafeAreaProvider>

@@ -15,8 +15,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { login, register, selectIsLoading, selectError } from '../redux/slices/authSlice';
 import { AppDispatch } from '../redux/store';
 import { colors } from '../utils/theme';
+import { useTranslation } from 'react-i18next';
 
 const AuthScreen: React.FC = () => {
+  const { t } = useTranslation();
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -43,27 +45,27 @@ const AuthScreen: React.FC = () => {
     setValidationError(null);
 
     if (!username.trim()) {
-      setValidationError('Username is required');
+      setValidationError(t('auth.errorRequired'));
       return false;
     }
 
     if (!isLogin && !email.trim()) {
-      setValidationError('Email is required');
+      setValidationError(t('auth.errorRequired'));
       return false;
     }
 
     if (!password) {
-      setValidationError('Password is required');
+      setValidationError(t('auth.errorRequired'));
       return false;
     }
 
     if (!isLogin && password.length < 6) {
-      setValidationError('Password must be at least 6 characters');
+      setValidationError(t('auth.errorPasswordShort'));
       return false;
     }
 
     if (!isLogin && password !== confirmPassword) {
-      setValidationError('Passwords do not match');
+      setValidationError(t('auth.errorPasswordsMatch'));
       return false;
     }
 
@@ -91,14 +93,14 @@ const AuthScreen: React.FC = () => {
             <View style={styles.formContainer}>
               <View style={styles.logoContainer}>
                 <Text style={styles.logo}>KOACH</Text>
-                <Text style={styles.logoSubtitle}>Your Reading Journey Starts Here</Text>
+                <Text style={styles.logoSubtitle}>{t('auth.yourJourneyStarts')}</Text>
               </View>
 
-              <Text style={styles.formTitle}>{isLogin ? 'Login' : 'Create Account'}</Text>
+              <Text style={styles.formTitle}>{isLogin ? t('auth.login') : t('auth.createAccount')}</Text>
 
               {/* Username Field */}
               <TextInput
-                label="Username"
+                label={t('auth.username')}
                 value={username}
                 onChangeText={setUsername}
                 style={styles.input}
@@ -109,7 +111,7 @@ const AuthScreen: React.FC = () => {
               {/* Email Field (only for registration) */}
               {!isLogin && (
                 <TextInput
-                  label="Email"
+                  label={t('auth.email')}
                   value={email}
                   onChangeText={setEmail}
                   style={styles.input}
@@ -121,7 +123,7 @@ const AuthScreen: React.FC = () => {
 
               {/* Password Field */}
               <TextInput
-                label="Password"
+                label={t('auth.password')}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!passwordVisible}
@@ -138,7 +140,7 @@ const AuthScreen: React.FC = () => {
               {/* Confirm Password Field (only for registration) */}
               {!isLogin && (
                 <TextInput
-                  label="Confirm Password"
+                  label={t('auth.confirmPassword')}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   secureTextEntry={!passwordVisible}
@@ -160,46 +162,45 @@ const AuthScreen: React.FC = () => {
                 loading={isLoading}
                 disabled={isLoading}
               >
-                {isLogin ? 'Login' : 'Create Account'}
+                {isLogin ? t('auth.login') : t('auth.createAccount')}
               </Button>
 
               {/* Toggle Login/Register */}
               <TouchableOpacity onPress={toggleAuthMode} style={styles.toggleButton}>
                 <Text style={styles.toggleText}>
                   {isLogin
-                    ? "Don't have an account? Register"
-                    : 'Already have an account? Login'}
+                    ? t('auth.dontHaveAccount')
+                    : t('auth.alreadyHaveAccount')}
                 </Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.heroContainer}>
-              <Text style={styles.heroTitle}>Track Your Reading Journey</Text>
+              <Text style={styles.heroTitle}>{t('heroText.trackJourney')}</Text>
               <Text style={styles.heroSubtitle}>
-                Koach helps you build a reading habit through gamification, challenges, and social
-                features.
+                {t('heroText.buildHabit')}
               </Text>
 
               <View style={styles.featuresList}>
                 <View style={styles.featureItem}>
                   <Text style={styles.featureIcon}>📚</Text>
-                  <Text style={styles.featureText}>Track your reading progress</Text>
+                  <Text style={styles.featureText}>{t('heroText.trackProgress')}</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <Text style={styles.featureIcon}>🏆</Text>
-                  <Text style={styles.featureText}>Earn badges and achievements</Text>
+                  <Text style={styles.featureText}>{t('heroText.earnBadges')}</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <Text style={styles.featureIcon}>👥</Text>
-                  <Text style={styles.featureText}>Join reading challenges with friends</Text>
+                  <Text style={styles.featureText}>{t('heroText.joinChallenges')}</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <Text style={styles.featureIcon}>📊</Text>
-                  <Text style={styles.featureText}>Set goals and develop reading habits</Text>
+                  <Text style={styles.featureText}>{t('heroText.setGoals')}</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <Text style={styles.featureIcon}>🔔</Text>
-                  <Text style={styles.featureText}>Get reminders to maintain your streaks</Text>
+                  <Text style={styles.featureText}>{t('heroText.getReminders')}</Text>
                 </View>
               </View>
             </View>

@@ -99,16 +99,16 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           <View style={styles.settingRow}>
             <View style={styles.settingTextContainer}>
               <Subheading>{t('settings.darkMode')}</Subheading>
-              <Text style={styles.settingDescription}>{t('Choose your preferred app theme')}</Text>
+              <Text style={styles.settingDescription}>{t('settings.chooseTheme')}</Text>
             </View>
             <RadioButton.Group 
               onValueChange={(value) => updatePreference('theme', value)} 
               value={preferences.theme}
             >
               <View style={styles.radioContainer}>
-                <RadioButton.Item label={t('Light')} value="light" />
-                <RadioButton.Item label={t('Dark')} value="dark" />
-                <RadioButton.Item label={t('System')} value="system" />
+                <RadioButton.Item label={t('settings.light')} value="light" />
+                <RadioButton.Item label={t('settings.dark')} value="dark" />
+                <RadioButton.Item label={t('settings.system')} value="system" />
               </View>
             </RadioButton.Group>
           </View>
@@ -118,7 +118,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           <View style={styles.settingRow}>
             <View style={styles.settingTextContainer}>
               <Subheading>{t('settings.fontSize')}</Subheading>
-              <Text style={styles.settingDescription}>{t('Adjust reading text size')}</Text>
+              <Text style={styles.settingDescription}>{t('settings.adjustTextSize')}</Text>
             </View>
             <View style={styles.sliderContainer}>
               <Text style={styles.sliderLabel}>A</Text>
@@ -150,8 +150,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           
           <List.Section>
             <List.Item
-              title={t('Reading Reminders')}
-              description={t('Get reminders for your reading plans')}
+              title={t('settings.readingReminders')}
+              description={t('settings.reminderDescription')}
               right={() => (
                 <Switch
                   value={preferences.notifications.readingReminders}
@@ -163,8 +163,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             />
             
             <List.Item
-              title={t('Achievements')}
-              description={t('Get notified when you earn badges')}
+              title={t('settings.achievements')}
+              description={t('settings.achievementDescription')}
               right={() => (
                 <Switch
                   value={preferences.notifications.achievements}
@@ -176,8 +176,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             />
             
             <List.Item
-              title={t('Friend Activity')}
-              description={t('Get updates on friend activities')}
+              title={t('settings.friendActivity')}
+              description={t('settings.friendDescription')}
               right={() => (
                 <Switch
                   value={preferences.notifications.friendActivity}
@@ -189,8 +189,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             />
             
             <List.Item
-              title={t('Challenges')}
-              description={t('Get updates on challenges')}
+              title={t('settings.challenges')}
+              description={t('settings.challengeDescription')}
               right={() => (
                 <Switch
                   value={preferences.notifications.challenges}
@@ -206,33 +206,28 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       
       <Card style={styles.section}>
         <Card.Content>
-          <Title>{t('Reading Preferences')}</Title>
+          <Title>{t('settings.readingFrequency')}</Title>
           <Divider style={styles.divider} />
           
-          <List.Section>
-            <Subheading>{t('Default Reading Frequency')}</Subheading>
-            <RadioButton.Group 
-              onValueChange={(value) => updatePreference('readingFrequency', value)} 
-              value={preferences.readingFrequency}
-            >
-              <RadioButton.Item label={t('Daily')} value="daily" />
-              <RadioButton.Item label={t('Weekly')} value="weekly" />
-              <RadioButton.Item label={t('Monthly')} value="monthly" />
-            </RadioButton.Group>
-          </List.Section>
+          <RadioButton.Group 
+            onValueChange={(value) => updatePreference('readingFrequency', value)} 
+            value={preferences.readingFrequency}>
+            <RadioButton.Item label={t('settings.daily')} value="daily" />
+            <RadioButton.Item label={t('settings.weekly')} value="weekly" />
+            <RadioButton.Item label={t('settings.monthly')} value="monthly" />
+          </RadioButton.Group>
         </Card.Content>
       </Card>
       
-      <View style={styles.buttonContainer}>
-        <Button 
-          mode="contained" 
-          onPress={savePreferences}
-          disabled={!hasUnsavedChanges}
-          style={styles.saveButton}
-        >
-          {t('common.save')}
-        </Button>
-      </View>
+      <Button 
+        mode="contained" 
+        onPress={savePreferences}
+        disabled={!hasUnsavedChanges}
+        style={[styles.saveButton, !hasUnsavedChanges && styles.disabledButton]}
+        labelStyle={styles.saveButtonText}
+      >
+        {t('common.save')}
+      </Button>
     </ScrollView>
   );
 };
@@ -280,6 +275,12 @@ const styles = StyleSheet.create({
   saveButton: {
     width: '80%',
     paddingVertical: 8,
+  },
+  disabledButton: {
+    backgroundColor: '#ccc',
+  },
+  saveButtonText: {
+    fontSize: 16,
   },
 });
 

@@ -49,6 +49,7 @@ import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../App';
 import { AppDispatch } from '../store';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 const { width, height } = Dimensions.get('window');
 
@@ -61,6 +62,7 @@ interface BookDetailScreenProps {
 }
 
 const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }) => {
+  const { t } = useTranslation();
   const { bookId } = route.params;
   const dispatch = useDispatch<AppDispatch>();
   
@@ -100,7 +102,7 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
   
   const handleSubmitComment = () => {
     if (commentText.trim() === '') {
-      Alert.alert('Error', 'Please enter a comment');
+      Alert.alert(t('common.errorText'), t('book.commentRequired'));
       return;
     }
     
@@ -127,12 +129,12 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
     const minutesSpentNum = parseInt(minutesSpent);
     
     if (isNaN(pagesReadNum) || pagesReadNum <= 0) {
-      Alert.alert('Error', 'Please enter a valid number of pages');
+      Alert.alert(t('common.errorText'), t('readingSession.validPagesRequired'));
       return;
     }
     
     if (isNaN(minutesSpentNum) || minutesSpentNum <= 0) {
-      Alert.alert('Error', 'Please enter a valid number of minutes');
+      Alert.alert(t('common.errorText'), t('readingSession.validTimeRequired'));
       return;
     }
     
@@ -147,9 +149,9 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
     setMinutesSpent('');
     
     Alert.alert(
-      'Success',
-      `You've logged ${pagesReadNum} pages and earned ${pagesReadNum} Koach points!`,
-      [{ text: 'Great!' }]
+      t('common.success'),
+      t('readingSession.pointsEarned', { count: pagesReadNum }),
+      [{ text: t('common.great') }]
     );
   };
   
@@ -169,11 +171,11 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
     
     try {
       await Share.share({
-        message: `Check out this book I'm reading: ${book.title} by ${book.author}. #KoachReader`,
+        message: t('book.shareMessage', { title: book.title, author: book.author }),
         title: book.title,
       });
     } catch (error) {
-      Alert.alert('Error', 'Could not share the book');
+      Alert.alert(t('common.errorText'), t('book.shareError'));
     }
   };
   
@@ -221,7 +223,7 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
   if (!book && bookId > 0) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading book details...</Text>
+        <Text>{t('book.loading')}</Text>
       </View>
     );
   }
@@ -257,7 +259,7 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
                     />
                     <View style={styles.bookInfoContainer}>
                       <Text style={styles.bookTitle}>{book.title}</Text>
-                      <Text style={styles.bookAuthor}>by {book.author}</Text>
+                      <Text style={styles.bookAuthor}>{t('common.author')} {book.author}</Text>
                       
                       <View style={styles.ratingOverview}>
                         <View style={styles.ratingStars}>
@@ -276,7 +278,7 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
                       
                       <View style={styles.chipContainer}>
                         <Chip style={styles.chip} textStyle={styles.chipText}>{book.category}</Chip>
-                        <Chip style={styles.chip} textStyle={styles.chipText}>{book.pageCount} pages</Chip>
+                        <Chip style={styles.chip} textStyle={styles.chipText}>{book.pageCount} {t('book.pages')}</Chip>
                         <Chip style={styles.chip} textStyle={styles.chipText}>{book.language}</Chip>
                       </View>
                     </View>
@@ -293,7 +295,7 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
                   style={[styles.actionButton, { backgroundColor: '#8A2BE2' }]}
                   icon="book-open-page-variant"
                 >
-                  Read
+                  {t('book.read')}
                 </Button>
                 <Button 
                   mode="contained" 
@@ -301,7 +303,7 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
                   style={[styles.actionButton, { backgroundColor: '#FF6B6B' }]}
                   icon="headphones"
                 >
-                  Listen
+                  {t('book.listen')}
                 </Button>
                 <Button 
                   mode="contained" 
@@ -309,26 +311,26 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
                   style={[styles.actionButton, { backgroundColor: '#00CEC9' }]}
                   icon="pen"
                 >
-                  Log Reading
+                  {t('readingSession.logReading')}
                 </Button>
               </View>
             
               <Card style={styles.descriptionCard}>
                 <Card.Content>
-                  <Title style={styles.sectionTitle}>Description</Title>
+                  <Title style={styles.sectionTitle}>{t('book.description')}</Title>
                   <Paragraph style={styles.description}>{book.description}</Paragraph>
                 </Card.Content>
               </Card>
               
               <Title style={[styles.sectionTitle, { marginTop: 16, marginHorizontal: 16 }]}>
-                Reviews & Comments ({comments.length})
+                {t('book.reviewsComments', { count: comments.length })}
               </Title>
               
               <Card style={styles.addCommentCard}>
                 <Card.Content>
-                  <Title style={styles.addCommentTitle}>Add Your Review</Title>
+                  <Title style={styles.addCommentTitle}>{t('book.addYourReview')}</Title>
                   <View style={styles.ratingSelector}>
-                    <Text style={styles.ratingLabel}>Your Rating:</Text>
+                    <Text style={styles.ratingLabel}>{t('book.yourRating')}:</Text>
                     <View style={styles.stars}>
                       {[1, 2, 3, 4, 5].map(star => (
                         <IconButton
@@ -343,7 +345,7 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
                   </View>
                   
                   <TextInput
-                    label="Your comment"
+                    label={t('book.yourComment')}
                     value={commentText}
                     onChangeText={setCommentText}
                     multiline
@@ -359,7 +361,7 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
                     icon="send"
                     color="#8A2BE2"
                   >
-                    Submit
+                    {t('common.submit')}
                   </Button>
                 </Card.Content>
               </Card>
@@ -376,7 +378,7 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
                 <Card style={styles.emptyCommentsCard}>
                   <Card.Content>
                     <Text style={styles.emptyCommentsText}>
-                      Be the first to leave a comment!
+                      {t('book.beFirstToComment')}
                     </Text>
                   </Card.Content>
                 </Card>
@@ -392,24 +394,17 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
         actions={[
           {
             icon: 'share',
-            label: 'Share',
+            label: t('book.share'),
             onPress: handleShare,
           },
           {
             icon: 'notebook',
-            label: 'Create Reading Plan',
+            label: t('readingPlan.create'),
             onPress: handleCreateReadingPlan,
-            color: '#8A2BE2',
-          },
-          {
-            icon: 'book-outline',
-            label: 'Start Reading',
-            onPress: handleReadBook,
-            color: '#8A2BE2',
           },
         ]}
         onStateChange={({ open }) => setMenuVisible(open)}
-        color="#FFFFFF"
+        color="white"
         fabStyle={{ backgroundColor: '#8A2BE2' }}
       />
       
@@ -418,28 +413,28 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
           visible={logSessionVisible}
           onDismiss={() => setLogSessionVisible(false)}
         >
-          <Dialog.Title>Log Reading Session</Dialog.Title>
+          <Dialog.Title>{t('readingSession.title')}</Dialog.Title>
           <Dialog.Content>
             <TextInput
-              label="Pages Read"
+              label={t('readingSession.pagesRead')}
               value={pagesRead}
               onChangeText={setPagesRead}
-              style={styles.dialogInput}
               keyboardType="numeric"
+              style={styles.sessionInput}
               theme={{ colors: { primary: '#8A2BE2' } }}
             />
             <TextInput
-              label="Minutes Spent"
+              label={t('readingSession.timeSpent')} 
               value={minutesSpent}
               onChangeText={setMinutesSpent}
-              style={styles.dialogInput}
               keyboardType="numeric"
+              style={styles.sessionInput}
               theme={{ colors: { primary: '#8A2BE2' } }}
             />
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setLogSessionVisible(false)} color="#8A2BE2">Cancel</Button>
-            <Button onPress={handleLogSession} color="#8A2BE2">Log Session</Button>
+            <Button onPress={() => setLogSessionVisible(false)}>{t('common.cancel')}</Button>
+            <Button onPress={handleLogSession}>{t('common.save')}</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -629,7 +624,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
-  dialogInput: {
+  sessionInput: {
     marginVertical: 8,
     backgroundColor: 'white',
   },

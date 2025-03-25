@@ -17,6 +17,7 @@ import { useAuth } from '../hooks/useAuth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 type RegisterScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Register'>;
 
@@ -27,6 +28,7 @@ interface RegisterScreenProps {
 const { width, height } = Dimensions.get('window');
 
 const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -54,22 +56,18 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     
     // Username validation
     if (username.trim() === '') {
-      setUsernameError('Username is required');
-      isValid = false;
-    } else if (username.length < 3) {
-      setUsernameError('Username must be at least 3 characters');
+      setUsernameError(t('auth.errorRequired'));
       isValid = false;
     } else {
       setUsernameError('');
     }
     
     // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (email.trim() === '') {
-      setEmailError('Email is required');
+      setEmailError(t('auth.errorRequired'));
       isValid = false;
-    } else if (!emailRegex.test(email)) {
-      setEmailError('Please enter a valid email address');
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      setEmailError(t('auth.errorInvalidEmail'));
       isValid = false;
     } else {
       setEmailError('');
@@ -77,10 +75,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     
     // Password validation
     if (password === '') {
-      setPasswordError('Password is required');
+      setPasswordError(t('auth.errorRequired'));
       isValid = false;
     } else if (password.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
+      setPasswordError(t('auth.errorPasswordShort'));
       isValid = false;
     } else {
       setPasswordError('');
@@ -88,10 +86,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     
     // Confirm password validation
     if (confirmPassword === '') {
-      setConfirmPasswordError('Please confirm your password');
+      setConfirmPasswordError(t('auth.errorRequired'));
       isValid = false;
     } else if (confirmPassword !== password) {
-      setConfirmPasswordError('Passwords do not match');
+      setConfirmPasswordError(t('auth.errorPasswordsMatch'));
       isValid = false;
     } else {
       setConfirmPasswordError('');
@@ -104,8 +102,6 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     if (validateForm()) {
       try {
         await register({ username, email, password });
-        // After successful registration, navigate to onboarding
-        navigation.replace('Onboarding');
       } catch (err) {
         // Error will be handled by the useAuth hook
         console.error('Registration failed:', err);
@@ -138,8 +134,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                   source={require('../../assets/icon.png')}
                   style={styles.logo}
                 />
-                <Text style={styles.appName}>Koach Reader</Text>
-                <Text style={styles.tagline}>Join our reading community</Text>
+                <Text style={styles.appName}>{t('common.appTitle')}</Text>
+                <Text style={styles.tagline}>{t('auth.joinCommunity')}</Text>
               </View>
               
               <View style={styles.formContainer}>
@@ -148,15 +144,15 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                 )}
                 
                 <TextInput
-                  label="Username"
+                  label={t('auth.username')}
                   value={username}
                   onChangeText={setUsername}
                   style={styles.input}
                   autoCapitalize="none"
                   error={!!usernameError}
                   theme={{ colors: { primary: '#8A2BE2' } }}
-                  left={<TextInput.Icon icon="account" color="#8A2BE2" />}
                   mode="outlined"
+                  left={<TextInput.Icon icon="account" color="#8A2BE2" />}
                 />
                 {usernameError ? (
                   <HelperText type="error" visible={!!usernameError}>
@@ -165,16 +161,16 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                 ) : null}
                 
                 <TextInput
-                  label="Email"
+                  label={t('auth.email')}
                   value={email}
                   onChangeText={setEmail}
                   style={styles.input}
-                  keyboardType="email-address"
                   autoCapitalize="none"
+                  keyboardType="email-address"
                   error={!!emailError}
                   theme={{ colors: { primary: '#8A2BE2' } }}
-                  left={<TextInput.Icon icon="email" color="#8A2BE2" />}
                   mode="outlined"
+                  left={<TextInput.Icon icon="email" color="#8A2BE2" />}
                 />
                 {emailError ? (
                   <HelperText type="error" visible={!!emailError}>
@@ -183,7 +179,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                 ) : null}
                 
                 <TextInput
-                  label="Password"
+                  label={t('auth.password')}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={secureTextEntry}
@@ -207,7 +203,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                 ) : null}
                 
                 <TextInput
-                  label="Confirm Password"
+                  label={t('auth.confirmPassword')}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   secureTextEntry={confirmSecureTextEntry}
@@ -240,21 +236,15 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                   contentStyle={styles.registerButtonContent}
                   color="#8A2BE2"
                 >
-                  Sign Up
+                  {t('auth.createAccount')}
                 </Button>
                 
                 <View style={styles.loginContainer}>
-                  <Text style={styles.loginText}>Already have an account? </Text>
+                  <Text style={styles.loginText}>{t('auth.alreadyHaveAccount')} </Text>
                   <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                    <Text style={styles.loginLink}>Sign In</Text>
+                    <Text style={styles.loginLink}>{t('auth.login')}</Text>
                   </TouchableOpacity>
                 </View>
-              </View>
-              
-              <View style={styles.termsContainer}>
-                <Text style={styles.termsText}>
-                  By signing up, you agree to our Terms of Service and Privacy Policy.
-                </Text>
               </View>
             </ScrollView>
           </KeyboardAvoidingView>

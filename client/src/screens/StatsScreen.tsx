@@ -23,6 +23,7 @@ import { AppDispatch } from '../store';
 import { selectUser } from '../slices/authSlice';
 import { fetchApi } from '../utils/api';
 import { mockFetchApi } from '../utils/mockApi';
+import { useTranslation } from 'react-i18next';
 
 // Height and width for responsive designs
 const { width } = Dimensions.get('window');
@@ -53,6 +54,7 @@ interface ReadingStats {
 const StatsScreen: React.FC<StatsScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector(selectUser);
+  const { t } = useTranslation();
   
   const [stats, setStats] = useState<ReadingStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -190,7 +192,7 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ navigation }) => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#6200ee" />
-        <Text style={styles.loadingText}>Loading statistics...</Text>
+        <Text style={styles.loadingText}>{t('stats.loading')}</Text>
       </View>
     );
   }
@@ -199,14 +201,14 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ navigation }) => {
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>
-          No reading statistics available yet. Start reading to track your progress!
+          {t('stats.noStats')}
         </Text>
         <Button 
           mode="contained"
           onPress={() => navigation.navigate('Home')}
           style={styles.emptyButton}
         >
-          Go to Books
+          {t('stats.goToBooks')}
         </Button>
       </View>
     );
@@ -215,8 +217,8 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ navigation }) => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Title style={styles.title}>Reading Statistics</Title>
-        <Text style={styles.subtitle}>Track your reading performance</Text>
+        <Title style={styles.title}>{t('stats.title')}</Title>
+        <Text style={styles.subtitle}>{t('stats.tracking')}</Text>
         
         <View style={styles.timeRangeContainer}>
           <Chip 
@@ -225,7 +227,7 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ navigation }) => {
             style={styles.timeRangeChip}
             selectedColor="#fff"
           >
-            Week
+            {t('stats.week')}
           </Chip>
           <Chip 
             selected={timeRange === 'month'} 
@@ -233,7 +235,7 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ navigation }) => {
             style={styles.timeRangeChip}
             selectedColor="#fff"
           >
-            Month
+            {t('stats.month')}
           </Chip>
           <Chip 
             selected={timeRange === 'year'} 
@@ -241,31 +243,31 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ navigation }) => {
             style={styles.timeRangeChip}
             selectedColor="#fff"
           >
-            Year
+            {t('stats.year')}
           </Chip>
         </View>
       </View>
       
       <Card style={styles.card}>
         <Card.Content>
-          <Title style={styles.cardTitle}>Summary</Title>
+          <Title style={styles.cardTitle}>{t('stats.summary')}</Title>
           
           <View style={styles.statsGrid}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{stats.daysActive}</Text>
-              <Text style={styles.statLabel}>Days Active</Text>
+              <Text style={styles.statLabel}>{t('stats.daysActive')}</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{stats.totalPagesRead}</Text>
-              <Text style={styles.statLabel}>Pages Read</Text>
+              <Text style={styles.statLabel}>{t('stats.pagesRead')}</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{formatTime(stats.totalReadingTime)}</Text>
-              <Text style={styles.statLabel}>Time Spent</Text>
+              <Text style={styles.statLabel}>{t('stats.timeSpent')}</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{stats.booksCompleted}</Text>
-              <Text style={styles.statLabel}>Books Completed</Text>
+              <Text style={styles.statLabel}>{t('stats.booksCompleted')}</Text>
             </View>
           </View>
           
@@ -275,15 +277,15 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ navigation }) => {
             <View style={styles.streakItem}>
               <Avatar.Icon size={40} icon="fire" style={styles.streakIcon} />
               <View style={styles.streakTextContainer}>
-                <Text style={styles.streakValue}>{stats.currentStreak} days</Text>
-                <Text style={styles.streakLabel}>Current Streak</Text>
+                <Text style={styles.streakValue}>{stats.currentStreak} {t('stats.days')}</Text>
+                <Text style={styles.streakLabel}>{t('stats.currentStreak')}</Text>
               </View>
             </View>
             <View style={styles.streakItem}>
               <Avatar.Icon size={40} icon="trophy" style={styles.streakIcon} />
               <View style={styles.streakTextContainer}>
-                <Text style={styles.streakValue}>{stats.longestStreak} days</Text>
-                <Text style={styles.streakLabel}>Longest Streak</Text>
+                <Text style={styles.streakValue}>{stats.longestStreak} {t('stats.days')}</Text>
+                <Text style={styles.streakLabel}>{t('stats.longestStreak')}</Text>
               </View>
             </View>
           </View>

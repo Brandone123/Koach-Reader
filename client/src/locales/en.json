@@ -15,7 +15,22 @@
     "search": "Search",
     "loading": "Loading...",
     "language": "Language",
-    "appTitle": "Koach Reader"
+    "appTitle": "Koach Reader",
+    "goBack": "Go Back",
+    "author": "By",
+    "errorText": "An error occurred",
+    "noData": "No data available",
+    "welcome": "Welcome",
+    "next": "Next",
+    "previous": "Previous",
+    "finish": "Finish",
+    "continue": "Continue",
+    "viewAll": "View All",
+    "errorGeneric": "Something went wrong",
+    "points": "Points",
+    "success": "Success",
+    "great": "Great!",
+    "submit": "Submit"
   },
   "auth": {
     "login": "Login",
@@ -24,9 +39,18 @@
     "password": "Password",
     "forgotPassword": "Forgot Password?",
     "name": "Name",
+    "username": "Username",
     "confirmPassword": "Confirm Password",
-    "alreadyHaveAccount": "Already have an account?",
-    "dontHaveAccount": "Don't have an account?"
+    "alreadyHaveAccount": "Already have an account? Login",
+    "dontHaveAccount": "Don't have an account? Register",
+    "createAccount": "Create Account",
+    "yourJourneyStarts": "Your Reading Journey Starts Here",
+    "errorRequired": "This field is required",
+    "errorPasswordShort": "Password must be at least 6 characters",
+    "errorPasswordsMatch": "Passwords do not match",
+    "validationError": "Please fill all required fields correctly",
+    "joinCommunity": "Join our reading community",
+    "errorInvalidEmail": "Please enter a valid email address"
   },
   "home": {
     "welcomeBack": "Welcome back",
@@ -38,7 +62,34 @@
     "weeklyGoal": "Weekly Goal",
     "recommendedBooks": "Recommended for you",
     "viewAll": "View All",
-    "addBook": "Add Book"
+    "addBook": "Add Book",
+    "readingPlans": "My Reading Plans",
+    "newPlan": "New Plan",
+    "noPlansYet": "You don't have any reading plans yet. Create your first one!",
+    "createReadingPlan": "Create Reading Plan",
+    "loadingPlans": "Loading your reading plans...",
+    "browseByCategory": "Browse by Category",
+    "recentlyAdded": "Recently Added",
+    "mostPopular": "Most Popular"
+  },
+  "onboarding": {
+    "howOftenRead": "How often do you read?",
+    "ageGroup": "Which age group do you belong to?",
+    "bookTypes": "What types of books do you enjoy?",
+    "bookDiscovery": "How do you discover new books?",
+    "readingHabits": "Tell us about your reading habits so we can tailor your experience.",
+    "ageAppropriate": "This helps us recommend age-appropriate content.",
+    "selectCategories": "Select as many categories as you like.",
+    "enhanceDiscovery": "Select all that apply to help us enhance your book discovery experience."
+  },
+  "heroText": {
+    "trackJourney": "Track Your Reading Journey",
+    "buildHabit": "Koach helps you build a reading habit through gamification, challenges, and social features.",
+    "trackProgress": "Track your reading progress",
+    "earnBadges": "Earn badges and achievements",
+    "joinChallenges": "Join reading challenges with friends",
+    "setGoals": "Set goals and develop reading habits",
+    "getReminders": "Get reminders to maintain your streaks"
   },
   "profile": {
     "title": "My Profile",
@@ -48,7 +99,11 @@
     "readingGoals": "Reading Goals",
     "favoriteGenres": "Favorite Genres",
     "changePassword": "Change Password",
-    "setPremium": "Upgrade to Premium"
+    "setPremium": "Upgrade to Premium",
+    "accountSettings": "Account Settings",
+    "reader": "Reader",
+    "appSettings": "App Settings",
+    "viewAllBadges": "View All Badges"
   },
   "book": {
     "details": "Book Details",
@@ -62,7 +117,20 @@
     "rateBook": "Rate this Book",
     "shareBook": "Share",
     "reviewBook": "Write a Review",
-    "readingProgress": "Reading Progress"
+    "readingProgress": "Reading Progress",
+    "notFound": "Book not found",
+    "loading": "Loading book details...",
+    "read": "Read",
+    "listen": "Listen",
+    "share": "Share",
+    "commentRequired": "Please enter a comment",
+    "shareMessage": "Check out this book I'm reading: {title} by {author}. #KoachReader",
+    "shareError": "Could not share the book",
+    "reviewsComments": "Reviews & Comments ({count})",
+    "addYourReview": "Add Your Review",
+    "yourRating": "Your Rating",
+    "yourComment": "Your comment",
+    "beFirstToComment": "Be the first to leave a comment!"
   },
   "challenges": {
     "title": "Reading Challenges",
@@ -85,23 +153,45 @@
     "longestStreak": "Longest Streak",
     "currentStreak": "Current Streak",
     "mostReadGenre": "Most Read Genre",
-    "readingHabits": "Reading Habits"
+    "readingHabits": "Reading Habits",
+    "loading": "Loading statistics...",
+    "noStats": "No reading statistics available yet. Start reading to track your progress!",
+    "goToBooks": "Go to Books",
+    "tracking": "Track your reading performance",
+    "summary": "Summary",
+    "daysActive": "Days Active",
+    "timeSpent": "Time Spent",
+    "booksCompleted": "Books Completed",
+    "week": "Week",
+    "month": "Month",
+    "year": "Year",
+    "days": "days"
   },
   "settings": {
     "title": "Settings",
     "appearance": "Appearance",
     "darkMode": "Dark Mode",
+    "chooseTheme": "Choose your preferred app theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
     "fontSize": "Font Size",
+    "adjustTextSize": "Adjust reading text size",
     "notifications": "Notifications",
-    "reminderTime": "Reminder Time",
-    "dataUsage": "Data Usage",
-    "language": "Language",
-    "english": "English",
-    "french": "French",
-    "about": "About",
-    "terms": "Terms of Service",
-    "privacy": "Privacy Policy",
-    "appVersion": "App Version"
+    "readingReminders": "Reading Reminders",
+    "reminderDescription": "Get reminders for your reading plans",
+    "achievements": "Achievements",
+    "achievementDescription": "Get notified when you earn badges",
+    "friendActivity": "Friend Activity",
+    "friendDescription": "Get updates on friend activities",
+    "challenges": "Challenges",
+    "challengeDescription": "Get updates on challenges",
+    "readingFrequency": "Reading Preferences",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "cancel": "Cancel",
+    "account": "Account"
   },
   "readingPlan": {
     "title": "Reading Plan",
@@ -114,15 +204,23 @@
     "selectBooks": "Select Books",
     "startDate": "Start Date",
     "endDate": "End Date",
-    "estimatedCompletion": "Estimated Completion"
+    "estimatedCompletion": "Estimated Completion",
+    "planInfo": "Reading Plan: {current} of {total} pages"
   },
   "readingSession": {
     "title": "Log Reading Session",
     "pagesRead": "Pages Read",
     "timeSpent": "Time Spent",
     "date": "Date",
+    "selectedDate": "Selected Date",
+    "dateSelected": "Date selected",
     "notes": "Notes",
-    "save": "Save Session"
+    "save": "Save Session",
+    "loading": "Loading book data...",
+    "logReading": "Log Reading",
+    "validPagesRequired": "Please enter a valid number of pages",
+    "validTimeRequired": "Please enter a valid number of minutes",
+    "pointsEarned": "You've logged {count} pages and earned {count} Koach points!"
   },
   "badges": {
     "title": "Badges & Achievements",
@@ -137,5 +235,20 @@
   },
   "mediaViewer": {
     "title": "Media Viewer"
+  },
+  "calendar": {
+    "sun": "Su",
+    "mon": "Mo",
+    "tue": "Tu",
+    "wed": "We",
+    "thu": "Th",
+    "fri": "Fr",
+    "sat": "Sa",
+    "selectDate": "Select Date"
+  },
+  "validation": {
+    "dateMustBeFuture": "Date must be in the future",
+    "required": "This field is required",
+    "invalidFormat": "Invalid format"
   }
 } 

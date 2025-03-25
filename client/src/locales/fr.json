@@ -15,7 +15,23 @@
     "search": "Rechercher",
     "loading": "Chargement...",
     "language": "Langue",
-    "appTitle": "Koach Reader"
+    "appTitle": "Koach Reader",
+    "goBack": "Retour",
+    "author": "Par",
+    "errorText": "Une erreur est survenue",
+    "noData": "Aucune donnée disponible",
+    "welcome": "Bienvenue",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "finish": "Terminer",
+    "continue": "Continuer",
+    "viewAll": "Voir tout",
+    "errorGeneric": "Quelque chose s'est mal passé",
+    "points": "Points",
+    "success": "Succès",
+    "great": "Super !",
+    "submit": "Soumettre",
+    "ok": "OK"
   },
   "auth": {
     "login": "Connexion",
@@ -24,9 +40,18 @@
     "password": "Mot de passe",
     "forgotPassword": "Mot de passe oublié?",
     "name": "Nom",
+    "username": "Nom d'utilisateur",
     "confirmPassword": "Confirmer le mot de passe",
-    "alreadyHaveAccount": "Vous avez déjà un compte?",
-    "dontHaveAccount": "Vous n'avez pas de compte?"
+    "alreadyHaveAccount": "Vous avez déjà un compte? Connexion",
+    "dontHaveAccount": "Vous n'avez pas de compte? Inscription",
+    "createAccount": "Créer un compte",
+    "yourJourneyStarts": "Votre parcours de lecture commence ici",
+    "errorRequired": "Ce champ est requis",
+    "errorPasswordShort": "Le mot de passe doit contenir au moins 6 caractères",
+    "errorPasswordsMatch": "Les mots de passe ne correspondent pas",
+    "validationError": "Veuillez remplir correctement tous les champs requis",
+    "joinCommunity": "Rejoignez notre communauté de lecture",
+    "errorInvalidEmail": "Veuillez entrer une adresse email valide"
   },
   "home": {
     "welcomeBack": "Bienvenue",
@@ -38,7 +63,34 @@
     "weeklyGoal": "Objectif hebdomadaire",
     "recommendedBooks": "Recommandé pour vous",
     "viewAll": "Voir tout",
-    "addBook": "Ajouter un livre"
+    "addBook": "Ajouter un livre",
+    "readingPlans": "Mes plans de lecture",
+    "newPlan": "Nouveau plan",
+    "noPlansYet": "Vous n'avez pas encore de plan de lecture. Créez votre premier plan!",
+    "createReadingPlan": "Créer un plan de lecture",
+    "loadingPlans": "Chargement de vos plans de lecture...",
+    "browseByCategory": "Parcourir par catégorie",
+    "recentlyAdded": "Ajoutés récemment",
+    "mostPopular": "Les plus populaires"
+  },
+  "onboarding": {
+    "howOftenRead": "À quelle fréquence lisez-vous?",
+    "ageGroup": "À quel groupe d'âge appartenez-vous?",
+    "bookTypes": "Quels types de livres aimez-vous?",
+    "bookDiscovery": "Comment découvrez-vous de nouveaux livres?",
+    "readingHabits": "Parlez-nous de vos habitudes de lecture pour que nous puissions adapter votre expérience.",
+    "ageAppropriate": "Cela nous aide à recommander du contenu adapté à votre âge.",
+    "selectCategories": "Sélectionnez autant de catégories que vous le souhaitez.",
+    "enhanceDiscovery": "Sélectionnez tout ce qui s'applique pour améliorer votre expérience de découverte de livres."
+  },
+  "heroText": {
+    "trackJourney": "Suivez votre parcours de lecture",
+    "buildHabit": "Koach vous aide à développer une habitude de lecture grâce à la gamification, aux défis et aux fonctionnalités sociales.",
+    "trackProgress": "Suivez votre progression de lecture",
+    "earnBadges": "Gagnez des badges et des réalisations",
+    "joinChallenges": "Participez à des défis de lecture avec vos amis",
+    "setGoals": "Fixez des objectifs et développez des habitudes de lecture",
+    "getReminders": "Recevez des rappels pour maintenir vos séries"
   },
   "profile": {
     "title": "Mon Profil",
@@ -48,7 +100,11 @@
     "readingGoals": "Objectifs de lecture",
     "favoriteGenres": "Genres préférés",
     "changePassword": "Changer le mot de passe",
-    "setPremium": "Passer à Premium"
+    "setPremium": "Passer à Premium",
+    "accountSettings": "Paramètres du compte",
+    "reader": "Lecteur",
+    "appSettings": "Paramètres de l'application",
+    "viewAllBadges": "Voir tous les badges"
   },
   "book": {
     "details": "Détails du livre",
@@ -62,7 +118,20 @@
     "rateBook": "Noter ce livre",
     "shareBook": "Partager",
     "reviewBook": "Écrire un avis",
-    "readingProgress": "Progression de lecture"
+    "readingProgress": "Progression de lecture",
+    "notFound": "Livre non trouvé",
+    "loading": "Chargement des détails du livre...",
+    "read": "Lire",
+    "listen": "Écouter",
+    "share": "Partager",
+    "commentRequired": "Veuillez entrer un commentaire",
+    "shareMessage": "Découvrez ce livre que je lis : {title} par {author}. #KoachReader",
+    "shareError": "Impossible de partager le livre",
+    "reviewsComments": "Avis et commentaires ({count})",
+    "addYourReview": "Ajouter votre avis",
+    "yourRating": "Votre note",
+    "yourComment": "Votre commentaire",
+    "beFirstToComment": "Soyez le premier à laisser un commentaire !"
   },
   "challenges": {
     "title": "Défis de lecture",
@@ -85,23 +154,45 @@
     "longestStreak": "Plus longue série",
     "currentStreak": "Série actuelle",
     "mostReadGenre": "Genre le plus lu",
-    "readingHabits": "Habitudes de lecture"
+    "readingHabits": "Habitudes de lecture",
+    "loading": "Chargement des statistiques...",
+    "noStats": "Aucune statistique de lecture disponible. Commencez à lire pour suivre votre progression!",
+    "goToBooks": "Voir les livres",
+    "tracking": "Suivez votre performance de lecture",
+    "summary": "Résumé",
+    "daysActive": "Jours actifs",
+    "timeSpent": "Temps passé",
+    "booksCompleted": "Livres terminés",
+    "week": "Semaine",
+    "month": "Mois",
+    "year": "Année",
+    "days": "jours"
   },
   "settings": {
     "title": "Paramètres",
     "appearance": "Apparence",
     "darkMode": "Mode sombre",
+    "chooseTheme": "Choisissez votre thème préféré",
+    "light": "Clair",
+    "dark": "Sombre",
+    "system": "Système",
     "fontSize": "Taille de police",
+    "adjustTextSize": "Ajuster la taille du texte de lecture",
     "notifications": "Notifications",
-    "reminderTime": "Heure de rappel",
-    "dataUsage": "Utilisation des données",
-    "language": "Langue",
-    "english": "Anglais",
-    "french": "Français",
-    "about": "À propos",
-    "terms": "Conditions d'utilisation",
-    "privacy": "Politique de confidentialité",
-    "appVersion": "Version de l'application"
+    "readingReminders": "Rappels de lecture",
+    "reminderDescription": "Recevez des rappels pour vos plans de lecture",
+    "achievements": "Réalisations",
+    "achievementDescription": "Soyez notifié lorsque vous gagnez des badges",
+    "friendActivity": "Activité des amis",
+    "friendDescription": "Recevez des mises à jour sur les activités de vos amis",
+    "challenges": "Défis",
+    "challengeDescription": "Recevez des mises à jour sur les défis",
+    "readingFrequency": "Préférences de lecture",
+    "daily": "Quotidien",
+    "weekly": "Hebdomadaire",
+    "monthly": "Mensuel",
+    "cancel": "Annuler",
+    "account": "Compte"
   },
   "readingPlan": {
     "title": "Plan de lecture",
@@ -114,15 +205,23 @@
     "selectBooks": "Sélectionner des livres",
     "startDate": "Date de début",
     "endDate": "Date de fin",
-    "estimatedCompletion": "Achèvement estimé"
+    "estimatedCompletion": "Achèvement estimé",
+    "planInfo": "Plan de lecture: {current} sur {total} pages"
   },
   "readingSession": {
     "title": "Enregistrer une session de lecture",
     "pagesRead": "Pages lues",
     "timeSpent": "Temps passé",
     "date": "Date",
+    "selectedDate": "Date sélectionnée",
+    "dateSelected": "Date sélectionnée",
     "notes": "Notes",
-    "save": "Enregistrer la session"
+    "save": "Enregistrer la session",
+    "loading": "Chargement des données du livre...",
+    "logReading": "Noter la lecture",
+    "validPagesRequired": "Veuillez entrer un nombre valide de pages",
+    "validTimeRequired": "Veuillez entrer un nombre valide de minutes",
+    "pointsEarned": "Vous avez enregistré {count} pages et gagné {count} points Koach !"
   },
   "badges": {
     "title": "Badges et réussites",
@@ -137,5 +236,20 @@
   },
   "mediaViewer": {
     "title": "Visionneuse de médias"
+  },
+  "calendar": {
+    "sun": "Di",
+    "mon": "Lu",
+    "tue": "Ma",
+    "wed": "Me",
+    "thu": "Je",
+    "fri": "Ve",
+    "sat": "Sa",
+    "selectDate": "Sélectionner une date"
+  },
+  "validation": {
+    "dateMustBeFuture": "La date doit être dans le futur",
+    "required": "Ce champ est obligatoire",
+    "invalidFormat": "Format invalide"
   }
 } 

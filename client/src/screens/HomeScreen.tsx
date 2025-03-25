@@ -8,7 +8,8 @@ import {
   RefreshControl,
   FlatList,
   Image,
-  Dimensions
+  Dimensions,
+  ActivityIndicator
 } from 'react-native';
 import { 
   Card, 
@@ -39,6 +40,7 @@ import { RootStackParamList } from '../../App';
 import { AppDispatch } from '../store';
 import { Book } from '../slices/booksSlice';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
@@ -120,6 +122,7 @@ const CategorySection = ({ category, books, navigation }: {
 };
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector(selectUser);
@@ -295,171 +298,156 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   // Loading state
   if (isBooksLoading && books.length === 0) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: '#FFFFFF' }]}>
-        <Text style={{ color: '#333333' }}>Loading...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#6200ee" />
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
   
   return (
-    <View style={styles.container}>
-      <ScrollView
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-          />
-        }
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <Text style={styles.welcomeText}>
-            Welcome back, {user?.username || 'Reader'}!
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.welcomeText}>
+          {t('home.welcomeBack')}, {user?.name || 'Reader'}!
+        </Text>
+      </View>
+      
+      {featuredBooks.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            {userPreferredCategories.length > 0 
+              ? "Recommended For You" 
+              : "Featured Books"}
           </Text>
-          {/* <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{user?.koachPoints || 0}</Text>
-              <Text style={styles.statLabel}>Koach Points</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{user?.readingStreak || 0}</Text>
-              <Text style={styles.statLabel}>Day Streak</Text>
-            </View>
-          </View> */}
-        </View>
-        
-        {/* Featured Books Section */}
-        {featuredBooks.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              {userPreferredCategories.length > 0 
-                ? "Recommended For You" 
-                : "Featured Books"}
-            </Text>
-            <FlatList
-              data={featuredBooks.slice(0, 5)}
-              renderItem={renderFeaturedBookItem}
-              keyExtractor={item => `featured-${item.id}`}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.featuredBooksList}
-            />
-          </View>
-        )}
-        
-        {/* Reading Plans Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>My Reading Plans</Text>
-            <Button 
-              mode="text" 
-              onPress={() => navigation.navigate('ReadingPlan', {})}
-              disabled={isPlansLoading}
-              color="#8A2BE2"
-            >
-              New Plan
-            </Button>
-          </View>
-          
-          {readingPlans.length === 0 ? (
-            <Card style={styles.emptyCard}>
-              <Card.Content>
-                <Text style={styles.emptyText}>
-                  You don't have any reading plans yet. Create your first one!
-                </Text>
-                <Button 
-                  mode="contained" 
-                  onPress={() => navigation.navigate('ReadingPlan', {})}
-                  style={styles.emptyButton}
-                  color="#8A2BE2"
-                >
-                  Create Reading Plan
-                </Button>
-              </Card.Content>
-            </Card>
-          ) : (
-            <FlatList
-              data={readingPlans}
-              renderItem={renderPlanItem}
-              keyExtractor={item => `plan-${item.id.toString()}`}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.plansList}
-              ListEmptyComponent={
-                isPlansLoading ? (
-                  <Text style={styles.loadingText}>Loading your reading plans...</Text>
-                ) : null
-              }
-            />
-          )}
-        </View>
-        
-        <Divider style={styles.divider} />
-        
-        {/* Browse by Category Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Browse by Category</Text>
           <FlatList
-            data={categories}
-            renderItem={renderCategoryItem}
-            keyExtractor={item => `category-${item.id}`}
+            data={featuredBooks.slice(0, 5)}
+            renderItem={renderFeaturedBookItem}
+            keyExtractor={item => `featured-${item.id}`}
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoriesList}
+            contentContainerStyle={styles.featuredBooksList}
           />
+        </View>
+      )}
+      
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t('home.readingPlans')}</Text>
+          <Button 
+            mode="text" 
+            onPress={() => navigation.navigate('ReadingPlan', {})}
+            disabled={isPlansLoading}
+            color="#8A2BE2"
+          >
+            {t('home.newPlan')}
+          </Button>
         </View>
         
-        {/* Books Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              {searchQuery 
-                ? 'Search Results' 
-                : (selectedCategory === 'all' 
-                    ? 'All Books' 
-                    : categories.find(c => c.id === selectedCategory)?.name || 'Books')}
-            </Text>
-          </View>
-          
-          <Searchbar
-            placeholder="Search books..."
-            onChangeText={setSearchQuery}
-            value={searchQuery}
-            style={styles.searchbar}
-            iconColor="#8A2BE2"
+        {readingPlans.length === 0 ? (
+          <Card style={styles.emptyCard}>
+            <Card.Content>
+              <Text style={styles.emptyText}>
+                {t('home.noPlansYet')}
+              </Text>
+              <Button 
+                mode="contained" 
+                onPress={() => navigation.navigate('ReadingPlan', {})}
+                style={styles.emptyButton}
+                color="#8A2BE2"
+              >
+                {t('home.createReadingPlan')}
+              </Button>
+            </Card.Content>
+          </Card>
+        ) : (
+          <FlatList
+            data={readingPlans}
+            renderItem={renderPlanItem}
+            keyExtractor={item => `plan-${item.id.toString()}`}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.plansList}
+            ListEmptyComponent={
+              isPlansLoading ? (
+                <Text style={styles.loadingText}>{t('home.loadingPlans')}</Text>
+              ) : null
+            }
           />
-          
-          {filteredBooks.length === 0 ? (
-            <Card style={styles.emptyCard}>
-              <Card.Content>
-                <Text style={styles.emptyText}>
-                  {searchQuery 
-                    ? 'No books found matching your search.' 
-                    : 'No books available in this category.'}
-                </Text>
-              </Card.Content>
-            </Card>
-          ) : (
-            <FlatList
-              data={filteredBooks}
-              renderItem={renderBookItem}
-              keyExtractor={item => `book-${item.id.toString()}`}
-              horizontal={false}
-              numColumns={2}
-              columnWrapperStyle={styles.bookGrid}
-              showsVerticalScrollIndicator={false}
-              scrollEnabled={false}
-              ListEmptyComponent={
-                isBooksLoading ? (
-                  <Text style={styles.loadingText}>Loading books...</Text>
-                ) : null
-              }
-            />
-          )}
+        )}
+      </View>
+      
+      <Divider style={styles.divider} />
+      
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t('home.browseByCategory')}</Text>
+          <Button 
+            mode="text" 
+            onPress={() => {/* Navigate to categories screen */}}
+            color="#8A2BE2"
+          >
+            {t('common.viewAll')}
+          </Button>
         </View>
-      </ScrollView>
-    </View>
+        <FlatList
+          data={categories}
+          renderItem={renderCategoryItem}
+          keyExtractor={item => `category-${item.id}`}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesList}
+        />
+      </View>
+      
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>
+            {searchQuery 
+              ? 'Search Results' 
+              : (selectedCategory === 'all' 
+                  ? 'All Books' 
+                  : categories.find(c => c.id === selectedCategory)?.name || 'Books')}
+          </Text>
+        </View>
+        
+        <Searchbar
+          placeholder="Search books..."
+          onChangeText={setSearchQuery}
+          value={searchQuery}
+          style={styles.searchbar}
+          iconColor="#8A2BE2"
+        />
+        
+        {filteredBooks.length === 0 ? (
+          <Card style={styles.emptyCard}>
+            <Card.Content>
+              <Text style={styles.emptyText}>
+                {searchQuery 
+                  ? 'No books found matching your search.' 
+                  : 'No books available in this category.'}
+              </Text>
+            </Card.Content>
+          </Card>
+        ) : (
+          <FlatList
+            data={filteredBooks}
+            renderItem={renderBookItem}
+            keyExtractor={item => `book-${item.id.toString()}`}
+            horizontal={false}
+            numColumns={2}
+            columnWrapperStyle={styles.bookGrid}
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={false}
+            ListEmptyComponent={
+              isBooksLoading ? (
+                <Text style={styles.loadingText}>Loading books...</Text>
+              ) : null
+            }
+          />
+        )}
+      </View>
+    </ScrollView>
   );
 };
 

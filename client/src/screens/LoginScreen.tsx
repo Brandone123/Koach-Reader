@@ -17,6 +17,7 @@ import { useAuth } from '../hooks/useAuth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -27,6 +28,7 @@ interface LoginScreenProps {
 const { width, height } = Dimensions.get('window');
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
@@ -49,7 +51,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     
     // Username validation
     if (username.trim() === '') {
-      setUsernameError('Username is required');
+      setUsernameError(t('auth.errorRequired'));
       isValid = false;
     } else {
       setUsernameError('');
@@ -57,7 +59,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     
     // Password validation
     if (password === '') {
-      setPasswordError('Password is required');
+      setPasswordError(t('auth.errorRequired'));
       isValid = false;
     } else {
       setPasswordError('');
@@ -102,8 +104,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                   source={require('../../assets/icon.png')}
                   style={styles.logo}
                 />
-                <Text style={styles.appName}>Koach Reader</Text>
-                <Text style={styles.tagline}>Your reading journey begins here</Text>
+                <Text style={styles.appName}>{t('common.appTitle')}</Text>
+                <Text style={styles.tagline}>{t('auth.yourJourneyStarts')}</Text>
               </View>
               
               <View style={styles.formContainer}>
@@ -112,7 +114,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 )}
                 
                 <TextInput
-                  label="Username"
+                  label={t('auth.username')}
                   value={username}
                   onChangeText={setUsername}
                   style={styles.input}
@@ -129,7 +131,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 ) : null}
                 
                 <TextInput
-                  label="Password"
+                  label={t('auth.password')}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={secureTextEntry}
@@ -153,7 +155,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 ) : null}
                 
                 <TouchableOpacity style={styles.forgotPassword}>
-                  <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                  <Text style={styles.forgotPasswordText}>{t('auth.forgotPassword')}</Text>
                 </TouchableOpacity>
                 
                 <Button 
@@ -166,13 +168,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                   contentStyle={styles.loginButtonContent}
                   color="#8A2BE2"
                 >
-                  Sign In
+                  {t('auth.login')}
                 </Button>
                 
                 <View style={styles.registerContainer}>
-                  <Text style={styles.registerText}>Don't have an account? </Text>
+                  <Text style={styles.registerText}>{t('auth.dontHaveAccount')} </Text>
                   <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                    <Text style={styles.registerLink}>Sign Up</Text>
+                    <Text style={styles.registerLink}>{t('auth.signup')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>

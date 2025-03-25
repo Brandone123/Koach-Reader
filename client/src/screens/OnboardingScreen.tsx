@@ -18,6 +18,10 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { useAuth } from '../hooks/useAuth';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useDispatch } from 'react-redux';
+import { updatePreferences } from '../slices/authSlice';
+import { useTranslation } from 'react-i18next';
+
 const { width, height } = Dimensions.get('window');
 
 type OnboardingNavigationProp = StackNavigationProp<RootStackParamList, 'Onboarding'>;
@@ -111,6 +115,7 @@ const OnboardingScreen = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const { t } = useTranslation();
 
   // State for user preferences
   const [readingFrequency, setReadingFrequency] = useState<string[]>([]);
@@ -217,20 +222,20 @@ const OnboardingScreen = () => {
 
   const getStepTitle = () => {
     switch (currentStep) {
-      case 0: return "How often do you read?";
-      case 1: return "Which age group do you belong to?";
-      case 2: return "What types of books do you enjoy?";
-      case 3: return "How do you discover new books?";
+      case 0: return t('onboarding.howOftenRead');
+      case 1: return t('onboarding.ageGroup');
+      case 2: return t('onboarding.bookTypes');
+      case 3: return t('onboarding.bookDiscovery');
       default: return "";
     }
   };
 
   const getStepDescription = () => {
     switch (currentStep) {
-      case 0: return "Tell us about your reading habits so we can tailor your experience.";
-      case 1: return "This helps us recommend age-appropriate content.";
-      case 2: return "Select as many categories as you like.";
-      case 3: return "Select all that apply to help us enhance your book discovery experience.";
+      case 0: return t('onboarding.readingHabits');
+      case 1: return t('onboarding.ageAppropriate');
+      case 2: return t('onboarding.selectCategories');
+      case 3: return t('onboarding.enhanceDiscovery');
       default: return "";
     }
   };
@@ -312,25 +317,26 @@ const OnboardingScreen = () => {
           </View>
           
           <View style={styles.footer}>
-            {currentStep > 0 && (
-              <Button 
-                mode="outlined" 
-                onPress={handleBack} 
-                style={styles.backButton}
-                labelStyle={styles.backButtonLabel}
+            <View style={styles.buttonContainer}>
+              {currentStep > 0 && (
+                <Button
+                  mode="text"
+                  onPress={handleBack}
+                  style={styles.button}
+                  color={colors.textSecondary}
+                >
+                  {t('common.previous')}
+                </Button>
+              )}
+              <Button
+                mode="contained"
+                onPress={handleNext}
+                style={[styles.button, styles.primaryButton]}
+                disabled={!getStepValidation(currentStep)}
               >
-                Back
+                {currentStep < totalSteps - 1 ? t('common.next') : t('common.finish')}
               </Button>
-            )}
-            <Button 
-              mode="contained" 
-              onPress={handleNext} 
-              style={styles.nextButton}
-              labelStyle={styles.nextButtonLabel}
-              disabled={!getStepValidation(currentStep)}
-            >
-              {currentStep < totalSteps - 1 ? 'Next' : 'Get Started'}
-            </Button>
+            </View>
           </View>
         </Animated.View>
       </LinearGradient>
@@ -424,23 +430,17 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: Platform.OS === 'ios' ? 40 : 20,
   },
-  backButton: {
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  button: {
     borderColor: '#FFFFFF',
     borderWidth: 2,
     borderRadius: 10,
   },
-  backButtonLabel: {
-    color: '#FFFFFF',
-  },
-  nextButton: {
-    flex: 1,
-    marginLeft: 10,
+  primaryButton: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-  },
-  nextButtonLabel: {
-    color: '#8A2BE2',
-    fontWeight: 'bold',
   },
 });
 

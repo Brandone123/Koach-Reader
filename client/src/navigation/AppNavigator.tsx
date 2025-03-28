@@ -2,7 +2,7 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
 import { selectIsLoggedIn } from '../redux/slices/authSlice';
-
+import {colors} from "../utils/theme";
 // Screens
 import AuthScreen from '../screens/AuthScreen';
 import HomeScreen from '../screens/HomeScreen';
@@ -40,7 +40,7 @@ const AppNavigator: React.FC = () => {
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#58CC02', // Duolingo green
+          backgroundColor: colors.background,
         },
         headerTintColor: 'white',
         headerTitleStyle: {

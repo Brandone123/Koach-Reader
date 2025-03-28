@@ -41,20 +41,21 @@ import AppWithLanguage from './src/components/AppWithLanguage';
 LogBox.ignoreLogs(['Require cycle:']);
 
 export type RootStackParamList = {
+  Home: undefined;
+  BookDetail: { bookId: string };
+  ReadingSession: { bookId: string; planId?: string };
+  ReadingPlan: { bookId: string };
+  Settings: undefined;
+  Profile: undefined;
+  Search: undefined;
   Login: undefined;
   Register: undefined;
-  Home: undefined;
-  Profile: undefined;
-  BookDetail: { bookId: string };
   Challenges: undefined;
   ChallengeDetail: { challengeId: string };
-  ReadingSession: { bookId: string };
   MediaViewer: { mediaId: string; mediaType: 'pdf' | 'audio' };
-  ReadingPlan: { planId?: string; isEdit?: boolean } | undefined;
   Badges: undefined;
   Stats: undefined;
   Notifications: undefined;
-  Settings: undefined;
   Leaderboard: undefined;
   Onboarding: undefined;
   LanguageSettings: undefined;
@@ -182,7 +183,7 @@ const AppNavigator = () => {
         initialRouteName={initialRoute}
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#8A2BE2',
+            backgroundColor: "rgb(91,61,221)",
             elevation: 0, // Supprime l'ombre sur Android
             shadowOpacity: 0, // Supprime l'ombre sur iOS
           },

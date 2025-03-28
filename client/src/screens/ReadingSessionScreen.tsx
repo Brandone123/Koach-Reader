@@ -21,7 +21,10 @@ interface ReadingSessionScreenProps {
 
 const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navigation }) => {
   const { t } = useTranslation();
-  const { bookId, planId } = route.params as { bookId: number; planId?: number };
+  const { bookId, planId } = route.params;
+  const bookIdNumber = parseInt(bookId, 10);
+  const planIdNumber = planId ? parseInt(planId, 10) : undefined;
+  
   const dispatch = useDispatch<AppDispatch>();
   const book = useSelector(selectCurrentBook);
   const plan = useSelector(selectCurrentPlan);
@@ -40,9 +43,9 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
     const loadData = async () => {
       setIsLoading(true);
       try {
-        await dispatch(fetchBookById(bookId)).unwrap();
-        if (planId) {
-          await dispatch(fetchReadingPlanById(planId)).unwrap();
+        await dispatch(fetchBookById(bookIdNumber)).unwrap();
+        if (planIdNumber) {
+          await dispatch(fetchReadingPlanById(planIdNumber)).unwrap();
         }
       } catch (error) {
         Alert.alert(t('common.errorText'), t('common.errorGeneric'));
@@ -52,7 +55,7 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
     };
 
     loadData();
-  }, [dispatch, bookId, planId]);
+  }, [dispatch, bookIdNumber, planIdNumber]);
 
   const handleDateChange = (newDate: Date) => {
     setDate(newDate);
@@ -82,8 +85,8 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
     setSubmitting(true);
     try {
       const session = {
-        bookId,
-        readingPlanId: planId || undefined,
+        bookId: bookIdNumber,
+        readingPlanId: planIdNumber,
         pagesRead: parseInt(pagesRead),
         minutesSpent: minutesSpent ? parseInt(minutesSpent) : undefined,
         notes: notes || undefined,
@@ -93,7 +96,7 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
 
       const result = await dispatch(logReadingSession({
         ...session,
-        bookId: bookId
+        bookId: bookIdNumber
       })).unwrap();
       
       Alert.alert(
@@ -111,8 +114,8 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
-        <Text style={styles.loadingText}>{t('readingSession.loading')}</Text>
+        <ActivityIndicator size="large" color="#8A2BE2" />
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -120,7 +123,7 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
   if (!book) {
     return (
       <View style={styles.errorContainer}>
-        <Text>{t('book.notFound')}</Text>
+        <Text style={styles.errorText}>{t('book.notFound')}</Text>
         <Button mode="contained" onPress={() => navigation.goBack()}>
           {t('common.goBack')}
         </Button>
@@ -134,6 +137,10 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.logoContainer}>
+          {/* Placeholder for the logo container */}
+        </View>
+        
         <Card style={styles.bookCard}>
           <Card.Cover source={{ uri: book.coverImageUrl }} style={styles.bookCover} />
           <Card.Content>
@@ -227,12 +234,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
   },
   bookCard: {
     marginBottom: 20,
@@ -280,6 +292,10 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
+    fontSize: 16,
+  },
+  errorText: {
+    marginBottom: 16,
     fontSize: 16,
   }
 });

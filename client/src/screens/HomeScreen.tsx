@@ -41,6 +41,7 @@ import { AppDispatch } from '../store';
 import { Book } from '../slices/booksSlice';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get('window');
 
@@ -311,7 +312,23 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <Text style={styles.welcomeText}>
           {t('home.welcomeBack')}, {user?.name || 'Reader'}!
         </Text>
+        <Text style={styles.subHeadText}>{t('home.subHeadText')}</Text>
       </View>
+
+        {/* <LinearGradient
+          colors={["rgb(91,61,221)", "#9317ed"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.headBox}
+        >
+          <Text style={[styles.headText, { fontSize: 10 * 1.5 }]}>
+          {t('home.welcomeBack')}, {user?.name || 'Reader'}!
+          </Text>
+          <Text style={styles.subHeadText}>Record your wonderful reading</Text>
+          <View style={[styles.circle, styles.circle1]}></View>
+          <View style={[styles.circle, styles.circle2]}></View>
+          <View style={[styles.circle, styles.circle3]}></View>
+        </LinearGradient> */}
       
       {featuredBooks.length > 0 && (
         <View style={styles.section}>
@@ -454,14 +471,17 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "rgba(255, 255, 255, 0.35)",
   },
   scrollView: {
     flex: 1,
     paddingBottom: 80, // Space for bottom navigation
   },
+  subHeadText: {
+    color: "rgba(255,255,255,0.8)",
+  },
   header: {
-    backgroundColor: '#8A2BE2',
+    backgroundColor: "rgb(91,61,221)",
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
     padding: 24,
@@ -478,10 +498,10 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   welcomeText: {
-    fontSize: 26,
+    fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 14,
+    marginBottom: 0,
   },
   statsContainer: {
     flexDirection: 'row',

@@ -8,6 +8,7 @@ import { useSelector } from 'react-redux';
 import { selectUser } from '../slices/authSlice';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import {colors} from '../utils/theme';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 type IconProps = { color: string; size: number };
@@ -118,8 +119,8 @@ const BottomNavigationBar: React.FC = () => {
           onIndexChange={handleIndexChange}
           renderScene={BottomNavigation.SceneMap(renderScene)}
           barStyle={styles.bar}
-          activeColor="#FFFFFF"
-          inactiveColor="rgba(255,255,255,0.7)"
+          activeColor={colors.primary}
+          inactiveColor={colors.textSecondary}
           labeled={false}
           shifting={false}
           renderIcon={renderIcon}
@@ -131,14 +132,6 @@ const BottomNavigationBar: React.FC = () => {
             }
           }}
         />
-        {/* <TouchableOpacity 
-          style={styles.fabContainer}
-          onPress={handleAddBook}
-        >
-          <View style={styles.fab}>
-            <MaterialCommunityIcons name="plus" size={30} color="#FFFFFF" />
-          </View>
-        </TouchableOpacity> */}
       </View>
     </View>
   );
@@ -157,7 +150,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   bar: {
-    backgroundColor: '#8A2BE2',
+    backgroundColor: '#FFFFFF',
     height: 70,
     borderTopWidth: 0,
     elevation: 8,

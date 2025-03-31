@@ -30,7 +30,13 @@
     "points": "Points",
     "success": "Success",
     "great": "Great!",
-    "submit": "Submit"
+    "submit": "Submit",
+    "free": "Free",
+    "allBooks": "All Books",
+    "searchResult": "Search Results",
+    "searchBooks": "Search books...",
+    "noBooksFound": "No books found matching your search.",
+    "noBooksAvailable": "No books available in this category."
   },
   "auth": {
     "login": "Login",
@@ -71,7 +77,12 @@
     "browseByCategory": "Browse by Category",
     "recentlyAdded": "Recently Added",
     "mostPopular": "Most Popular",
-    "subHeadText": "Reveal your faith, one book at a time"
+    "subHeadText": "Reveal your faith, one book at a time",
+    "freeQuarterlyBooks": "Free Books of the Day",
+    "freeQuarterlyBooksSubtitle": "Daily readings, always free!",
+    "availableUntil": "Available until {date}",
+    "daysLeft": "{days} days left",
+    "freeQuarterlyBooksDescription": "Every 3 months, enjoy 3 new free books regardless of your subscription plan."
   },
   "onboarding": {
     "howOftenRead": "How often do you read?",

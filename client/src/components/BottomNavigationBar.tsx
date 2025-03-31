@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Platform, TouchableOpacity } from 'react-native';
-import { BottomNavigation, Text } from 'react-native-paper';
-import { useNavigation, useNavigationState } from '@react-navigation/native';
-import { RootStackParamList } from '../../App';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { useSelector } from 'react-redux';
-import { selectUser } from '../slices/authSlice';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTranslation } from 'react-i18next';
-import {colors} from '../utils/theme';
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, Platform, TouchableOpacity } from "react-native";
+import { BottomNavigation, Text } from "react-native-paper";
+import { useNavigation, useNavigationState } from "@react-navigation/native";
+import { RootStackParamList } from "../../App";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { useSelector } from "react-redux";
+import { selectUser } from "../slices/authSlice";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+import { colors } from "../utils/theme";
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 type IconProps = { color: string; size: number };
@@ -21,19 +21,19 @@ const BottomNavigationBar: React.FC = () => {
 
   // Utiliser useNavigationState pour vérifier la route actuelle de façon sûre
   const currentRouteName = useNavigationState(
-    state => state?.routes[state?.index]?.name
+    (state) => state?.routes[state?.index]?.name
   );
-  
+
   // Ne pas afficher sur l'écran d'onboarding
-  if (currentRouteName === 'Onboarding') {
+  if (currentRouteName === "Onboarding") {
     return null;
   }
-  
+
   const isPremium = user?.isPremium || false;
 
   // Define empty component for each scene
   const renderEmptyScene = () => null;
-  
+
   // Map the components to keys
   const renderScene = {
     leaderboard: renderEmptyScene,
@@ -43,72 +43,99 @@ const BottomNavigationBar: React.FC = () => {
     stats: renderEmptyScene,
   };
 
-  // Custom render icon function with larger icons and active state indicator
-  const renderIcon = ({ route, focused, color }: { route: any; focused: boolean; color: string }) => {
+  const routes = [
+    {
+      key: "leaderboard",
+      title: t("common.leaderboard"),
+      icon: "podium",
+      focusedIcon: "podium-gold",
+    },
+    {
+      key: "challenges",
+      title: t("common.challenges"),
+      icon: "target",
+      focusedIcon: "target-variant",
+    },
+    {
+      key: "home",
+      title: t("common.home"),
+      icon: "view-dashboard-outline",
+      focusedIcon: "view-dashboard",
+    },
+    {
+      key: "profile",
+      title: t("common.profile"),
+      icon: "account-cog-outline",
+      focusedIcon: "account-cog",
+    },
+    {
+      key: "stats",
+      title: t("common.stats"),
+      icon: "chart-box-outline",
+      focusedIcon: "chart-box",
+    },
+  ];
+
+  const renderIcon = ({
+    route,
+    focused,
+    color,
+  }: {
+    route: any;
+    focused: boolean;
+    color: string;
+  }) => {
+    const iconName = focused ? route.focusedIcon || route.icon : route.icon;
+
     return (
-      <View style={focused ? styles.activeIconContainer : styles.iconContainer}>
-        <MaterialCommunityIcons
-          name={route.icon}
-          size={37}
-          color={color}
-        />
+      <View style={styles.iconColumn}>
+        <View
+          style={focused ? styles.activeIconContainer : styles.iconContainer}
+        >
+          <MaterialCommunityIcons
+            name={iconName}
+            size={focused ? 28 : 24}
+            color={color}
+          />
+          {focused}
+        </View>
+        <Text
+          style={[
+            styles.labelText,
+            { color: focused ? colors.primary : colors.textSecondary },
+          ]}
+          numberOfLines={1}
+        >
+          {route.title}
+        </Text>
       </View>
     );
   };
 
-  const routes = [
-    { 
-      key: 'leaderboard', 
-      title: t('common.leaderboard'), 
-      icon: 'trophy-award',
-    },
-    { 
-      key: 'challenges', 
-      title: t('common.challenges'), 
-      icon: 'flag-checkered',
-    },
-    { 
-      key: 'home', 
-      title: t('common.home'), 
-      icon: 'home',
-    },
-    { 
-      key: 'profile', 
-      title: t('common.profile'), 
-      icon: 'account-circle',
-    },
-    { 
-      key: 'stats', 
-      title: t('common.stats'), 
-      icon: 'chart-line',
-    },
-  ];
-
   const handleIndexChange = (newIndex: number) => {
     setIndex(newIndex);
-    
+
     switch (routes[newIndex].key) {
-      case 'leaderboard':
-        navigation.navigate('Leaderboard');
+      case "leaderboard":
+        navigation.navigate("Leaderboard");
         break;
-      case 'challenges':
-        navigation.navigate('Challenges');
+      case "challenges":
+        navigation.navigate("Challenges");
         break;
-      case 'home':
-        navigation.navigate('Home');
+      case "home":
+        navigation.navigate("Home");
         break;
-      case 'profile':
-        navigation.navigate('Profile');
+      case "profile":
+        navigation.navigate("Profile");
         break;
-      case 'stats':
-        navigation.navigate('Stats');
+      case "stats":
+        navigation.navigate("Stats");
         break;
     }
   };
 
-  // Gérer le clic sur le bouton d'ajout de livre
   const handleAddBook = () => {
-    navigation.navigate('ReadingPlan', {});
+    navigation.navigate("ReadingPlan", {});
   };
 
   return (
@@ -128,8 +155,8 @@ const BottomNavigationBar: React.FC = () => {
           sceneAnimationEnabled={true}
           theme={{
             colors: {
-              secondaryContainer: 'transparent',
-            }
+              secondaryContainer: "transparent",
+            },
           }}
         />
       </View>
@@ -139,63 +166,79 @@ const BottomNavigationBar: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     zIndex: 999,
   },
   barContainer: {
-    position: 'relative',
+    position: "relative",
   },
   bar: {
-    backgroundColor: '#FFFFFF',
-    height: 70,
+    backgroundColor: "#FFFFFF",
+    height: 80,
     borderTopWidth: 0,
     elevation: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
   },
   fabContainer: {
-    position: 'absolute',
-    alignSelf: 'center',
+    position: "absolute",
+    alignSelf: "center",
     bottom: 30,
     zIndex: 1000,
   },
   fab: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: "#FF6B6B",
     borderRadius: 28,
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     width: 56,
     height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   iconContainer: {
-    width: 35,
-    height: 35,
-    bottom: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
   },
   activeIconContainer: {
-    width: 55,
-    height: 55,
-    bottom: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    borderRadius: 15,
-    backgroundColor: 'transparent',
+    width: 28,
+    height: 28,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  activeDot: {
+    position: "absolute",
+    bottom: -6,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
+  },
+
+  iconColumn: {
+    justifyContent: "center",
+    alignItems: "center",
+    width: 70,
+  },
+
+  labelText: {
+    fontSize: 12,
+    marginTop: 1,
+    fontWeight: "500",
+    textAlign: "center",
+    maxWidth: 70,
   },
 });
 
-export default BottomNavigationBar; 
+export default BottomNavigationBar;

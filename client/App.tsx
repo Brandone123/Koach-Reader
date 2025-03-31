@@ -1,5 +1,5 @@
 // import 'react-native-get-random-values'; // Déplacé dans index.js
-import { LogBox, StyleSheet, Platform, View, Text, TouchableOpacity } from 'react-native';
+import { LogBox, StyleSheet, Platform, View, Text, TouchableOpacity, Image } from 'react-native';
 import React, { useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -154,10 +154,15 @@ function HeaderRight({ navigation }: HeaderRightProps) {
 function HomeTitle() {
   const { t } = useTranslation();
   return (
-    <Text style={styles.appTitle}>{t('common.appTitle')}</Text>
+    // <Text style={styles.appTitle}>{t('common.appTitle')}</Text>
+    <View style={styles.container}>
+      <Image 
+        source={require('../client/assets/logo.png')}
+        style={[styles.logo, { alignSelf: 'flex-start' }]}
+      />
+    </View>
   );
 }
-
 
 // Main app navigation wrapper
 const AppNavigator = () => {
@@ -183,7 +188,7 @@ const AppNavigator = () => {
         initialRouteName={initialRoute}
         screenOptions={{
           headerStyle: {
-            backgroundColor: "rgb(91,61,221)",
+            backgroundColor: "#9317ed",
             elevation: 0, // Supprime l'ombre sur Android
             shadowOpacity: 0, // Supprime l'ombre sur iOS
           },
@@ -365,7 +370,19 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'left',  // S'assurer que le texte est aligné à gauche
-  }
+  },
+
+  container: {
+    alignSelf: 'flex-start',
+    width: '100%',
+  },
+
+  logo: {
+    width: 120,
+    height: 80,
+    marginLeft: -40,
+    resizeMode: 'contain',
+  },
 });
 
 export default function App() {

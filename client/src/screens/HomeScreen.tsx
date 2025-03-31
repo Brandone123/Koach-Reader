@@ -35,6 +35,11 @@ import {
   selectReadingPlansLoading 
 } from '../slices/readingPlansSlice';
 import { selectUser } from '../slices/authSlice';
+import { 
+  fetchFreeQuarterlyBooks, 
+  selectFreeQuarterlyBooks, 
+  selectFreeQuarterlyBooksLoading 
+} from '../slices/freeQuarterlyBooksSlice';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { AppDispatch } from '../store';
@@ -42,6 +47,16 @@ import { Book } from '../slices/booksSlice';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from "expo-linear-gradient";
+import FreeQuarterlyBooksSection from '../components/FreeQuarterlyBooksSection';
+
+// Define interface for User to have name property
+interface ExtendedUser {
+  name?: string;
+  preferences?: {
+    preferredCategories?: string[];
+  };
+  isPremium?: boolean;
+}
 
 const { width } = Dimensions.get('window');
 
@@ -126,11 +141,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const dispatch = useDispatch<AppDispatch>();
-  const user = useSelector(selectUser);
+  const user = useSelector(selectUser) as ExtendedUser;
   const books = useSelector(selectBooks);
   const readingPlans = useSelector(selectReadingPlans);
+  const freeQuarterlyBooks = useSelector(selectFreeQuarterlyBooks);
   const isBooksLoading = useSelector(selectBooksLoading);
   const isPlansLoading = useSelector(selectReadingPlansLoading);
+  const isFreeQuarterlyBooksLoading = useSelector(selectFreeQuarterlyBooksLoading);
   
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -143,13 +160,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     // Fetch initial data
     dispatch(fetchBooks());
     dispatch(fetchReadingPlans());
+    dispatch(fetchFreeQuarterlyBooks());
   }, [dispatch]);
   
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([
       dispatch(fetchBooks()),
-      dispatch(fetchReadingPlans())
+      dispatch(fetchReadingPlans()),
+      dispatch(fetchFreeQuarterlyBooks())
     ]);
     setRefreshing(false);
   }, [dispatch]);
@@ -164,15 +183,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       onPress={() => navigation.navigate('BookDetail', { bookId: item.id })}
     >
       <Card.Cover 
-        source={{ uri: item.coverImageUrl || 'https://via.placeholder.com/150' }} 
+        source={require('../../assets/list_book.jpg')} 
         style={styles.bookCover}
       />
       <Card.Content>
-        <Title numberOfLines={1} style={styles.bookTitle}>{item.title}</Title>
-        <Paragraph numberOfLines={1}>{item.author}</Paragraph>
+        <Title numberOfLines={2} style={styles.bookTitle}>{item.title}</Title>
+        <Paragraph numberOfLines={1} style={styles.bookAuthor}>{item.author}</Paragraph>
         <View style={styles.chipContainer}>
           <Chip style={styles.chip}>{item.category}</Chip>
-          <Chip style={styles.chip}>{item.pageCount} pages</Chip>
+          <Text style={styles.chip}>{item.pageCount} pages</Text>
         </View>
       </Card.Content>
     </Card>
@@ -228,7 +247,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const renderPlanItem = ({ item }: { item: any }) => (
     <Card 
       style={styles.planCard}
-      onPress={() => navigation.navigate('ReadingPlan', { planId: item.id })}
+      onPress={() => navigation.navigate('ReadingPlan', { bookId: item.book?.id?.toString() || "" })}
     >
       <Card.Content>
         <Title numberOfLines={1}>{item.title}</Title>
@@ -257,7 +276,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <Button 
             mode="text" 
             compact 
-            onPress={() => navigation.navigate('ReadingPlan', { planId: item.id })}
+            onPress={() => navigation.navigate('ReadingPlan', { bookId: item.book?.id?.toString() || "" })}
             color="#8A2BE2"
           >
             Log Progress
@@ -296,8 +315,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     return books;
   };
   
+  const handleFreeBookPress = (bookId: number) => {
+    console.log(`Navigating to BookDetail with bookId: ${bookId}`);
+    navigation.navigate('BookDetail', { bookId: bookId.toString() });
+  };
+  
   // Loading state
-  if (isBooksLoading && books.length === 0) {
+  if ((isBooksLoading && books.length === 0) || isFreeQuarterlyBooksLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#6200ee" />
@@ -307,7 +331,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   }
   
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={['#8A2BE2']}
+        />
+      }
+    >
       <View style={styles.header}>
         <Text style={styles.welcomeText}>
           {t('home.welcomeBack')}, {user?.name || 'Reader'}!
@@ -330,7 +363,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <View style={[styles.circle, styles.circle3]}></View>
         </LinearGradient> */}
       
-      {featuredBooks.length > 0 && (
+      {/* Free Quarterly Books Section */}
+      {freeQuarterlyBooks.length > 0 && (
+        <FreeQuarterlyBooksSection 
+          books={freeQuarterlyBooks} 
+          onBookPress={handleFreeBookPress} 
+        />
+      )}
+      
+      {/* {featuredBooks.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
             {userPreferredCategories.length > 0 
@@ -346,14 +387,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             contentContainerStyle={styles.featuredBooksList}
           />
         </View>
-      )}
+      )} */}
+
+      <Divider style={styles.divider} />  
       
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t('home.readingPlans')}</Text>
           <Button 
             mode="text" 
-            onPress={() => navigation.navigate('ReadingPlan', {})}
+            onPress={() => navigation.navigate('ReadingPlan', { bookId: "" })}
             disabled={isPlansLoading}
             color="#8A2BE2"
           >
@@ -369,7 +412,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               </Text>
               <Button 
                 mode="contained" 
-                onPress={() => navigation.navigate('ReadingPlan', {})}
+                onPress={() => navigation.navigate('ReadingPlan', { bookId: "" })}
                 style={styles.emptyButton}
                 color="#8A2BE2"
               >
@@ -421,15 +464,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
             {searchQuery 
-              ? 'Search Results' 
+              ? t('common.searchResult')
               : (selectedCategory === 'all' 
-                  ? 'All Books' 
+                  ? t('common.allBooks')
                   : categories.find(c => c.id === selectedCategory)?.name || 'Books')}
           </Text>
         </View>
         
         <Searchbar
-          placeholder="Search books..."
+          placeholder={t('common.searchBooks')}
           onChangeText={setSearchQuery}
           value={searchQuery}
           style={styles.searchbar}
@@ -441,8 +484,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             <Card.Content>
               <Text style={styles.emptyText}>
                 {searchQuery 
-                  ? 'No books found matching your search.' 
-                  : 'No books available in this category.'}
+                  ? t('common.noBooksFound')
+                  : t('common.noBooksAvailable')}
               </Text>
             </Card.Content>
           </Card>
@@ -481,10 +524,10 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.8)",
   },
   header: {
-    backgroundColor: "rgb(91,61,221)",
+    backgroundColor: '#9317ED',
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-    padding: 24,
+    padding: 20,
     marginBottom: 20,
     marginTop: 0,
     // Ajout d'une ombre pour donner du relief
@@ -549,13 +592,13 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 28,
-    paddingHorizontal: 18,
+    paddingHorizontal: 14,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   sectionTitle: {
     fontSize: 20,
@@ -564,7 +607,8 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   plansList: {
-    paddingRight: 16,
+    paddingRight: 2,
+    padding: 5,
   },
   bookGrid: {
     justifyContent: 'space-between',
@@ -585,9 +629,9 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   bookCard: {
-    width: (width - 52) / 2,
-    marginBottom: 18,
-    borderRadius: 16,
+    width: (width - 32) / 2,
+    marginBottom: 2,
+    borderRadius: 10,
     // Ajout d'une ombre
     shadowColor: "#000",
     shadowOffset: {
@@ -595,28 +639,27 @@ const styles = StyleSheet.create({
       height: 3,
     },
     shadowOpacity: 0.15,
-    shadowRadius: 5,
+    shadowRadius: 1,
     elevation: 5,
   },
   bookCover: {
     height: 160,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
   },
   bookTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
-    marginBottom: 4,
   },
   chipContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 4,
+    marginTop: 2,
   },
   chip: {
-    marginRight: 4,
-    marginTop: 4,
-    height: 24,
+    // marginRight: 4,
+    // marginTop: 4,
+    height: 30,
   },
   progressContainer: {
     marginVertical: 8,
@@ -807,9 +850,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   bookAuthor: {
-    fontSize: 14,
+    fontSize: 12,
+    fontStyle: 'italic',
     color: '#666666',
-    marginTop: 2,
   },
 });
 

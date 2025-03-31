@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
+import { 
+  View, 
+  Text, 
   StyleSheet,
-  ScrollView,
+  ScrollView, 
   TouchableOpacity,
   Image,
   Dimensions,
   ImageBackground,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import {
+import { 
   Avatar,
-  Title,
+  Title, 
   Caption,
   Divider,
-  Button,
+  Button, 
   Card,
   ProgressBar,
   IconButton,
@@ -30,6 +31,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../hooks/useAuth';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../App';
+import { useTranslation } from 'react-i18next';
+import { colors } from '../utils/theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -80,6 +83,7 @@ const readingStats = {
 };
 
 const ProfileScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { user, logout } = useAuth();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -88,11 +92,22 @@ const ProfileScreen = () => {
     displayName: user?.username || '',
     bio: 'Avid reader and book enthusiast. Love to explore new worlds through reading.',
   });
-
+  
+  const handleLogout = () => {
+    Alert.alert(
+      t('common.logout'),
+      t('profile.logoutConfirmation'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('profile.confirmLogout'), onPress: logout }
+      ]
+    );
+  };
+  
   const handleEditProfile = () => {
     setEditDialogVisible(true);
   };
-
+  
   const handleSaveProfile = () => {
     // Save profile changes to backend - would be implemented in a real app
     setEditDialogVisible(false);
@@ -102,9 +117,9 @@ const ProfileScreen = () => {
     return (
       <View style={styles.badgeSection}>
         <View style={styles.sectionHeader}>
-          <Title style={styles.sectionTitle}>Badges</Title>
+          <Title style={styles.sectionTitle}>{t('profile.achievements')}</Title>
           <TouchableOpacity onPress={() => navigation.navigate('Badges')}>
-            <Caption style={styles.seeAll}>See All</Caption>
+            <Caption style={styles.seeAll}>{t('common.viewAll')}</Caption>
           </TouchableOpacity>
         </View>
         <ScrollView
@@ -140,9 +155,9 @@ const ProfileScreen = () => {
     return (
       <View style={styles.recentBooksSection}>
         <View style={styles.sectionHeader}>
-          <Title style={styles.sectionTitle}>Recent Books</Title>
+          <Title style={styles.sectionTitle}>{t('profile.completedBooks')}</Title>
           <TouchableOpacity onPress={() => navigation.navigate('Home')}>
-            <Caption style={styles.seeAll}>See All</Caption>
+            <Caption style={styles.seeAll}>{t('common.viewAll')}</Caption>
           </TouchableOpacity>
         </View>
         <ScrollView
@@ -164,7 +179,7 @@ const ProfileScreen = () => {
                 <Text style={styles.bookAuthor} numberOfLines={1}>
                   {book.author}
                 </Text>
-                <Caption style={styles.lastRead}>Last read {book.lastRead}</Caption>
+                <Caption style={styles.lastRead}>{t('book.lastRead')} {book.lastRead}</Caption>
                 <View style={styles.progressContainer}>
                   <ProgressBar
                     progress={book.progress}
@@ -185,36 +200,36 @@ const ProfileScreen = () => {
     return (
       <View style={styles.statsSection}>
         <View style={styles.sectionHeader}>
-          <Title style={styles.sectionTitle}>Reading Stats</Title>
+          <Title style={styles.sectionTitle}>{t('stats.title')}</Title>
           <TouchableOpacity onPress={() => navigation.navigate('Stats')}>
-            <Caption style={styles.seeAll}>See All</Caption>
+            <Caption style={styles.seeAll}>{t('common.viewAll')}</Caption>
           </TouchableOpacity>
         </View>
 
         <View style={styles.statsGrid}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{readingStats.totalMinutes}</Text>
-            <Text style={styles.statLabel}>Total Minutes</Text>
+            <Text style={styles.statLabel}>{t('stats.readingTime')}</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{readingStats.booksCompleted}</Text>
-            <Text style={styles.statLabel}>Books Read</Text>
+            <Text style={styles.statLabel}>{t('stats.booksCompleted')}</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{readingStats.currentStreak}</Text>
-            <Text style={styles.statLabel}>Day Streak</Text>
+            <Text style={styles.statLabel}>{t('stats.currentStreak')}</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{readingStats.longestStreak}</Text>
-            <Text style={styles.statLabel}>Longest Streak</Text>
+            <Text style={styles.statLabel}>{t('stats.longestStreak')}</Text>
           </View>
         </View>
         
         <View style={styles.weeklyGoalContainer}>
           <View style={styles.weeklyGoalHeader}>
-            <Text style={styles.weeklyGoalTitle}>Weekly Reading Goal</Text>
+            <Text style={styles.weeklyGoalTitle}>{t('readingPlan.weeklyGoal')}</Text>
             <Text style={styles.weeklyGoalProgress}>
-              {readingStats.weeklyProgress} of {readingStats.weeklyGoal} days
+              {readingStats.weeklyProgress} {t('common.of')} {readingStats.weeklyGoal} {t('stats.days')}
             </Text>
           </View>
           <ProgressBar
@@ -235,17 +250,17 @@ const ProfileScreen = () => {
           onDismiss={() => setEditDialogVisible(false)}
           style={styles.dialog}
         >
-          <Dialog.Title>Edit Profile</Dialog.Title>
+          <Dialog.Title>{t('profile.editProfile')}</Dialog.Title>
           <Dialog.Content>
-            <TextInput
-              label="Display Name"
+          <TextInput
+              label={t('profile.displayName')}
               value={editableProfile.displayName}
               onChangeText={(text) => setEditableProfile({ ...editableProfile, displayName: text })}
               style={styles.dialogInput}
               mode="outlined"
             />
-            <TextInput
-              label="Bio"
+          <TextInput
+              label={t('profile.bio')}
               value={editableProfile.bio}
               onChangeText={(text) => setEditableProfile({ ...editableProfile, bio: text })}
               style={styles.dialogInput}
@@ -255,8 +270,8 @@ const ProfileScreen = () => {
             />
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setEditDialogVisible(false)}>Cancel</Button>
-            <Button onPress={handleSaveProfile}>Save</Button>
+            <Button onPress={() => setEditDialogVisible(false)}>{t('common.cancel')}</Button>
+            <Button onPress={handleSaveProfile}>{t('common.save')}</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -274,11 +289,7 @@ const ProfileScreen = () => {
           style={styles.coverGradient}
         >
           <View style={styles.headerButtons}>
-            <IconButton
-              icon="arrow-left"
-              size={24}
-              onPress={() => navigation.goBack()}
-            />
+            <View style={{ width: 40 }} />
             <Menu
               visible={menuVisible}
               onDismiss={() => setMenuVisible(false)}
@@ -290,10 +301,10 @@ const ProfileScreen = () => {
                 />
               }
             >
-              <Menu.Item onPress={handleEditProfile} title="Edit Profile" />
-              <Menu.Item onPress={() => navigation.navigate('Settings')} title="Settings" />
+              <Menu.Item onPress={handleEditProfile} title={t('profile.editProfile')} />
+              <Menu.Item onPress={() => navigation.navigate('Settings')} title={t('common.settings')} />
               <Divider />
-              <Menu.Item onPress={logout} title="Logout" />
+              <Menu.Item onPress={handleLogout} title={t('common.logout')} />
             </Menu>
           </View>
         </LinearGradient>
@@ -311,18 +322,18 @@ const ProfileScreen = () => {
             style={styles.avatar}
           />
           <View style={styles.profileInfo}>
-            <Title style={styles.username}>{user?.username || 'Reader'}</Title>
+            <Title style={styles.username}>{user?.username || t('common.reader')}</Title>
             <View style={styles.levelContainer}>
               <MaterialCommunityIcons name="star" size={20} color="#FFD700" />
-              <Text style={styles.levelText}>Level 8 Reader</Text>
+              <Text style={styles.levelText}>{t('profile.levelReader', { level: 8 })}</Text>
             </View>
             <Text style={styles.bio}>
-              Avid reader and book enthusiast. Love to explore new worlds through reading.
+              {editableProfile.bio}
             </Text>
             <View style={styles.interests}>
-              <Chip style={styles.interestChip} textStyle={{ color: '#666' }}>Fiction</Chip>
-              <Chip style={styles.interestChip} textStyle={{ color: '#666' }}>Fantasy</Chip>
-              <Chip style={styles.interestChip} textStyle={{ color: '#666' }}>Self-Help</Chip>
+              <Chip style={styles.interestChip} textStyle={{ color: '#666' }}>{t('categories.fiction')}</Chip>
+              <Chip style={styles.interestChip} textStyle={{ color: '#666' }}>{t('categories.fantasy')}</Chip>
+              <Chip style={styles.interestChip} textStyle={{ color: '#666' }}>{t('categories.selfHelp')}</Chip>
             </View>
           </View>
         </View>
@@ -333,9 +344,28 @@ const ProfileScreen = () => {
           {renderBadges()}
           <Divider style={styles.divider} />
           {renderRecentBooks()}
+          
+          <Card style={styles.logoutCard}>
+            <Card.Content>
+              <Button 
+                mode="contained" 
+                icon="logout" 
+                onPress={handleLogout}
+                style={styles.logoutButton}
+                contentStyle={styles.logoutButtonContent}
+                labelStyle={styles.logoutButtonLabel}
+              >
+                {t('common.logout')}
+              </Button>
+            </Card.Content>
+          </Card>
+          
+          <View style={styles.versionContainer}>
+            <Text style={styles.versionText}>Koach Reader v1.0.0</Text>
+          </View>
         </View>
       </ScrollView>
-      
+  
       {renderEditProfileDialog()}
     </View>
   );
@@ -347,7 +377,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   coverPhoto: {
-    height: 200,
+    height: 170,
     width: '100%',
   },
   coverGradient: {
@@ -357,13 +387,13 @@ const styles = StyleSheet.create({
   headerButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
-    paddingTop: 40,
+    paddingHorizontal: 16,
+    paddingTop: 30,
     width: '100%',
   },
   profileHeader: {
     flexDirection: 'row',
-    marginTop: -50,
+    marginTop: -65,
     paddingHorizontal: 20,
     zIndex: 1,
   },
@@ -418,7 +448,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 20,
-    marginTop: 60,
+    marginTop: 40,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -586,11 +616,39 @@ const styles = StyleSheet.create({
     height: 1,
     marginVertical: 8,
   },
-  dialog: {
+  logoutCard: {
+    marginTop: 30,
+    elevation: 4,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  logoutButton: {
+    backgroundColor: colors.error || '#B00020',
     borderRadius: 8,
+    marginVertical: 10,
+  },
+  logoutButtonContent: {
+    height: 50,
+  },
+  logoutButtonLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  versionContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  versionText: {
+    color: '#999',
+    fontSize: 12,
+  },
+  dialog: {
+    borderRadius: 12,
   },
   dialogInput: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
 });
 

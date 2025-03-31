@@ -3,7 +3,7 @@
     "home": "Home",
     "profile": "Profile",
     "challenges": "Challenges",
-    "leaderboard": "Leaderboard",
+    "leaderboard": "Board",
     "stats": "Statistics",
     "settings": "Settings",
     "logout": "Logout",
@@ -36,7 +36,8 @@
     "searchResult": "Search Results",
     "searchBooks": "Search books...",
     "noBooksFound": "No books found matching your search.",
-    "noBooksAvailable": "No books available in this category."
+    "noBooksAvailable": "No books available in this category.",
+    "of": "of"
   },
   "auth": {
     "login": "Login",
@@ -47,8 +48,8 @@
     "name": "Name",
     "username": "Username",
     "confirmPassword": "Confirm Password",
-    "alreadyHaveAccount": "Already have an account? Login",
-    "dontHaveAccount": "Don't have an account? Register",
+    "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Don't have an account?",
     "createAccount": "Create Account",
     "yourJourneyStarts": "Your Reading Journey Starts Here",
     "errorRequired": "This field is required",
@@ -92,7 +93,38 @@
     "readingHabits": "Tell us about your reading habits so we can tailor your experience.",
     "ageAppropriate": "This helps us recommend age-appropriate content.",
     "selectCategories": "Select as many categories as you like.",
-    "enhanceDiscovery": "Select all that apply to help us enhance your book discovery experience."
+    "enhanceDiscovery": "Select all that apply to help us enhance your book discovery experience.",
+    "fewWeekly": "Few times a week",
+    "occasionally": "Occasionally",
+    "under18": "Under 18",
+    "18to24": "18-24",
+    "25to34": "25-34",
+    "35to44": "35-44",
+    "45plus": "45+",
+    "friends": "Friends",
+    "socialMedia": "Social Media",
+    "bookstores": "Bookstores",
+    "onlineReviews": "Online Reviews",
+    "bookClubs": "Book Clubs",
+    "recommendations": "Recommendations"
+  },
+  "categories": {
+    "bibleStudies": "Bible and Biblical Studies",
+    "theology": "Theology and Christian Doctrine",
+    "spirituality": "Spirituality and Christian Life",
+    "jesus": "Books about Jesus Christ",
+    "evangelism": "Evangelism and Mission",
+    "marriageFamily": "Marriage, Family and Relationships",
+    "youth": "Youth and Children",
+    "testimonies": "Christian Testimonies and Biographies",
+    "prophecy": "Prophecy and End Times",
+    "ethics": "Christian Ethics and Society",
+    "healing": "Healing and Deliverance",
+    "ministry": "Ministry and Leadership",
+    "worship": "Praise and Worship",
+    "fiction": "Christian Fiction",
+    "churchHistory": "Church History",
+    "encouragement": "Encouragement and Motivation Books"
   },
   "heroText": {
     "trackJourney": "Track Your Reading Journey",
@@ -115,7 +147,12 @@
     "accountSettings": "Account Settings",
     "reader": "Reader",
     "appSettings": "App Settings",
-    "viewAllBadges": "View All Badges"
+    "viewAllBadges": "View All Badges",
+    "displayName": "Display Name",
+    "bio": "Biography",
+    "logoutConfirmation": "Are you sure you want to log out?",
+    "confirmLogout": "Yes, log out",
+    "levelReader": "Level {{level}} Reader"
   },
   "book": {
     "details": "Book Details",
@@ -142,7 +179,8 @@
     "addYourReview": "Add Your Review",
     "yourRating": "Your Rating",
     "yourComment": "Your comment",
-    "beFirstToComment": "Be the first to leave a comment!"
+    "beFirstToComment": "Be the first to leave a comment!",
+    "lastRead": "Last read"
   },
   "challenges": {
     "title": "Reading Challenges",

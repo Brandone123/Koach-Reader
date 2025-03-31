@@ -115,6 +115,7 @@ const AuthNavigator = () => {
     >
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false, gestureEnabled: false }} />
     </Stack.Navigator>
   );
 };
@@ -168,24 +169,17 @@ function HomeTitle() {
 const AppNavigator = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
-  const [isAppReady, setIsAppReady] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
   
   // Show auth screens if no user
   if (!user) {
     return <AuthNavigator />;
   }
   
-  // Vérifier si user.hasCompletedOnboarding existe avant de l'utiliser
-  const hasCompletedOnboarding = user.hasCompletedOnboarding ?? false;
-  
-  // Main navigator with conditional initial route
-  const initialRoute = hasCompletedOnboarding ? 'Home' : 'Onboarding';
-  
+  // Si l'utilisateur est authentifié, toujours aller sur Home
   return (
     <>
       <Stack.Navigator 
-        initialRouteName={initialRoute}
+        initialRouteName="Home"
         screenOptions={{
           headerStyle: {
             backgroundColor: "#9317ed",
@@ -231,16 +225,6 @@ const AppNavigator = () => {
           },
         }}
       >
-        {showOnboarding ? (
-          <Stack.Screen 
-            name="Onboarding" 
-            component={OnboardingScreen} 
-            options={{
-              headerShown: false,
-              gestureEnabled: false
-            }}
-          />
-        ) : null}
         <Stack.Screen 
           name="Home" 
           component={HomeScreen} 

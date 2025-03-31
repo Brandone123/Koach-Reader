@@ -24,52 +24,20 @@ import { useTranslation } from 'react-i18next';
 
 const { width, height } = Dimensions.get('window');
 
+// Colors definition
+const colors = {
+  primary: '#8A2BE2',
+  secondary: '#4B0082',
+  textPrimary: '#FFFFFF',
+  textSecondary: 'rgba(255,255,255,0.8)',
+  background: '#FFFFFF',
+  chipBackground: '#F0F0F0',
+  chipSelected: '#8A2BE2',
+  chipTextNormal: '#333',
+  chipTextSelected: '#FFFFFF',
+};
+
 type OnboardingNavigationProp = StackNavigationProp<RootStackParamList, 'Onboarding'>;
-
-// Définition des catégories chrétiennes
-const BOOK_CATEGORIES = [
-  { label: 'Bible et études bibliques', value: 'bible_studies', icon: '📖' },
-  { label: 'Théologie et doctrine chrétienne', value: 'theology', icon: '✝️' },
-  { label: 'Spiritualité et vie chrétienne', value: 'spirituality', icon: '🙏' },
-  { label: 'Livres sur Jésus Christ', value: 'jesus', icon: '👑' },
-  { label: 'Évangélisation et mission', value: 'evangelism', icon: '🌍' },
-  { label: 'Mariage famille et relation', value: 'marriage_family', icon: '👨‍👩‍👧‍👦' },
-  { label: 'Jeunesse et enfants', value: 'youth', icon: '👶' },
-  { label: 'Témoignages et biographies chrétiennes', value: 'testimonies', icon: '📚' },
-  { label: 'Prophétie et fin des temps', value: 'prophecy', icon: '⏳' },
-  { label: 'Éthique chrétienne et société', value: 'ethics', icon: '⚖️' },
-  { label: 'Guérison et délivrance', value: 'healing', icon: '🌟' },
-  { label: 'Ministère et leadership', value: 'ministry', icon: '👥' },
-  { label: 'Louange et adoration', value: 'worship', icon: '🎵' },
-  { label: 'Fictions chrétiennes', value: 'fiction', icon: '📕' },
-  { label: 'Histoire de l\'Église', value: 'church_history', icon: '⛪' },
-  { label: 'Livre d\'encouragement et motivation', value: 'encouragement', icon: '💪' },
-];
-
-const READING_FREQUENCIES = [
-  { label: 'Daily', value: 'daily', icon: '📚' },
-  { label: 'Few times a week', value: 'few_weekly', icon: '📖' },
-  { label: 'Weekly', value: 'weekly', icon: '📅' },
-  { label: 'Monthly', value: 'monthly', icon: '📆' },
-  { label: 'Occasionally', value: 'occasionally', icon: '🔍' },
-];
-
-const AGE_GROUPS = [
-  { label: 'Under 18', value: 'under_18', icon: '👶' },
-  { label: '18-24', value: '18-24', icon: '🧑' },
-  { label: '25-34', value: '25-34', icon: '👨' },
-  { label: '35-44', value: '35-44', icon: '👩' },
-  { label: '45+', value: '45_plus', icon: '👴' },
-];
-
-const DISCOVERY_SOURCES = [
-  { label: 'Friends', value: 'friends', icon: '👥' },
-  { label: 'Social Media', value: 'social_media', icon: '📱' },
-  { label: 'Bookstores', value: 'bookstores', icon: '🏪' },
-  { label: 'Online Reviews', value: 'online_reviews', icon: '⭐' },
-  { label: 'Book Clubs', value: 'book_clubs', icon: '👋' },
-  { label: 'Recommendations', value: 'recommendations', icon: '👍' },
-];
 
 // Chip selection component for multiple choice questions
 const ChipSelectionGroup = ({ 
@@ -240,13 +208,58 @@ const OnboardingScreen = () => {
     }
   };
 
+  // Move these constants inside the component to use the t function
+  const bookCategories = [
+    { label: t('categories.bibleStudies'), value: 'bible_studies', icon: '📖' },
+    { label: t('categories.theology'), value: 'theology', icon: '✝️' },
+    { label: t('categories.spirituality'), value: 'spirituality', icon: '🙏' },
+    { label: t('categories.jesus'), value: 'jesus', icon: '👑' },
+    { label: t('categories.evangelism'), value: 'evangelism', icon: '🌍' },
+    { label: t('categories.marriageFamily'), value: 'marriage_family', icon: '👨‍👩‍👧‍👦' },
+    { label: t('categories.youth'), value: 'youth', icon: '👶' },
+    { label: t('categories.testimonies'), value: 'testimonies', icon: '📚' },
+    { label: t('categories.prophecy'), value: 'prophecy', icon: '⏳' },
+    { label: t('categories.ethics'), value: 'ethics', icon: '⚖️' },
+    { label: t('categories.healing'), value: 'healing', icon: '🌟' },
+    { label: t('categories.ministry'), value: 'ministry', icon: '👥' },
+    { label: t('categories.worship'), value: 'worship', icon: '🎵' },
+    { label: t('categories.fiction'), value: 'fiction', icon: '📕' },
+    { label: t('categories.churchHistory'), value: 'church_history', icon: '⛪' },
+    { label: t('categories.encouragement'), value: 'encouragement', icon: '💪' },
+  ];
+
+  const readingFrequencies = [
+    { label: t('settings.daily'), value: 'daily', icon: '📚' },
+    { label: t('onboarding.fewWeekly'), value: 'few_weekly', icon: '📖' },
+    { label: t('settings.weekly'), value: 'weekly', icon: '📅' },
+    { label: t('settings.monthly'), value: 'monthly', icon: '📆' },
+    { label: t('onboarding.occasionally'), value: 'occasionally', icon: '🔍' },
+  ];
+
+  const ageGroups = [
+    { label: t('onboarding.under18'), value: 'under_18', icon: '👶' },
+    { label: t('onboarding.18to24'), value: '18-24', icon: '🧑' },
+    { label: t('onboarding.25to34'), value: '25-34', icon: '👨' },
+    { label: t('onboarding.35to44'), value: '35-44', icon: '👩' },
+    { label: t('onboarding.45plus'), value: '45_plus', icon: '👴' },
+  ];
+
+  const sourceOptions = [
+    { label: t('onboarding.friends'), value: 'friends', icon: '👥' },
+    { label: t('onboarding.socialMedia'), value: 'social_media', icon: '📱' },
+    { label: t('onboarding.bookstores'), value: 'bookstores', icon: '🏪' },
+    { label: t('onboarding.onlineReviews'), value: 'online_reviews', icon: '⭐' },
+    { label: t('onboarding.bookClubs'), value: 'book_clubs', icon: '👋' },
+    { label: t('onboarding.recommendations'), value: 'recommendations', icon: '👍' },
+  ];
+
   const renderContent = () => {
     switch (currentStep) {
       case 0:
         return (
           <ScrollView style={styles.optionsScrollView}>
             <ChipSelectionGroup
-              options={READING_FREQUENCIES}
+              options={readingFrequencies}
               selectedValues={readingFrequency}
               onSelect={handleFrequencySelect}
               multiSelect={false}
@@ -257,7 +270,7 @@ const OnboardingScreen = () => {
         return (
           <ScrollView style={styles.optionsScrollView}>
             <ChipSelectionGroup
-              options={AGE_GROUPS}
+              options={ageGroups}
               selectedValues={ageGroup}
               onSelect={handleAgeGroupSelect}
               multiSelect={false}
@@ -268,7 +281,7 @@ const OnboardingScreen = () => {
         return (
           <ScrollView style={styles.optionsScrollView}>
             <ChipSelectionGroup
-              options={BOOK_CATEGORIES}
+              options={bookCategories}
               selectedValues={favoriteCategories}
               onSelect={handleCategorySelect}
             />
@@ -278,7 +291,7 @@ const OnboardingScreen = () => {
         return (
           <ScrollView style={styles.optionsScrollView}>
             <ChipSelectionGroup
-              options={DISCOVERY_SOURCES}
+              options={sourceOptions}
               selectedValues={discoverySources}
               onSelect={handleDiscoverySourceSelect}
             />

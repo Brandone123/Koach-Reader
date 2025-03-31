@@ -37,7 +37,8 @@
     "searchResult": "Résultats de la recherche",
     "searchBooks": "Rechercher des livres...",
     "noBooksFound": "Aucun livre trouvé correspondant à votre recherche.",
-    "noBooksAvailable": "Aucun livre disponible dans cette catégorie."
+    "noBooksAvailable": "Aucun livre disponible dans cette catégorie.",
+    "of": "sur"
   },
   "auth": {
     "login": "Connexion",
@@ -48,8 +49,8 @@
     "name": "Nom",
     "username": "Nom d'utilisateur",
     "confirmPassword": "Confirmer le mot de passe",
-    "alreadyHaveAccount": "Vous avez déjà un compte? Connexion",
-    "dontHaveAccount": "Vous n'avez pas de compte? Inscription",
+    "alreadyHaveAccount": "Vous avez déjà un compte?",
+    "dontHaveAccount": "Vous n'avez pas de compte?",
     "createAccount": "Créer un compte",
     "yourJourneyStarts": "Votre parcours de lecture commence ici",
     "errorRequired": "Ce champ est requis",
@@ -93,7 +94,38 @@
     "readingHabits": "Parlez-nous de vos habitudes de lecture pour que nous puissions adapter votre expérience.",
     "ageAppropriate": "Cela nous aide à recommander du contenu adapté à votre âge.",
     "selectCategories": "Sélectionnez autant de catégories que vous le souhaitez.",
-    "enhanceDiscovery": "Sélectionnez tout ce qui s'applique pour améliorer votre expérience de découverte de livres."
+    "enhanceDiscovery": "Sélectionnez tout ce qui s'applique pour améliorer votre expérience de découverte de livres.",
+    "fewWeekly": "Quelques fois par semaine",
+    "occasionally": "Occasionnellement",
+    "under18": "Moins de 18 ans",
+    "18to24": "18-24 ans",
+    "25to34": "25-34 ans",
+    "35to44": "35-44 ans",
+    "45plus": "45 ans et plus",
+    "friends": "Amis",
+    "socialMedia": "Médias sociaux",
+    "bookstores": "Librairies",
+    "onlineReviews": "Critiques en ligne",
+    "bookClubs": "Clubs de lecture",
+    "recommendations": "Recommandations"
+  },
+  "categories": {
+    "bibleStudies": "Bible et études bibliques",
+    "theology": "Théologie et doctrine chrétienne",
+    "spirituality": "Spiritualité et vie chrétienne",
+    "jesus": "Livres sur Jésus Christ",
+    "evangelism": "Évangélisation et mission",
+    "marriageFamily": "Mariage, famille et relations",
+    "youth": "Jeunesse et enfants",
+    "testimonies": "Témoignages et biographies chrétiennes",
+    "prophecy": "Prophétie et fin des temps",
+    "ethics": "Éthique chrétienne et société",
+    "healing": "Guérison et délivrance",
+    "ministry": "Ministère et leadership",
+    "worship": "Louange et adoration",
+    "fiction": "Fictions chrétiennes",
+    "churchHistory": "Histoire de l'Église",
+    "encouragement": "Livres d'encouragement et motivation"
   },
   "heroText": {
     "trackJourney": "Suivez votre parcours de lecture",
@@ -116,7 +148,12 @@
     "accountSettings": "Paramètres du compte",
     "reader": "Lecteur",
     "appSettings": "Paramètres de l'application",
-    "viewAllBadges": "Voir tous les badges"
+    "viewAllBadges": "Voir tous les badges",
+    "displayName": "Nom d'affichage",
+    "bio": "Biographie",
+    "logoutConfirmation": "Êtes-vous sûr de vouloir vous déconnecter ?",
+    "confirmLogout": "Oui, me déconnecter",
+    "levelReader": "Niveau {{level}} Lecteur"
   },
   "book": {
     "details": "Détails du livre",
@@ -143,7 +180,8 @@
     "addYourReview": "Ajouter votre avis",
     "yourRating": "Votre note",
     "yourComment": "Votre commentaire",
-    "beFirstToComment": "Soyez le premier à laisser un commentaire !"
+    "beFirstToComment": "Soyez le premier à laisser un commentaire !",
+    "lastRead": "Dernière lecture il y a"
   },
   "challenges": {
     "title": "Défis de lecture",

@@ -82,11 +82,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-      <ImageBackground
+      {/* <ImageBackground
         source={require('../../assets/splash.png')}
         style={styles.backgroundImage}
         resizeMode="cover"
-      >
+      > */}
         <LinearGradient
           colors={['rgba(0,0,0,0.6)', 'rgba(0,0,0,0.8)']}
           style={styles.gradient}
@@ -204,7 +204,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             </ScrollView>
           </KeyboardAvoidingView>
         </LinearGradient>
-      </ImageBackground>
+      {/* </ImageBackground> */}
     </View>
   );
 };
@@ -212,6 +212,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   backgroundImage: {
     width: '100%',

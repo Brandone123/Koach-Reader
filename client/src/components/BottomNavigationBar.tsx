@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet, Platform, TouchableOpacity } from "react-native";
 import { BottomNavigation, Text } from "react-native-paper";
 import { useNavigation, useNavigationState } from "@react-navigation/native";
@@ -14,36 +14,19 @@ type NavigationProp = StackNavigationProp<RootStackParamList>;
 type IconProps = { color: string; size: number };
 
 const BottomNavigationBar: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [index, setIndex] = useState(2); // Home index par défaut
   const navigation = useNavigation<NavigationProp>();
   const user = useSelector(selectUser);
+  const [isVisible, setIsVisible] = useState(false);
 
   // Utiliser useNavigationState pour vérifier la route actuelle de façon sûre
   const currentRouteName = useNavigationState(
     (state) => state?.routes[state?.index]?.name
   );
 
-  // Ne pas afficher sur l'écran d'onboarding
-  if (currentRouteName === "Onboarding") {
-    return null;
-  }
-
-  const isPremium = user?.isPremium || false;
-
-  // Define empty component for each scene
-  const renderEmptyScene = () => null;
-
-  // Map the components to keys
-  const renderScene = {
-    leaderboard: renderEmptyScene,
-    challenges: renderEmptyScene,
-    home: renderEmptyScene,
-    profile: renderEmptyScene,
-    stats: renderEmptyScene,
-  };
-
-  const routes = [
+  // Create local state for routes
+  const [routes, setRoutes] = useState([
     {
       key: "leaderboard",
       title: t("common.leaderboard"),
@@ -74,7 +57,73 @@ const BottomNavigationBar: React.FC = () => {
       icon: "chart-box-outline",
       focusedIcon: "chart-box",
     },
-  ];
+  ]);
+
+  // Mettre à jour la visibilité en fonction de la route actuelle
+  useEffect(() => {
+    // Si currentRouteName est exactement "Home", on affiche la barre
+    setIsVisible(currentRouteName === "Home");
+    
+    // Réinitialiser l'index sur "Home" quand on est sur la page Home
+    if (currentRouteName === "Home") {
+      setIndex(2); // Index de "home" dans le tableau routes
+    }
+  }, [currentRouteName]);
+
+  // Update routes when language changes
+  useEffect(() => {
+    setRoutes([
+      {
+        key: "leaderboard",
+        title: t("common.leaderboard"),
+        icon: "podium",
+        focusedIcon: "podium-gold",
+      },
+      {
+        key: "challenges",
+        title: t("common.challenges"),
+        icon: "target",
+        focusedIcon: "target-variant",
+      },
+      {
+        key: "home",
+        title: t("common.home"),
+        icon: "view-dashboard-outline",
+        focusedIcon: "view-dashboard",
+      },
+      {
+        key: "profile",
+        title: t("common.profile"),
+        icon: "account-cog-outline",
+        focusedIcon: "account-cog",
+      },
+      {
+        key: "stats",
+        title: t("common.stats"),
+        icon: "chart-box-outline",
+        focusedIcon: "chart-box",
+      },
+    ]);
+  }, [t, i18n.language]);
+
+  // Si la barre n'est pas visible, ne pas rendre le composant
+  if (!isVisible) {
+    return null;
+  }
+
+  const isPremium = user?.isPremium || false;
+
+  // Define empty component for each scene
+  const renderEmptyScene = () => null;
+
+  // Map the components to keys
+  const renderScene = {
+    leaderboard: renderEmptyScene,
+    challenges: renderEmptyScene,
+    home: renderEmptyScene,
+    profile: renderEmptyScene,
+    stats: renderEmptyScene,
+  };
 
   const renderIcon = ({
     route,
@@ -135,9 +184,10 @@ const BottomNavigationBar: React.FC = () => {
   };
 
   const handleAddBook = () => {
-    navigation.navigate("ReadingPlan", {});
+    navigation.navigate("ReadingPlan", { bookId: "" });
   };
 
+  // Si currentRouteName est exactement "Home", on retourne le composant de navigation
   return (
     <View style={styles.container}>
       <View style={styles.barContainer}>

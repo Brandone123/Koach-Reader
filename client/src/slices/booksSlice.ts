@@ -5,8 +5,11 @@ import { RootState } from '../store';
 export interface Book {
   id: number;
   title: string;
+  subtitle?: string;
   author: string;
   description: string;
+  views?: number;
+  totalRating?: number;
   pageCount: number;
   category: string;
   language: string;
@@ -46,6 +49,7 @@ interface GetBooksParams {
 
 interface CreateBookData {
   title: string;
+  subtitle?: string;
   author: string;
   description: string;
   pageCount: number;
@@ -60,9 +64,12 @@ interface CreateBookData {
 interface UpdateBookData {
   id: number;
   title?: string;
+  subtitle?: string;
   author?: string;
   description?: string;
   pageCount?: number;
+  views?: number;
+  totalRating?: number;
   category?: string;
   language?: string;
   isPublic?: boolean;
@@ -98,9 +105,12 @@ const booksAPI = {
       1: {
         id: 1,
         title: 'The Bible',
+        subtitle: '',
         author: 'Various Authors',
         description: 'The Bible is a collection of religious texts or scriptures sacred to Christians, Jews, Samaritans, and others.',
         pageCount: 1200,
+        views: 300,
+        totalRating: 2,
         category: 'Religious',
         language: 'English',
         isPublic: true,
@@ -112,9 +122,12 @@ const booksAPI = {
       2: {
         id: 2,
         title: 'The Purpose Driven Life',
+        subtitle: '',
         author: 'Rick Warren',
         description: 'The Purpose Driven Life is a devotional book written by Christian pastor Rick Warren and published by Zondervan.',
         pageCount: 368,
+        views: 600,
+        totalRating: 3,
         category: 'Self-Help',
         language: 'English',
         isPublic: true,
@@ -126,9 +139,12 @@ const booksAPI = {
       3: {
         id: 3,
         title: 'Mere Christianity',
+        subtitle: '',
         author: 'C.S. Lewis',
         description: 'Mere Christianity is a theological book by C.S. Lewis, adapted from a series of BBC radio talks.',
         pageCount: 256,
+        views: 900,
+        totalRating: 4,
         category: 'Religious',
         language: 'English',
         isPublic: true,
@@ -177,9 +193,12 @@ const booksAPI = {
     return {
       id: bookData.id,
       title: bookData.title || 'Updated Book',
+      subtitle: bookData.subtitle || '',
       author: bookData.author || 'Unknown Author',
       description: bookData.description || 'No description available',
       pageCount: bookData.pageCount || 100,
+      views: bookData.views || 0,
+      totalRating: bookData.totalRating || 0,
       category: bookData.category || 'General',
       language: bookData.language || 'English',
       isPublic: bookData.isPublic ?? true,

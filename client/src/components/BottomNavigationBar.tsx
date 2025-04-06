@@ -9,16 +9,27 @@ import { selectUser } from "../slices/authSlice";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { colors } from "../utils/theme";
+import { useLanguage } from "../context/LanguageContext";
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 type IconProps = { color: string; size: number };
 
+// Map route names to tab indices for consistency
+const ROUTE_TO_INDEX_MAP = {
+  Leaderboard: 0,
+  Challenges: 1,
+  Home: 2,
+  Profile: 3,
+  Stats: 4,
+};
+
 const BottomNavigationBar: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const { isChangingLanguage } = useLanguage();
   const [index, setIndex] = useState(2); // Home index par défaut
   const navigation = useNavigation<NavigationProp>();
   const user = useSelector(selectUser);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
 
   // Utiliser useNavigationState pour vérifier la route actuelle de façon sûre
   const currentRouteName = useNavigationState(
@@ -61,18 +72,20 @@ const BottomNavigationBar: React.FC = () => {
 
   // Mettre à jour la visibilité en fonction de la route actuelle
   useEffect(() => {
-    // Si currentRouteName est exactement "Home", on affiche la barre
-    setIsVisible(currentRouteName === "Home");
-    
-    // Réinitialiser l'index sur "Home" quand on est sur la page Home
-    if (currentRouteName === "Home") {
-      setIndex(2); // Index de "home" dans le tableau routes
+    if (currentRouteName) {
+      // Si currentRouteName est exactement "Home", on affiche la barre
+      setIsVisible(currentRouteName === "Home");
+      
+      // Update index based on current route name if we're on a route in our navigation
+      if (ROUTE_TO_INDEX_MAP.hasOwnProperty(currentRouteName)) {
+        setIndex(ROUTE_TO_INDEX_MAP[currentRouteName]);
+      }
     }
   }, [currentRouteName]);
 
-  // Update routes when language changes
+  // Update routes when language changes while preserving active tab
   useEffect(() => {
-    setRoutes([
+    const updatedRoutes = [
       {
         key: "leaderboard",
         title: t("common.leaderboard"),
@@ -103,7 +116,9 @@ const BottomNavigationBar: React.FC = () => {
         icon: "chart-box-outline",
         focusedIcon: "chart-box",
       },
-    ]);
+    ];
+    
+    setRoutes(updatedRoutes);
   }, [t, i18n.language]);
 
   // Si la barre n'est pas visible, ne pas rendre le composant
@@ -146,7 +161,6 @@ const BottomNavigationBar: React.FC = () => {
             size={focused ? 28 : 24}
             color={color}
           />
-          {focused}
         </View>
         <Text
           style={[
@@ -157,6 +171,7 @@ const BottomNavigationBar: React.FC = () => {
         >
           {route.title}
         </Text>
+        {focused}
       </View>
     );
   };
@@ -187,7 +202,7 @@ const BottomNavigationBar: React.FC = () => {
     navigation.navigate("ReadingPlan", { bookId: "" });
   };
 
-  // Si currentRouteName est exactement "Home", on retourne le composant de navigation
+  // Ensure the bar doesn't vanish during language changes
   return (
     <View style={styles.container}>
       <View style={styles.barContainer}>

@@ -13,7 +13,8 @@ import {
   Animated,
   PanResponder,
   GestureResponderEvent,
-  PanResponderGestureState
+  PanResponderGestureState,
+  ActivityIndicator
 } from 'react-native';
 import { FreeQuarterlyBook } from '../slices/freeQuarterlyBooksSlice';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +23,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 interface FreeQuarterlyBooksSectionProps {
   books: FreeQuarterlyBook[];
   onBookPress: (bookId: number) => void;
+  isLoading?: boolean;
 }
 
 const { width } = Dimensions.get('window');
@@ -29,12 +31,22 @@ const SWIPE_THRESHOLD = 120; // Distance minimum pour considérer comme un swipe
 
 const FreeQuarterlyBooksSection: React.FC<FreeQuarterlyBooksSectionProps> = ({ 
   books, 
-  onBookPress 
+  onBookPress,
+  isLoading = false
 }) => {
   const { t, i18n } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const slideTimer = useRef<NodeJS.Timeout | null>(null);
+  
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <Text style={styles.sectionTitle}>{t('home.freeQuarterlyBooks')}</Text>
+        <ActivityIndicator size="large" color="#8A2BE2" style={styles.loader} />
+      </View>
+    );
+  }
   
   if (!books || books.length === 0) return null;
   
@@ -402,6 +414,14 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     tintColor: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loader: {
+    marginTop: 20,
   },
 });
 

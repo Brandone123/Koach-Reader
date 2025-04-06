@@ -26,6 +26,7 @@ import {
   Portal,
   Dialog,
   TextInput,
+  Appbar,
 } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../hooks/useAuth';
@@ -88,6 +89,7 @@ const ProfileScreen = () => {
   const { user, logout } = useAuth();
   const [menuVisible, setMenuVisible] = useState(false);
   const [editDialogVisible, setEditDialogVisible] = useState(false);
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
   const [editableProfile, setEditableProfile] = useState({
     displayName: user?.username || '',
     bio: 'Avid reader and book enthusiast. Love to explore new worlds through reading.',
@@ -102,6 +104,18 @@ const ProfileScreen = () => {
         { text: t('profile.confirmLogout'), onPress: logout }
       ]
     );
+  };
+  
+  const handleDeleteProfile = () => {
+    setDeleteConfirmVisible(true);
+  };
+  
+  const confirmDeleteProfile = () => {
+    // In a real app, this would call an API to delete the user's profile
+    // For now, we'll just log them out and redirect to Register
+    setDeleteConfirmVisible(false);
+    logout();
+    navigation.navigate('Register');
   };
   
   const handleEditProfile = () => {
@@ -274,6 +288,28 @@ const ProfileScreen = () => {
             <Button onPress={handleSaveProfile}>{t('common.save')}</Button>
           </Dialog.Actions>
         </Dialog>
+        
+        <Dialog
+          visible={deleteConfirmVisible}
+          onDismiss={() => setDeleteConfirmVisible(false)}
+          style={styles.dialog}
+        >
+          <Dialog.Title>{t('profile.deleteProfile') || 'Delete Profile'}</Dialog.Title>
+          <Dialog.Content>
+            <Text style={styles.deleteWarningText}>
+              {t('profile.deleteWarning') || 'Are you sure you want to delete your profile? This action cannot be undone.'}
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteConfirmVisible(false)}>{t('common.cancel')}</Button>
+            <Button 
+              onPress={confirmDeleteProfile} 
+              textColor={colors.error || '#B00020'}
+            >
+              {t('profile.confirmDelete') || 'Delete'}
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     );
   };
@@ -289,13 +325,20 @@ const ProfileScreen = () => {
           style={styles.coverGradient}
         >
           <View style={styles.headerButtons}>
-            <View style={{ width: 40 }} />
+            {/* <IconButton
+              icon="arrow-left"
+              iconColor="#FFFFFF"
+              size={24}
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+            /> */}
             <Menu
               visible={menuVisible}
               onDismiss={() => setMenuVisible(false)}
               anchor={
                 <IconButton
                   icon="dots-vertical"
+                  iconColor="#FFFFFF"
                   size={24}
                   onPress={() => setMenuVisible(true)}
                 />
@@ -315,26 +358,23 @@ const ProfileScreen = () => {
         style={styles.mainScrollView}
         contentContainerStyle={styles.scrollContentContainer}
       >
-        <View style={styles.profileHeader}>
-          <Avatar.Image
-            source={{ uri: 'https://randomuser.me/api/portraits/women/17.jpg' }}
-            size={100}
-            style={styles.avatar}
-          />
-          <View style={styles.profileInfo}>
-            <Title style={styles.username}>{user?.username || t('common.reader')}</Title>
-            <View style={styles.levelContainer}>
-              <MaterialCommunityIcons name="star" size={20} color="#FFD700" />
-              <Text style={styles.levelText}>{t('profile.levelReader', { level: 8 })}</Text>
-            </View>
-            <Text style={styles.bio}>
-              {editableProfile.bio}
-            </Text>
-            <View style={styles.interests}>
-              <Chip style={styles.interestChip} textStyle={{ color: '#666' }}>{t('categories.fiction')}</Chip>
-              <Chip style={styles.interestChip} textStyle={{ color: '#666' }}>{t('categories.fantasy')}</Chip>
-              <Chip style={styles.interestChip} textStyle={{ color: '#666' }}>{t('categories.selfHelp')}</Chip>
-            </View>
+        <View style={styles.profileInfo}>
+          <Title style={styles.username}>{user?.username || t('common.reader')}</Title>
+          <View style={styles.levelContainer}>
+            <MaterialCommunityIcons name="star" size={20} color="#FFD700" />
+            <Text style={styles.levelText}>{t('profile.levelReader', { level: 8 })}</Text>
+          </View>
+          <Text style={styles.bio}>
+            {editableProfile.bio}
+          </Text>
+        </View>
+        
+        <View style={styles.interestsContainer}>
+          <Text style={styles.interestsLabel}>{t('profile.interests') || 'Interests'}</Text>
+          <View style={styles.interests}>
+            <Chip style={styles.interestChip} textStyle={{ color: '#666' }}>{t('categories.fiction')}</Chip>
+            <Chip style={styles.interestChip} textStyle={{ color: '#666' }}>{t('categories.theology')}</Chip>
+            <Chip style={styles.interestChip} textStyle={{ color: '#666' }}>{t('categories.jesus')}</Chip>
           </View>
         </View>
 
@@ -345,17 +385,17 @@ const ProfileScreen = () => {
           <Divider style={styles.divider} />
           {renderRecentBooks()}
           
-          <Card style={styles.logoutCard}>
+          <Card style={styles.deleteCard}>
             <Card.Content>
               <Button 
                 mode="contained" 
-                icon="logout" 
-                onPress={handleLogout}
-                style={styles.logoutButton}
-                contentStyle={styles.logoutButtonContent}
-                labelStyle={styles.logoutButtonLabel}
+                icon="account-remove" 
+                onPress={handleDeleteProfile}
+                style={styles.deleteButton}
+                contentStyle={styles.deleteButtonContent}
+                labelStyle={styles.deleteButtonLabel}
               >
-                {t('common.logout')}
+                {t('profile.deleteProfile') || 'Delete My Profile'}
               </Button>
             </Card.Content>
           </Card>
@@ -366,6 +406,18 @@ const ProfileScreen = () => {
         </View>
       </ScrollView>
   
+      {/* Fixed avatar that stays above scrolling content */}
+      <View style={styles.avatarContainerFixed}>
+        <Avatar.Image
+          source={{ uri: 'https://randomuser.me/api/portraits/women/17.jpg' }}
+          size={120}
+          style={styles.avatar}
+        />
+        <View style={styles.levelIndicator}>
+          <Text style={styles.levelIndicatorText}>8</Text>
+        </View>
+      </View>
+      
       {renderEditProfileDialog()}
     </View>
   );
@@ -377,44 +429,71 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   coverPhoto: {
-    height: 170,
+    height: 150,
     width: '100%',
   },
   coverGradient: {
     flex: 1,
     justifyContent: 'flex-start',
+    alignItems: 'center',
   },
   headerButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 30,
+    paddingLeft: 300,
+    paddingTop: 50,
     width: '100%',
   },
-  profileHeader: {
-    flexDirection: 'row',
-    marginTop: -65,
-    paddingHorizontal: 20,
-    zIndex: 1,
+  backButton: {
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    margin: 0,
+  },
+  avatarContainerFixed: {
+    position: 'absolute',
+    top: 75,
+    alignSelf: 'center',
+    zIndex: 999,
+    elevation: 10,
   },
   avatar: {
     borderWidth: 4,
     borderColor: '#FFFFFF',
-    elevation: 5,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+  },
+  levelIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#8A2BE2',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFF',
+    zIndex: 1000,
+  },
+  levelIndicatorText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   profileInfo: {
-    marginLeft: 20,
-    marginTop: 10,
-    flex: 1,
+    marginTop: 45,
+    width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
   username: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#333',
+    textAlign: 'center',
   },
   levelContainer: {
     flexDirection: 'row',
@@ -430,6 +509,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginVertical: 8,
+    lineHeight: 20,
+  },
+  interestsContainer: {
+    marginTop: 20,
+    paddingHorizontal: 20,
+  },
+  interestsLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
   },
   interests: {
     flexDirection: 'row',
@@ -444,11 +534,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContentContainer: {
-    paddingBottom: 80,
+    paddingBottom: 20,
   },
   content: {
     paddingHorizontal: 20,
-    marginTop: 40,
+    marginTop: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -616,21 +706,21 @@ const styles = StyleSheet.create({
     height: 1,
     marginVertical: 8,
   },
-  logoutCard: {
+  deleteCard: {
     marginTop: 30,
     elevation: 4,
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
   },
-  logoutButton: {
+  deleteButton: {
     backgroundColor: colors.error || '#B00020',
     borderRadius: 8,
     marginVertical: 10,
   },
-  logoutButtonContent: {
+  deleteButtonContent: {
     height: 50,
   },
-  logoutButtonLabel: {
+  deleteButtonLabel: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#FFFFFF',
@@ -650,6 +740,11 @@ const styles = StyleSheet.create({
   dialogInput: {
     marginBottom: 12,
   },
+  deleteWarningText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#333',
+  }
 });
 
 export default ProfileScreen;

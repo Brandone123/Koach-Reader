@@ -24,6 +24,7 @@ import { selectUser } from '../slices/authSlice';
 import { fetchApi } from '../utils/api';
 import { mockFetchApi } from '../utils/mockApi';
 import { useTranslation } from 'react-i18next';
+import { black } from 'react-native-paper/lib/typescript/styles/themes/v2/colors';
 
 // Height and width for responsive designs
 const { width } = Dimensions.get('window');
@@ -132,7 +133,7 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ navigation }) => {
   const renderReadingByTimeChart = () => {
     if (!stats?.readingByTime) return null;
     
-    const colors = ['#6200ee', '#03dac6', '#ff6c00', '#b38dff'];
+    const colors = ['#9317ED', '#03dac6', '#ff6c00', '#b38dff'];
     
     return (
       <View style={styles.timeDistributionContainer}>
@@ -217,7 +218,7 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ navigation }) => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Title style={styles.title}>{t('stats.title')}</Title>
+        {/* <Title style={styles.title}>{t('stats.title')}</Title> */}
         <Text style={styles.subtitle}>{t('stats.tracking')}</Text>
         
         <View style={styles.timeRangeContainer}>
@@ -342,8 +343,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: '#6200ee',
+    // backgroundColor: '#9317ED',
     padding: 24,
+    // color: '#000',
     paddingTop: 36,
   },
   title: {
@@ -352,8 +354,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   subtitle: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 4,
+    color: 'rgba(12, 11, 11, 0.8)',
+    marginTop: 2,
+    fontSize: 18,
     marginBottom: 16,
   },
   timeRangeContainer: {
@@ -362,7 +365,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   timeRangeChip: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#9317ED',
   },
   card: {
     margin: 16,
@@ -397,7 +400,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#6200ee',
+    color: '#9317ED',
   },
   statLabel: {
     fontSize: 14,
@@ -414,7 +417,7 @@ const styles = StyleSheet.create({
     width: '48%',
   },
   streakIcon: {
-    backgroundColor: '#6200ee',
+    backgroundColor: '#9317ED',
   },
   streakTextContainer: {
     marginLeft: 12,
@@ -445,7 +448,7 @@ const styles = StyleSheet.create({
   patternValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#6200ee',
+    color: '#9317ED',
   },
   chartContainer: {
     marginTop: 8,

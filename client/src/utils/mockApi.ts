@@ -380,6 +380,17 @@ export async function mockFetchApi(
         return newBook;
       }
       break;
+
+    // Get categories from books
+    case '/api/categories':
+      if (method === 'GET') {
+        const categories = [...new Set(mockBooks.map(book => book.category))];
+        return categories.map((category, index) => ({
+          id: index + 1,
+          name: category
+        }));
+      }
+      break;
     
     // Get books by ID
     case `/api/books/${idFromUrl}`:

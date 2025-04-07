@@ -112,19 +112,30 @@ const ProfileScreen = () => {
   
   const confirmDeleteProfile = () => {
     // In a real app, this would call an API to delete the user's profile
-    // For now, we'll just log them out and redirect to Register
+    // For now, we'll just log them out
     setDeleteConfirmVisible(false);
     logout();
-    navigation.navigate('Register');
+    // The AuthNavigator will automatically show after logout
   };
   
   const handleEditProfile = () => {
+    setMenuVisible(false);
     setEditDialogVisible(true);
   };
   
   const handleSaveProfile = () => {
     // Save profile changes to backend - would be implemented in a real app
     setEditDialogVisible(false);
+  };
+  
+  const handleOpenSettings = () => {
+    setMenuVisible(false);
+    navigation.navigate('Settings');
+  };
+  
+  const handleMenuLogout = () => {
+    setMenuVisible(false);
+    handleLogout();
   };
 
   const renderBadges = () => {
@@ -345,9 +356,9 @@ const ProfileScreen = () => {
               }
             >
               <Menu.Item onPress={handleEditProfile} title={t('profile.editProfile')} />
-              <Menu.Item onPress={() => navigation.navigate('Settings')} title={t('common.settings')} />
+              <Menu.Item onPress={handleOpenSettings} title={t('common.settings')} />
               <Divider />
-              <Menu.Item onPress={handleLogout} title={t('common.logout')} />
+              <Menu.Item onPress={handleMenuLogout} title={t('common.logout')} />
             </Menu>
           </View>
         </LinearGradient>

@@ -31,7 +31,9 @@ import { AppDispatch } from '../store';
 import { selectUser } from '../slices/authSlice';
 import { fetchApi } from '../utils/api';
 import { mockFetchApi } from '../utils/mockApi';
+import { LinearGradient } from 'expo-linear-gradient';
 import { fetchLeaderboard, selectLeaderboard, selectIsLoading } from '../slices/koachSlice';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 type LeaderboardScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Leaderboard'>;
 
@@ -40,7 +42,7 @@ interface LeaderboardScreenProps {
 }
 
 const AVATAR_COLORS = [
-  '#6200ee', // Primary
+  '#9317ED', // Primary
   '#03dac6', // Secondary
   '#ff6c00', // Orange
   '#b38dff', // Light purple
@@ -139,16 +141,15 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ navigation }) => 
                 ]} 
               />
             ) : (
-              <Avatar.Text 
-                size={40} 
-                label={item.rank.toString()} 
-                style={[styles.rankText, { backgroundColor: '#6200ee' }]} 
-              />
+              <Text
+                style={[styles.rankText]} 
+              >{item.rank.toString()} 
+                </Text>
             )}
           </View>
           
           <Avatar.Text 
-            size={50} 
+            size={40} 
             label={initials} 
             style={[styles.userAvatar, { backgroundColor: avatarColor }]} 
           />
@@ -160,20 +161,18 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ navigation }) => 
             </Text>
             <View style={styles.pointsContainer}>
               <Text style={styles.pointsValue}>{item.points}</Text>
-              <Text style={styles.pointsLabel}>Koach Points</Text>
+              <Text style={styles.pointsLabel}>KP</Text>
             </View>
           </View>
           
           <View style={styles.actionsContainer}>
             {!isCurrentUser && (
-              <Button 
-                mode="outlined" 
-                icon="account-plus" 
-                style={styles.addFriendButton}
-                compact
-              >
-                Add
-              </Button>
+              <Button
+              style={styles.addFriendButton}
+              compact
+            >
+              <Icon name="account-plus" size={24} />
+            </Button>
             )}
           </View>
         </Card.Content>
@@ -183,9 +182,12 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ navigation }) => 
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Title style={styles.title}>Leaderboard</Title>
-        <Text style={styles.subtitle}>See who's leading the pack!</Text>
+       <LinearGradient
+        colors={['#9317ED', '#5E0D93']}
+        style={styles.header}
+      >
+        {/* <Title style={styles.title}>Leaderboard</Title> */}
+        <Text style={styles.title}>See who's leading the pack!</Text>
         
         <Searchbar
           placeholder="Search users"
@@ -236,14 +238,13 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ navigation }) => 
             
             <IconButton
               icon="tune-vertical"
-              color="white"
               size={24}
               onPress={() => setShowFiltersModal(true)}
               style={styles.filterButton}
             />
           </View>
         </View>
-      </View>
+      </LinearGradient>
       
       <Portal>
         <Modal
@@ -321,7 +322,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ navigation }) => 
             <Title style={styles.yourRankTitle}>Your Position</Title>
             <View style={styles.yourRankContent}>
               <Avatar.Text 
-                size={60} 
+                size={40} 
                 label={getUserRank().rank.toString()} 
                 style={styles.yourRankAvatar} 
               />
@@ -340,7 +341,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ navigation }) => 
       
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6200ee" />
+          <ActivityIndicator size="large" color="#9317ED" />
           <Text style={styles.loadingText}>Loading leaderboard...</Text>
         </View>
       ) : filteredLeaderboard.length > 0 ? (
@@ -384,15 +385,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: '#6200ee',
-    padding: 24,
-    paddingTop: 36,
-    paddingBottom: 24,
+    // backgroundColor: '#9317ED',
+    padding: 15,
+    // paddingTop: 36,
+    // paddingBottom: 24,
+
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    width: '100%'
   },
   title: {
     color: 'white',
     fontSize: 24,
     fontWeight: 'bold',
+    marginBottom: 10,
   },
   subtitle: {
     color: 'rgba(255, 255, 255, 0.8)',
@@ -400,17 +412,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   searchBar: {
-    marginBottom: 16,
+    marginBottom: 4,
     elevation: 0,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 8, 
+    height: 50,
+    borderRadius: 15,
   },
   filtersContainer: {
-    marginTop: 8,
+    marginTop: 6,
   },
   periodSelectionContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   periodButton: {
     paddingVertical: 8,
@@ -426,26 +441,26 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   activePeriodText: {
-    color: '#6200ee',
+    color: '#9317ED',
     fontWeight: 'bold',
   },
   friendsFilterChip: {
     alignSelf: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    // backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   leaderboardList: {
-    padding: 16,
+    padding: 13,
     paddingTop: 8,
   },
   yourRankCard: {
-    margin: 16,
+    margin: 6,
     marginBottom: 8,
     borderRadius: 12,
     elevation: 3,
   },
   yourRankTitle: {
-    fontSize: 18,
-    marginBottom: 8,
+    fontSize: 15,
+    marginBottom: 5,
   },
   yourRankContent: {
     flexDirection: 'row',
@@ -453,7 +468,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
   },
   yourRankAvatar: {
-    backgroundColor: '#6200ee',
+    backgroundColor: '#9317ED',
   },
   yourRankInfoContainer: {
     alignItems: 'center',
@@ -465,10 +480,10 @@ const styles = StyleSheet.create({
   rankInfoValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#6200ee',
+    color: '#9317ED',
   },
   leaderboardCard: {
-    marginBottom: 12,
+    marginBottom: 10,
     borderRadius: 12,
     elevation: 2,
   },
@@ -483,19 +498,22 @@ const styles = StyleSheet.create({
   currentUserCard: {
     backgroundColor: '#f0f0ff',
     borderLeftWidth: 3,
-    borderLeftColor: '#6200ee',
+    borderLeftColor: '#9317ED',
   },
   rankContainer: {
-    marginRight: 12,
+    marginRight: 10,
   },
   rankIcon: {
     marginRight: 8,
   },
   rankText: {
     marginRight: 8,
+    color: '#9317ED',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   userAvatar: {
-    marginRight: 16,
+    marginRight: 10,
   },
   userInfoContainer: {
     flex: 1,
@@ -506,7 +524,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   currentUserText: {
-    color: '#6200ee',
+    color: '#9317ED',
   },
   pointsContainer: {
     flexDirection: 'row',
@@ -515,7 +533,7 @@ const styles = StyleSheet.create({
   pointsValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#6200ee',
+    color: '#9317ED',
     marginRight: 4,
   },
   pointsLabel: {
@@ -526,7 +544,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   addFriendButton: {
-    borderColor: '#6200ee',
+    borderColor: '#9317ED',
   },
   loadingContainer: {
     flex: 1,
@@ -561,6 +579,7 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     margin: 0,
+    backgroundColor: 'white'
   },
   modalContainer: {
     flex: 1,

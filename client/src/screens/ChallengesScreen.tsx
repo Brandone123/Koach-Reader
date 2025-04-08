@@ -124,8 +124,8 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
     setIsLoading(true);
     try {
       // Use the mock API directly
-      const mockData = await mockFetchApi('/api/challenges');
-      handleChallengesData(mockData);
+        const mockData = await mockFetchApi('/api/challenges');
+        handleChallengesData(mockData);
     } catch (error) {
       console.error('Failed to fetch challenges:', error);
     } finally {
@@ -138,19 +138,19 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
     
     // Only filter for user's challenges if user is logged in
     if (user) {
-      // Filter for user's challenges
-      const userChallenges = data.filter(challenge => 
+    // Filter for user's challenges
+    const userChallenges = data.filter(challenge => 
         challenge.creatorId === user.id || challenge.status === 'active'
-      );
-      setMyChallenges(userChallenges);
-      
-      // Filter for public challenges user is not part of
-      const otherChallenges = data.filter(challenge => 
-        !challenge.isPrivate && 
+    );
+    setMyChallenges(userChallenges);
+    
+    // Filter for public challenges user is not part of
+    const otherChallenges = data.filter(challenge => 
+      !challenge.isPrivate && 
         challenge.creatorId !== user.id && 
-        challenge.status !== 'active'
-      );
-      setPublicChallenges(otherChallenges);
+      challenge.status !== 'active'
+    );
+    setPublicChallenges(otherChallenges);
     } else {
       // If no user is logged in, show all public challenges
       const publicChallenges = data.filter(challenge => !challenge.isPrivate);
@@ -222,19 +222,19 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
     setIsLoading(true);
     try {
       // Use mock API directly
-      const mockResponse = await mockFetchApi('/api/challenges', {
-        method: 'POST',
-        body: newChallenge
-      });
-      
-      // Update challenge lists
+        const mockResponse = await mockFetchApi('/api/challenges', {
+          method: 'POST',
+          body: newChallenge
+        });
+        
+        // Update challenge lists
       const updatedChallenges = [...challenges, mockResponse as Challenge];
-      handleChallengesData(updatedChallenges);
-      
-      // Reset form and close modal
-      resetForm();
-      setModalVisible(false);
-      
+        handleChallengesData(updatedChallenges);
+        
+        // Reset form and close modal
+        resetForm();
+        setModalVisible(false);
+        
       Alert.alert(t('common.success'), t('challenges.createdSuccess'));
     } catch (error) {
       console.error('Failed to create challenge:', error);
@@ -248,11 +248,11 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
     setIsLoading(true);
     try {
       // Use the mock API directly
-      await mockFetchApi(`/api/challenges/${challengeId}/join`, {
-        method: 'POST'
-      });
-      
-      // Update the challenge in our lists
+        await mockFetchApi(`/api/challenges/${challengeId}/join`, {
+          method: 'POST'
+        });
+        
+        // Update the challenge in our lists
       const updatedChallenges = challenges.map(challenge => {
         if (challenge.id === challengeId) {
           return {
@@ -264,12 +264,12 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
         return challenge;
       });
       
-      handleChallengesData(updatedChallenges);
-      
-      Alert.alert('Success', 'You have joined the challenge!');
+        handleChallengesData(updatedChallenges);
+        
+        Alert.alert('Success', 'You have joined the challenge!');
     } catch (error) {
       console.error('Failed to join challenge:', error);
-      Alert.alert('Error', 'Failed to join challenge');
+        Alert.alert('Error', 'Failed to join challenge');
     } finally {
       setIsLoading(false);
     }
@@ -353,7 +353,7 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
     
     setEndDate(selectedDate);
   };
-
+  
   const renderChallengeItem = ({ item }: { item: Challenge }) => {
     const isCreator = user ? item.creatorId === user.id : false;
     const progress = calculateProgress(item);
@@ -458,12 +458,12 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
   
   // Enhanced challenge creation modal
   const renderChallengeCreationModal = () => (
-    <Portal>
-      <Modal
-        visible={modalVisible}
-        onDismiss={() => setModalVisible(false)}
-        contentContainerStyle={styles.modalContainer}
-      >
+      <Portal>
+        <Modal
+          visible={modalVisible}
+          onDismiss={() => setModalVisible(false)}
+          contentContainerStyle={styles.modalContainer}
+        >
         <View style={styles.modalHeaderContainer}>
           <View style={styles.modalHeader}>
             <Title style={styles.modalTitle}>{t('challenges.createNewChallenge')}</Title>
@@ -480,29 +480,29 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
           </View>
         </View>
         
-        <ScrollView style={styles.modalScrollView}>
+          <ScrollView style={styles.modalScrollView}>
           {/* <Divider style={styles.divider} /> */}
-          
-          <TextInput
+            
+            <TextInput
             label={t('challenges.challengeTitle')}
-            value={challengeTitle}
-            onChangeText={setChallengeTitle}
-            style={styles.input}
+              value={challengeTitle}
+              onChangeText={setChallengeTitle}
+              style={styles.input}
             mode="outlined"
             error={!!formErrors.title}
-          />
+            />
           {!!formErrors.title && <HelperText type="error">{formErrors.title}</HelperText>}
-          
-          <TextInput
+            
+            <TextInput
             label={t('challenges.description')}
-            value={challengeDescription}
-            onChangeText={setChallengeDescription}
-            multiline
-            numberOfLines={3}
-            style={styles.input}
+              value={challengeDescription}
+              onChangeText={setChallengeDescription}
+              multiline
+              numberOfLines={3}
+              style={styles.input}
             mode="outlined"
-          />
-          
+            />
+            
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionLabel}>{t('challenges.challengeGoal')}</Text>
             <View style={styles.goalTypeContainer}>
@@ -587,8 +587,8 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
                         >
                           {t('common.next')}
                         </Button>
-                      </View>
-                      
+            </View>
+            
                       <View style={styles.calendar}>
                         {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
                           <Text key={day} style={styles.dayHeader}>{day}</Text>
@@ -649,7 +649,7 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
                                 isPastDate && styles.disabledDayText
                               ]}>
                                 {day}
-                              </Text>
+            </Text>
                             </TouchableOpacity>
                           );
                         })}
@@ -682,14 +682,14 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
                     <View style={styles.datePickerContent}>
                       <View style={styles.datePickerHeader}>
                         <Button 
-                          onPress={() => {
+                onPress={() => {
                             const prevMonth = new Date(endDate);
                             prevMonth.setMonth(prevMonth.getMonth() - 1);
                             setEndDate(prevMonth);
-                          }}
-                        >
+                }}
+              >
                           {t('common.prev')}
-                        </Button>
+              </Button>
                         <Text style={styles.monthYearText}>
                           {endDate.toLocaleDateString('default', { month: 'long', year: 'numeric' })}
                         </Text>

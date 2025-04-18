@@ -187,12 +187,29 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         style={styles.bookCover}
       />
       <Card.Content>
+        <View style={styles.chipContainer}>
+          <Text style={styles.chip}>34.4k</Text>
+          <Avatar.Icon 
+            size={30} 
+            icon={'eye'} 
+            style={[
+              { backgroundColor: '#c0c0c0'}
+            ]} 
+          />
+          <Divider style={styles.divider} /> 
+          <Text style={styles.chip}>4</Text>
+          <Avatar.Icon 
+            size={30} 
+            icon={'star'} 
+            style={[
+              styles.rankIcon, 
+              { backgroundColor: '#f5b700'}
+            ]} 
+          />
+        </View>
         <Title numberOfLines={2} style={styles.bookTitle}>{item.title}</Title>
         <Paragraph numberOfLines={1} style={styles.bookAuthor}>{item.author}</Paragraph>
-        <View style={styles.chipContainer}>
-          <Chip style={styles.chip}>{item.category}</Chip>
-          <Text style={styles.chip}>{item.pageCount} pages</Text>
-        </View>
+       
       </Card.Content>
     </Card>
   );
@@ -338,6 +355,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           refreshing={refreshing}
           onRefresh={onRefresh}
           colors={['#8A2BE2']}
+          style={styles.refreshControl}
         />
       }
     >
@@ -515,6 +533,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "rgba(255, 255, 255, 0.35)",
+    bottom: 50,
+  },
+  refreshControl: {
+    top: 50,
   },
   scrollView: {
     flex: 1,
@@ -529,7 +551,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 30,
     padding: 20,
     marginBottom: 20,
-    marginTop: 0,
+    marginTop: 30,
     // Ajout d'une ombre pour donner du relief
     shadowColor: "#000",
     shadowOffset: {
@@ -612,7 +634,7 @@ const styles = StyleSheet.create({
   },
   bookGrid: {
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 6,
   },
   planCard: {
     width: 300,
@@ -630,8 +652,9 @@ const styles = StyleSheet.create({
   },
   bookCard: {
     width: (width - 32) / 2,
-    marginBottom: 2,
+    marginTop: 30,
     borderRadius: 10,
+    // margin: 4,
     // Ajout d'une ombre
     shadowColor: "#000",
     shadowOffset: {
@@ -643,23 +666,38 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   bookCover: {
+    // height: 160,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+
+    position: 'relative',
+    top: -30,
+    left: 5,
+    right: 20,
+    width: 110,
     height: 160,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
   },
   bookTitle: {
     fontSize: 15,
     fontWeight: 'bold',
   },
   chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 2,
+    marginTop: -155,
+    marginBottom: 10,
+    marginLeft: 107,
+  },
+  rankIcon: {
+    // marginRight: 5,
+    // color: '#f5b700',
+    alignItems: 'center',
   },
   chip: {
-    // marginRight: 4,
-    // marginTop: 4,
-    height: 30,
+    color: 'gray',
+    fontSize: 10,
+    marginBottom: 5,
+    textAlign: 'center',
   },
   progressContainer: {
     marginVertical: 8,

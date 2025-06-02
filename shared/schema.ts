@@ -9,6 +9,7 @@ import {
   timestamp,
   boolean,
   primaryKey,
+  uuid,
 } from "drizzle-orm/pg-core";
 
 // Enums
@@ -49,7 +50,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
 
 // Users table
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+  id: uuid("id").primaryKey(),
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
@@ -59,6 +60,8 @@ export const users = pgTable("users", {
   preferences: json("preferences").$type<UserPreferences>().default({}),
   createdAt: timestamp("created_at").default(sql`NOW()`).notNull(),
   updatedAt: timestamp("updated_at").default(sql`NOW()`).notNull(),
+  lastLogin: timestamp("last_login").default(sql`NOW()`).notNull(),
+  avatarUrl: text("avatar_url"),
 });
 
 export const userRelations = relations(users, ({ many }) => ({
@@ -89,6 +92,7 @@ export const books = pgTable("books", {
   audioUrl: text("audio_url"),
   createdAt: timestamp("created_at").default(sql`NOW()`).notNull(),
   updatedAt: timestamp("updated_at").default(sql`NOW()`).notNull(),
+  isbn: text("isbn"),
 });
 
 export const bookRelations = relations(books, ({ many, one }) => ({
@@ -112,7 +116,7 @@ export const categories = pgTable("categories", {
 // Reading plans table
 export const readingPlans = pgTable("reading_plans", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id")
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   bookId: integer("book_id")
@@ -146,7 +150,7 @@ export const readingPlanRelations = relations(readingPlans, ({ one }) => ({
 // User_Books table - tracks user's relationship with books
 export const userBooks = pgTable("user_books", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id")
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   bookId: integer("book_id")
@@ -174,7 +178,7 @@ export const userBookRelations = relations(userBooks, ({ one }) => ({
 // Reading sessions table
 export const readingSessions = pgTable("reading_sessions", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id")
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   bookId: integer("book_id")
@@ -187,6 +191,7 @@ export const readingSessions = pgTable("reading_sessions", {
   minutesSpent: integer("minutes_spent"),
   koachEarned: integer("koach_earned").default(0).notNull(),
   sessionDate: timestamp("session_date").default(sql`NOW()`).notNull(),
+  createdAt: timestamp("created_at").default(sql`NOW()`).notNull(),
 });
 
 export const readingSessionRelations = relations(readingSessions, ({ one }) => ({
@@ -211,19 +216,22 @@ export const badges = pgTable("badges", {
   description: text("description").notNull(),
   iconName: text("icon_name").notNull(),
   koachReward: integer("koach_reward").default(100).notNull(),
+  requirement: text("requirement").notNull(),
+  createdAt: timestamp("created_at").default(sql`NOW()`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`NOW()`).notNull(),
 });
 
 // User_Badges junction table
 export const userBadges = pgTable(
   "user_badges",
   {
-    userId: integer("user_id")
+    userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     badgeId: integer("badge_id")
       .notNull()
       .references(() => badges.id, { onDelete: "cascade" }),
-    earnedAt: timestamp("earned_at").default(sql`NOW()`).notNull(),
+    awardedAt: timestamp("awarded_at").default(sql`NOW()`).notNull(),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.userId, t.badgeId] }),
@@ -244,7 +252,7 @@ export const userBadgeRelations = relations(userBadges, ({ one }) => ({
 // Comments table
 export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id")
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   bookId: integer("book_id")
@@ -271,10 +279,10 @@ export const commentRelations = relations(comments, ({ one }) => ({
 export const friends = pgTable(
   "friends",
   {
-    userId: integer("user_id")
+    userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    friendId: integer("friend_id")
+    friendId: uuid("friend_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     status: friendStatusEnum("status").default("pending").notNull(),
@@ -304,7 +312,7 @@ export const challenges = pgTable("challenges", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull(),
-  creatorId: integer("creator_id")
+  creatorId: uuid("creator_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   startDate: timestamp("start_date").notNull(),
@@ -332,7 +340,7 @@ export const challengeParticipants = pgTable(
     challengeId: integer("challenge_id")
       .notNull()
       .references(() => challenges.id, { onDelete: "cascade" }),
-    userId: integer("user_id")
+    userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     status: challengeStatusEnum("status").default("active").notNull(),
@@ -362,7 +370,7 @@ export const challengeParticipantRelations = relations(
 // Notifications table
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id")
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   type: notificationTypeEnum("type").notNull(),
@@ -380,7 +388,7 @@ export const notificationRelations = relations(notifications, ({ one }) => ({
   }),
 }));
 
-// Types
+// Types for database schema
 export interface UserPreferences {
   readingFrequency?: "daily" | "weekly" | "monthly";
   ageRange?: "child" | "teen" | "adult";
@@ -392,15 +400,204 @@ export interface UserPreferences {
   theme?: "light" | "dark" | "system";
 }
 
-export type User = typeof users.$inferSelect;
-export type InsertUser = typeof users.$inferInsert;
-export type Book = typeof books.$inferSelect;
-export type InsertBook = typeof books.$inferInsert;
-export type ReadingPlan = typeof readingPlans.$inferSelect;
-export type InsertReadingPlan = typeof readingPlans.$inferInsert;
-export type Badge = typeof badges.$inferSelect;
-export type InsertBadge = typeof badges.$inferInsert;
-export type Challenge = typeof challenges.$inferSelect;
-export type InsertChallenge = typeof challenges.$inferInsert;
-export type Notification = typeof notifications.$inferSelect;
-export type InsertNotification = typeof notifications.$inferInsert;
+export interface User {
+  id: string;
+  email: string;
+  username: string;
+  is_premium: boolean;
+  koach_points: number;
+  reading_streak: number;
+  preferences: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+  last_login: string | null;
+  avatar_url: string | null;
+}
+
+export type InsertUser = Omit<User, 'id' | 'created_at' | 'updated_at'>;
+
+export interface Book {
+  id: number;
+  title: string;
+  author: string;
+  description: string;
+  cover_url: string;
+  page_count: number;
+  category: string;
+  is_public: boolean;
+  uploaded_by: string;
+  created_at: string;
+  updated_at: string;
+  language: string;
+  isbn: string | null;
+}
+
+export type InsertBook = Omit<Book, 'id' | 'created_at' | 'updated_at'>;
+
+export interface ReadingPlan {
+  id: number;
+  user_id: string;
+  book_id: number;
+  title: string;
+  start_date: string;
+  end_date: string;
+  frequency: string;
+  pages_per_session: number;
+  total_pages: number;
+  current_page: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type InsertReadingPlan = Omit<ReadingPlan, 'id' | 'created_at' | 'updated_at'>;
+
+export interface Badge {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  points: number;
+  requirement: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type InsertBadge = Omit<Badge, 'id' | 'created_at' | 'updated_at'>;
+
+export interface Challenge {
+  id: number;
+  title: string;
+  description: string;
+  created_by: string;
+  start_date: string;
+  end_date: string;
+  goal: number;
+  goal_type: 'pages' | 'books' | 'minutes';
+  is_private: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type InsertChallenge = Omit<Challenge, 'id' | 'created_at' | 'updated_at'>;
+
+export interface Notification {
+  id: number;
+  user_id: string;
+  type: 'achievement' | 'friend_request' | 'challenge' | 'system';
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+  related_id?: number;
+}
+
+export type InsertNotification = Omit<Notification, 'id' | 'created_at'>;
+
+// Types pour les relations
+export interface UserBadge {
+  user_id: string;
+  badge_id: number;
+  awarded_at: string;
+}
+
+export interface UserBook {
+  user_id: string;
+  book_id: number;
+  last_page_read: number;
+  completion_percentage: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReadingSession {
+  id: number;
+  user_id: string;
+  book_id: number;
+  reading_plan_id: number | null;
+  pages_read: number;
+  minutes_spent: number | null;
+  session_date: string;
+  created_at: string;
+}
+
+export interface Friend {
+  user_id: string;
+  friend_id: string;
+  status: 'pending' | 'accepted' | 'declined';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChallengeParticipant {
+  challenge_id: number;
+  user_id: string;
+  progress: number;
+  status: 'active' | 'completed' | 'abandoned';
+  joined_at: string;
+  updated_at: string;
+  completed_at: string | null;
+}
+
+// Type pour la base de données Supabase
+export interface Database {
+  public: {
+    Tables: {
+      users: {
+        Row: User;
+        Insert: InsertUser;
+        Update: Partial<InsertUser>;
+      };
+      books: {
+        Row: Book;
+        Insert: InsertBook;
+        Update: Partial<InsertBook>;
+      };
+      reading_plans: {
+        Row: ReadingPlan;
+        Insert: InsertReadingPlan;
+        Update: Partial<InsertReadingPlan>;
+      };
+      badges: {
+        Row: Badge;
+        Insert: InsertBadge;
+        Update: Partial<InsertBadge>;
+      };
+      challenges: {
+        Row: Challenge;
+        Insert: InsertChallenge;
+        Update: Partial<InsertChallenge>;
+      };
+      notifications: {
+        Row: Notification;
+        Insert: InsertNotification;
+        Update: Partial<InsertNotification>;
+      };
+      user_badges: {
+        Row: UserBadge;
+        Insert: UserBadge;
+        Update: Partial<UserBadge>;
+      };
+      user_books: {
+        Row: UserBook;
+        Insert: UserBook;
+        Update: Partial<UserBook>;
+      };
+      reading_sessions: {
+        Row: ReadingSession;
+        Insert: Omit<ReadingSession, 'id' | 'created_at'>;
+        Update: Partial<Omit<ReadingSession, 'id' | 'created_at'>>;
+      };
+      friends: {
+        Row: Friend;
+        Insert: Friend;
+        Update: Partial<Friend>;
+      };
+      challenge_participants: {
+        Row: ChallengeParticipant;
+        Insert: ChallengeParticipant;
+        Update: Partial<ChallengeParticipant>;
+      };
+    };
+  };
+}

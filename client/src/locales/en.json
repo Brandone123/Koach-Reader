@@ -38,7 +38,8 @@
     "noBooksFound": "No books found matching your search.",
     "noBooksAvailable": "No books available in this category.",
     "of": "of",
-    "create": "Create"
+    "create": "Create",
+    "ok": "OK"
   },
   "auth": {
     "login": "Login",
@@ -58,7 +59,25 @@
     "errorPasswordsMatch": "Passwords do not match",
     "validationError": "Please fill all required fields correctly",
     "joinCommunity": "Join our reading community",
-    "errorInvalidEmail": "Please enter a valid email address"
+    "errorInvalidEmail": "Please enter a valid email address",
+    "welcomeBack": "Welcome back!",
+    "termsAgreement": "By signing up, you agree to our Terms of Service and Privacy Policy",
+    "registrationSuccess": "Registration successful!",
+    "redirectingToOnboarding": "Redirecting to onboarding...",
+    "registrationError": "Registration failed",
+    "loginError": "Login failed",
+    "forgotPasswordInstructions": "Enter your email address and we'll send you instructions to reset your password",
+    "resetPassword": "Reset Password",
+    "resetPasswordSuccess": "Email Sent",
+    "resetPasswordError": "Reset Password Error",
+    "resetPasswordInstructions": "An email with instructions to reset your password has been sent to your email address.",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "passwordResetSuccess": "Your password has been reset successfully",
+    "passwordResetError": "Error resetting password",
+    "enterNewPassword": "Please enter your new password",
+    "loginWithNewPassword": "You can now login with your new password",
+    "errorPasswordTooShort": "Password must be at least 8 characters long"
   },
   "home": {
     "welcomeBack": "Welcome back",

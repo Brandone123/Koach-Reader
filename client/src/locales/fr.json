@@ -59,7 +59,25 @@
     "errorPasswordsMatch": "Les mots de passe ne correspondent pas",
     "validationError": "Veuillez remplir correctement tous les champs requis",
     "joinCommunity": "Rejoignez notre communauté de lecture",
-    "errorInvalidEmail": "Veuillez entrer une adresse email valide"
+    "errorInvalidEmail": "Veuillez entrer une adresse email valide",
+    "welcomeBack": "Bon retour parmi nous !",
+    "termsAgreement": "En vous inscrivant, vous acceptez nos conditions d'utilisation et notre politique de confidentialité",
+    "registrationSuccess": "Inscription réussie !",
+    "redirectingToOnboarding": "Redirection vers l'onboarding...",
+    "registrationError": "Erreur lors de l'inscription",
+    "loginError": "Erreur lors de la connexion",
+    "forgotPasswordInstructions": "Entrez votre adresse email et nous vous enverrons les instructions pour réinitialiser votre mot de passe",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "resetPasswordSuccess": "Email envoyé",
+    "resetPasswordError": "Erreur lors de la réinitialisation",
+    "resetPasswordInstructions": "Un email contenant les instructions pour réinitialiser votre mot de passe a été envoyé à votre adresse email.",
+    "newPassword": "Nouveau mot de passe",
+    "confirmNewPassword": "Confirmer le nouveau mot de passe",
+    "passwordResetSuccess": "Votre mot de passe a été réinitialisé avec succès",
+    "passwordResetError": "Erreur lors de la réinitialisation du mot de passe",
+    "enterNewPassword": "Veuillez entrer votre nouveau mot de passe",
+    "loginWithNewPassword": "Vous pouvez maintenant vous connecter avec votre nouveau mot de passe",
+    "errorPasswordTooShort": "Le mot de passe doit contenir au moins 8 caractères"
   },
   "home": {
     "welcomeBack": "Bon retour",
@@ -108,7 +126,8 @@
     "bookstores": "Librairies",
     "onlineReviews": "Critiques en ligne",
     "bookClubs": "Clubs de lecture",
-    "recommendations": "Recommandations"
+    "recommendations": "Recommandations",
+    "personalizing": "Personnalisation de votre expérience..."
   },
   "categories": {
     "bibleStudies": "Bible et études bibliques",

@@ -13,6 +13,7 @@ import BookDetailScreen from './src/screens/BookDetailScreen';
 import ReadingPlanScreen from './src/screens/ReadingPlanScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
+import OnboardingScreen from './src/screens/OnboardingScreen';
 import ReadingSessionScreen from './src/screens/ReadingSessionScreen';
 import BadgesScreen from './src/screens/BadgesScreen';
 import StatsScreen from './src/screens/StatsScreen';
@@ -29,6 +30,7 @@ LogBox.ignoreLogs(['Require cycle:']);
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
+  Onboarding: undefined;
   Home: undefined;
   BookDetail: { bookId: number };
   ReadingPlan: { planId?: number; bookId?: number; isEdit?: boolean };
@@ -81,6 +83,16 @@ const AppNavigator = () => {
     return <AuthNavigator />;
   }
   
+  // If authenticated but hasn't completed onboarding, show onboarding
+  if (!auth.user.has_completed_onboarding) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+      </Stack.Navigator>
+    );
+  }
+  
+  // Main app screens
   return (
     <Stack.Navigator 
       initialRouteName="Home"
@@ -92,7 +104,6 @@ const AppNavigator = () => {
         headerTitleStyle: {
           fontWeight: 'bold',
         },
-        // Ajouter des animations de transition entre les écrans
         cardStyleInterpolator: ({ current, layouts }) => {
           return {
             cardStyle: {
@@ -235,19 +246,22 @@ function ProfileButton({ navigation }: ProfileButtonProps) {
   );
 }
 
-export default function App() {
+// Root component
+const App = () => {
   return (
     <SafeAreaProvider>
       <ReduxProvider store={store}>
-        <AuthProvider>
-          <PaperProvider theme={theme}>
+        <PaperProvider theme={theme}>
+          <AuthProvider>
             <NavigationContainer>
               <AppNavigator />
-              <StatusBar style="auto" />
             </NavigationContainer>
-          </PaperProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </PaperProvider>
       </ReduxProvider>
+      <StatusBar style="light" />
     </SafeAreaProvider>
   );
-} 
+};
+
+export default App; 

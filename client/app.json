@@ -17,15 +17,30 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.koach.reading"
+      "bundleIdentifier": "com.koach.reading",
+      "associatedDomains": ["applinks:koachreader.app"]
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#6200ee"
       },
-      "package": "com.koach.reading"
+      "package": "com.koach.reading",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "koachreader",
+              "host": "reset-password"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
+    "scheme": "koachreader",
     "web": {
       "favicon": "./assets/favicon.png"
     }

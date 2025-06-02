@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { 
   Avatar,
   Title, 
@@ -29,11 +30,12 @@ import {
   Appbar,
 } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuth } from '../hooks/useAuth';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { RootStackParamList } from '../../App';
+import { useDispatch, useSelector } from 'react-redux';
+import { logout, selectUser } from '../slices/authSlice';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../utils/theme';
+import { RootStackParamList } from '../types/navigation';
+import { AppDispatch } from '../store';
 
 const { width, height } = Dimensions.get('window');
 
@@ -86,7 +88,8 @@ const readingStats = {
 const ProfileScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<ProfileScreenNavigationProp>();
-  const { user, logout } = useAuth();
+  const dispatch = useDispatch<AppDispatch>();
+  const user = useSelector(selectUser);
   const [menuVisible, setMenuVisible] = useState(false);
   const [editDialogVisible, setEditDialogVisible] = useState(false);
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
@@ -95,15 +98,12 @@ const ProfileScreen = () => {
     bio: 'Avid reader and book enthusiast. Love to explore new worlds through reading.',
   });
   
-  const handleLogout = () => {
-    Alert.alert(
-      t('common.logout'),
-      t('profile.logoutConfirmation'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        { text: t('profile.confirmLogout'), onPress: logout }
-      ]
-    );
+  const handleLogout = async () => {
+    try {
+      await dispatch(logout()).unwrap();
+    } catch (error) {
+      console.error('Failed to logout:', error);
+    }
   };
   
   const handleDeleteProfile = () => {
@@ -114,7 +114,7 @@ const ProfileScreen = () => {
     // In a real app, this would call an API to delete the user's profile
     // For now, we'll just log them out
     setDeleteConfirmVisible(false);
-    logout();
+    handleLogout();
     // The AuthNavigator will automatically show after logout
   };
   
@@ -324,6 +324,8 @@ const ProfileScreen = () => {
       </Portal>
     );
   };
+
+  if (!user) return null;
 
   return (
     <View style={styles.container}>

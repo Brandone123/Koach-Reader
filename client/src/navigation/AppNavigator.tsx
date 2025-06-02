@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
-import { selectIsLoggedIn } from '../redux/slices/authSlice';
-import {colors} from "../utils/theme";
+import { selectUser, selectHasCompletedOnboarding } from '../slices/authSlice';
+import { colors } from '../utils/theme';
+
+// Types
+import { RootStackParamList } from '../types/navigation';
+
 // Screens
 import AuthScreen from '../screens/AuthScreen';
+import OnboardingScreen from '../screens/OnboardingScreen';
 import HomeScreen from '../screens/HomeScreen';
 import BookDetailScreen from '../screens/BookDetailScreen';
 import ReadingPlanScreen from '../screens/ReadingPlanScreen';
@@ -16,101 +22,53 @@ import ChallengeDetailScreen from '../screens/ChallengeDetailScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
-// Types
-export type RootStackParamList = {
-  Auth: undefined;
-  Home: undefined;
-  BookDetail: { bookId: number };
-  ReadingPlan: { planId?: number };
-  Profile: undefined;
-  ReadingSession: { bookId: number; planId?: number };
-  Leaderboard: undefined;
-  Challenges: undefined;
-  ChallengeDetail: { challengeId: number };
-  Notifications: undefined;
-  Settings: undefined;
-};
-
 const Stack = createStackNavigator<RootStackParamList>();
 
-const AppNavigator: React.FC = () => {
-  const isLoggedIn = useSelector(selectIsLoggedIn);
+export const AppNavigator = () => {
+  const user = useSelector(selectUser);
+  const hasCompletedOnboarding = useSelector(selectHasCompletedOnboarding);
+
+  useEffect(() => {
+    console.log('AppNavigator state changed:', { 
+      user, 
+      hasCompletedOnboarding,
+      shouldShowAuth: !user,
+      shouldShowOnboarding: user && !hasCompletedOnboarding,
+      shouldShowHome: user && hasCompletedOnboarding
+    });
+  }, [user, hasCompletedOnboarding]);
 
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: colors.background,
-        },
-        headerTintColor: 'white',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
-      }}
-    >
-      {isLoggedIn ? (
-        // Logged in routes
-        <>
-          <Stack.Screen
-            name="Home"
-            component={HomeScreen}
-            options={{ title: 'Koach Books' }}
-          />
-          <Stack.Screen
-            name="BookDetail"
-            component={BookDetailScreen}
-            options={{ title: 'Book Details' }}
-          />
-          <Stack.Screen
-            name="ReadingPlan"
-            component={ReadingPlanScreen}
-            options={{ title: 'Reading Plan' }}
-          />
-          <Stack.Screen
-            name="Profile"
-            component={ProfileScreen}
-            options={{ title: 'My Profile' }}
-          />
-          <Stack.Screen
-            name="ReadingSession"
-            component={ReadingSessionScreen}
-            options={{ title: 'Reading Session' }}
-          />
-          <Stack.Screen
-            name="Leaderboard"
-            component={LeaderboardScreen}
-            options={{ title: 'Leaderboard' }}
-          />
-          <Stack.Screen
-            name="Challenges"
-            component={ChallengesScreen}
-            options={{ title: 'Reading Challenges' }}
-          />
-          <Stack.Screen
-            name="ChallengeDetail"
-            component={ChallengeDetailScreen}
-            options={{ title: 'Challenge Details' }}
-          />
-          <Stack.Screen
-            name="Notifications"
-            component={NotificationsScreen}
-            options={{ title: 'Notifications' }}
-          />
-          <Stack.Screen
-            name="Settings"
-            component={SettingsScreen}
-            options={{ title: 'Settings' }}
-          />
-        </>
-      ) : (
-        // Auth routes
-        <Stack.Screen
-          name="Auth"
-          component={AuthScreen}
-          options={{ headerShown: false }}
-        />
-      )}
-    </Stack.Navigator>
+    <NavigationContainer>
+      <Stack.Navigator 
+        screenOptions={{ 
+          headerShown: false,
+          animationEnabled: false // Désactiver les animations pour éviter les problèmes de transition
+        }}
+      >
+        {!user ? (
+          // Non authentifié
+          <Stack.Screen name="Auth" component={AuthScreen} />
+        ) : !hasCompletedOnboarding ? (
+          // Authentifié mais n'a pas complété l'onboarding
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        ) : (
+          // Authentifié et a complété l'onboarding
+          <>
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="BookDetail" component={BookDetailScreen} />
+            <Stack.Screen name="ReadingPlan" component={ReadingPlanScreen} />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="ReadingSession" component={ReadingSessionScreen} />
+            <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+            <Stack.Screen name="Challenges" component={ChallengesScreen} />
+            <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+          </>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 };
 

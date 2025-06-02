@@ -24,6 +24,8 @@ import { selectUser } from '../slices/authSlice';
 import { fetchApi } from '../utils/api';
 import { mockFetchApi } from '../utils/mockApi';
 import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
+import { black } from 'react-native-paper/lib/typescript/styles/themes/v2/colors';
 
 // Height and width for responsive designs
 const { width } = Dimensions.get('window');
@@ -132,7 +134,7 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ navigation }) => {
   const renderReadingByTimeChart = () => {
     if (!stats?.readingByTime) return null;
     
-    const colors = ['#6200ee', '#03dac6', '#ff6c00', '#b38dff'];
+    const colors = ['#9317ED', '#03dac6', '#ff6c00', '#b38dff'];
     
     return (
       <View style={styles.timeDistributionContainer}>
@@ -215,9 +217,12 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ navigation }) => {
   }
   
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Title style={styles.title}>{t('stats.title')}</Title>
+    <View style={styles.container}>
+       <LinearGradient
+        colors={['#9317ED', '#5E0D93']}
+        style={styles.header}
+      >
+        {/* <Title style={styles.title}>{t('stats.title')}</Title> */}
         <Text style={styles.subtitle}>{t('stats.tracking')}</Text>
         
         <View style={styles.timeRangeContainer}>
@@ -246,8 +251,13 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ navigation }) => {
             {t('stats.year')}
           </Chip>
         </View>
-      </View>
-      
+      </LinearGradient>
+    
+      <ScrollView 
+      style={styles.scrollContainer}
+      contentContainerStyle={styles.contentContainer}
+    >
+
       <Card style={styles.card}>
         <Card.Content>
           <Title style={styles.cardTitle}>{t('stats.summary')}</Title>
@@ -332,7 +342,8 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ navigation }) => {
           {renderReadingByTimeChart()}
         </Card.Content>
       </Card>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 };
 
@@ -342,9 +353,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: '#6200ee',
-    padding: 24,
-    paddingTop: 36,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1,
+    padding: 15,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    // elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   title: {
     color: 'white',
@@ -352,9 +373,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   subtitle: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 4,
+    color: 'white',
+    // marginTop: 2,
+    fontSize: 20,
     marginBottom: 16,
+    fontWeight: 'bold',
+  },
+  scrollContainer: {
+    flex: 1,
+    marginTop: 110,
+  },
+  contentContainer: {
+    paddingBottom: 40,
   },
   timeRangeContainer: {
     flexDirection: 'row',
@@ -362,7 +392,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   timeRangeChip: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#9317ED',
   },
   card: {
     margin: 16,
@@ -397,7 +427,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#6200ee',
+    color: '#9317ED',
   },
   statLabel: {
     fontSize: 14,
@@ -414,7 +444,7 @@ const styles = StyleSheet.create({
     width: '48%',
   },
   streakIcon: {
-    backgroundColor: '#6200ee',
+    backgroundColor: '#9317ED',
   },
   streakTextContainer: {
     marginLeft: 12,
@@ -445,7 +475,7 @@ const styles = StyleSheet.create({
   patternValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#6200ee',
+    color: '#9317ED',
   },
   chartContainer: {
     marginTop: 8,

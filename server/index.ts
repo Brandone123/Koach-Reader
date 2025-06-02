@@ -1,8 +1,8 @@
+import dotenv from "dotenv";
 import express, { Request, Response } from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import { registerRoutes } from "./routes";
-import { checkDb } from "./db";
+import { checkDb } from "./utils/db";
 
 // Load environment variables
 dotenv.config();

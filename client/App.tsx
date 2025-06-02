@@ -1,10 +1,10 @@
 // import 'react-native-get-random-values'; // Déplacé dans index.js
-import { LogBox, StyleSheet, Platform, View, Text, TouchableOpacity } from 'react-native';
-import React, { useState } from 'react';
+import { LogBox, StyleSheet, Platform, View, Text, TouchableOpacity, Image, Linking } from 'react-native';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Provider as PaperProvider, DefaultTheme, IconButton, Badge } from 'react-native-paper';
-import { NavigationContainer, useNavigation, useRoute } from '@react-navigation/native';
+import { NavigationContainer, useNavigation, useRoute, useNavigationState } from '@react-navigation/native';
 import { createStackNavigator, StackNavigationProp } from '@react-navigation/stack';
 import { Provider as ReduxProvider } from 'react-redux';
 import { store } from './src/store';
@@ -21,7 +21,6 @@ import LeaderboardScreen from './src/screens/LeaderboardScreen';
 import ChallengesScreen from './src/screens/ChallengesScreen';
 import ChallengeDetailScreen from './src/screens/ChallengeDetailScreen';
 import MediaViewerScreen from './src/screens/MediaViewerScreen';
-import { AuthProvider, useAuth } from './src/hooks/useAuth';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
@@ -29,32 +28,37 @@ import BottomNavigationBar from './src/components/BottomNavigationBar';
 import { useSelector } from 'react-redux';
 import { selectUser } from './src/slices/authSlice';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigationState } from '@react-navigation/native';
 import { Animated } from 'react-native';
 import './src/utils/i18n'; // Import i18n configuration
 import { LanguageProvider } from './src/context/LanguageContext';
 import LanguageSwitcher from './src/components/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 import AppWithLanguage from './src/components/AppWithLanguage';
+import Toast from 'react-native-toast-message';
+import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
+import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 
 
 LogBox.ignoreLogs(['Require cycle:']);
 
 export type RootStackParamList = {
+  Home: undefined;
+  BookDetail: { bookId: string };
+  ReadingSession: { bookId: string; planId?: string; isEdit?: boolean };
+  ReadingPlan: { bookId: string; planId?: string; isEdit?: boolean };
+  Settings: undefined;
+  Profile: undefined;
+  Search: undefined;
   Login: undefined;
   Register: undefined;
-  Home: undefined;
-  Profile: undefined;
-  BookDetail: { bookId: string };
+  ForgotPassword: undefined;
+  ResetPassword: { token: string };
   Challenges: undefined;
   ChallengeDetail: { challengeId: string };
-  ReadingSession: { bookId: string };
   MediaViewer: { mediaId: string; mediaType: 'pdf' | 'audio' };
-  ReadingPlan: { planId?: string; isEdit?: boolean } | undefined;
   Badges: undefined;
   Stats: undefined;
   Notifications: undefined;
-  Settings: undefined;
   Leaderboard: undefined;
   Onboarding: undefined;
   LanguageSettings: undefined;
@@ -104,30 +108,16 @@ const theme = {
   },
 };
 
-// Auth navigation wrapper
-const AuthNavigator = () => {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
-    </Stack.Navigator>
-  );
-};
-
 type HeaderRightProps = {
   navigation: StackNavigationProp<RootStackParamList, 'Home'>;
 };
 
 function HeaderRight({ navigation }: HeaderRightProps) {
-  const { user } = useAuth();
+  const user = useSelector(selectUser);
   
   // Récupérer les points et le streak de l'utilisateur
-  const koachPoints = user?.koachPoints || 0;
-  const streak = user?.readingStreak || 0;
+  const koachPoints = user?.koach_points || 0;
+  const streak = user?.reading_streak || 0;
   
   return (
     <View style={styles.headerRightContainer}>
@@ -153,185 +143,126 @@ function HeaderRight({ navigation }: HeaderRightProps) {
 function HomeTitle() {
   const { t } = useTranslation();
   return (
-    <Text style={styles.appTitle}>{t('common.appTitle')}</Text>
+    // <Text style={styles.appTitle}>{t('common.appTitle')}</Text>
+    <View style={styles.container}>
+      <Image 
+        source={require('../client/assets/logo.png')}
+        style={[styles.logo, { alignSelf: 'flex-start' }]}
+      />
+    </View>
   );
 }
 
+type AppNavigatorProps = {
+  initialRoute: keyof RootStackParamList | null;
+  resetToken: string | null;
+};
 
 // Main app navigation wrapper
-const AppNavigator = () => {
-  const { user } = useAuth();
+const AppNavigator = ({ initialRoute, resetToken }: AppNavigatorProps) => {
+  const user = useSelector(selectUser);
   const { t } = useTranslation();
-  const [isAppReady, setIsAppReady] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const navigationState = useNavigationState(state => state);
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   
-  // Show auth screens if no user
-  if (!user) {
-    return <AuthNavigator />;
-  }
+  // Si nous avons un token de réinitialisation et que l'utilisateur n'est pas connecté,
+  // nous devons afficher l'écran de réinitialisation
+  React.useEffect(() => {
+    if (resetToken && !user) {
+      navigation.navigate('ResetPassword', { token: resetToken });
+    }
+  }, [resetToken, user, navigation]);
   
-  // Vérifier si user.hasCompletedOnboarding existe avant de l'utiliser
-  const hasCompletedOnboarding = user.hasCompletedOnboarding ?? false;
-  
-  // Main navigator with conditional initial route
-  const initialRoute = hasCompletedOnboarding ? 'Home' : 'Onboarding';
+  // Déterminer si nous devons afficher le footer
+  const shouldShowFooter = () => {
+    if (!navigationState || !navigationState.routes || navigationState.routes.length === 0) return false;
+    const currentRoute = navigationState.routes[navigationState.routes.length - 1].name;
+    const noFooterRoutes = ['Login', 'Register', 'Onboarding', 'MediaViewer', 'ResetPassword', 'ForgotPassword'];
+    return !noFooterRoutes.includes(currentRoute);
+  };
   
   return (
     <>
       <Stack.Navigator 
-        initialRouteName={initialRoute}
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#8A2BE2',
-            elevation: 0, // Supprime l'ombre sur Android
-            shadowOpacity: 0, // Supprime l'ombre sur iOS
+            backgroundColor: "#9317ed",
+            elevation: 0,
+            shadowOpacity: 0,
           },
           headerTintColor: '#fff',
           headerTitleStyle: {
             fontWeight: '600',
             fontSize: 18,
           },
-          headerTitleAlign: 'left', // Aligner le titre à gauche
+          headerTitleAlign: 'left',
           headerLeftContainerStyle: {
             paddingLeft: 10,
           },
           headerRightContainerStyle: {
             paddingRight: 10,
           },
-          // Animation de transition entre les écrans
-          cardStyleInterpolator: ({ current, layouts }) => {
-            return {
-              cardStyle: {
-                transform: [
-                  {
-                    translateX: current.progress.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [layouts.screen.width, 0],
-                    }),
-                  },
-                ],
-                opacity: current.progress.interpolate({
-                  inputRange: [0, 0.5, 0.9, 1],
-                  outputRange: [0, 0.25, 0.7, 1],
-                }),
-              },
-              overlayStyle: {
-                opacity: current.progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, 0.5],
-                }),
-              },
-            };
-          },
         }}
+        initialRouteName={initialRoute || (user ? 'Home' : 'Login')}
       >
-        {showOnboarding ? (
+        {!user ? (
+          // Non authentifié
+          <>
+            <Stack.Screen 
+              name="Login" 
+              component={LoginScreen} 
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen 
+              name="Register" 
+              component={RegisterScreen} 
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen 
+              name="ForgotPassword" 
+              component={ForgotPasswordScreen} 
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen 
+              name="ResetPassword" 
+              component={ResetPasswordScreen} 
+              options={{ headerShown: false }}
+            />
+          </>
+        ) : !user.has_completed_onboarding ? (
+          // Authentifié mais n'a pas complété l'onboarding
           <Stack.Screen 
             name="Onboarding" 
             component={OnboardingScreen} 
-            options={{
-              headerShown: false,
-              gestureEnabled: false
-            }}
+            options={{ headerShown: false, gestureEnabled: false }}
           />
-        ) : null}
-        <Stack.Screen 
-          name="Home" 
-          component={HomeScreen} 
-          options={({ navigation }) => ({
-            headerTitle: () => <HomeTitle />,
-            headerRight: () => <HeaderRight navigation={navigation} />,
-          })}
-        />
-        <Stack.Screen 
-          name="BookDetail" 
-          component={BookDetailScreen} 
-          options={{
-            title: t('book.details', 'Book Details'),
-          }}
-        />
-        <Stack.Screen 
-          name="ReadingPlan" 
-          component={ReadingPlanScreen} 
-          options={({ route }) => ({
-            title: route.params?.planId && !route.params?.isEdit 
-              ? t('readingPlan.title', 'Reading Plan') 
-              : (route.params?.isEdit ? t('readingPlan.edit', 'Edit Plan') : t('readingPlan.create', 'Create Plan')),
-          })}
-        />
-        <Stack.Screen 
-          name="Profile" 
-          component={ProfileScreen} 
-          options={{
-            title: t('profile.title', 'My Profile'),
-          }}
-        />
-        <Stack.Screen 
-          name="ReadingSession" 
-          component={ReadingSessionScreen} 
-          options={{
-            title: t('readingSession.title', 'Log Reading Session'),
-          }}
-        />
-        <Stack.Screen 
-          name="Badges" 
-          component={BadgesScreen} 
-          options={{
-            title: t('badges.title', 'Badges & Achievements'),
-          }}
-        />
-        <Stack.Screen 
-          name="Stats" 
-          component={StatsScreen} 
-          options={{
-            title: t('stats.title', 'Reading Statistics'),
-          }}
-        />
-        <Stack.Screen 
-          name="Leaderboard" 
-          component={LeaderboardScreen} 
-          options={{
-            title: t('common.leaderboard', 'Leaderboard'),
-          }}
-        />
-        <Stack.Screen 
-          name="Challenges" 
-          component={ChallengesScreen} 
-          options={{
-            title: t('challenges.title', 'Reading Challenges'),
-          }}
-        />
-        <Stack.Screen 
-          name="ChallengeDetail" 
-          component={ChallengeDetailScreen} 
-          options={{
-            title: t('challenges.details', 'Challenge Details'),
-          }}
-        />
-        <Stack.Screen 
-          name="MediaViewer" 
-          component={MediaViewerScreen} 
-          options={{
-            title: t('mediaViewer.title', 'Media Viewer'),
-            headerShown: false, // Hide header for full-screen experience
-          }}
-        />
-        <Stack.Screen 
-          name="Notifications" 
-          component={NotificationsScreen} 
-          options={{
-            title: t('notifications.title', 'Notifications'),
-          }}
-        />
-        <Stack.Screen 
-          name="Settings" 
-          component={SettingsScreen} 
-          options={{
-            title: t('settings.title', 'Settings'),
-          }}
-        />
+        ) : (
+          // Authentifié et a complété l'onboarding
+          <>
+            <Stack.Screen 
+              name="Home" 
+              component={HomeScreen}
+              options={({ navigation }) => ({
+                headerTitle: () => <HomeTitle />,
+                headerRight: () => <HeaderRight navigation={navigation} />,
+              })}
+            />
+            <Stack.Screen name="BookDetail" component={BookDetailScreen} />
+            <Stack.Screen name="ReadingPlan" component={ReadingPlanScreen} />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="ReadingSession" component={ReadingSessionScreen} />
+            <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+            <Stack.Screen name="Challenges" component={ChallengesScreen} />
+            <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="Badges" component={BadgesScreen} />
+            <Stack.Screen name="Stats" component={StatsScreen} />
+            <Stack.Screen name="MediaViewer" component={MediaViewerScreen} />
+          </>
+        )}
       </Stack.Navigator>
-      <BottomNavigationBar />
+      {shouldShowFooter() && <BottomNavigationBar />}
     </>
   );
 };
@@ -364,26 +295,88 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'left',  // S'assurer que le texte est aligné à gauche
-  }
+  },
+
+  container: {
+    alignSelf: 'flex-start',
+    width: '100%',
+  },
+
+  logo: {
+    width: 120,
+    height: 80,
+    marginLeft: -40,
+    resizeMode: 'contain',
+  },
 });
 
+// Root component
 export default function App() {
+  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
+  const [resetToken, setResetToken] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    // Fonction pour gérer les liens profonds
+    const handleDeepLink = (event: { url: string }) => {
+      console.log('Deep link handled:', event.url);
+      if (event.url.includes('type=recovery')) {
+        // Extraire le token de réinitialisation
+        const token = event.url.split('token=')[1]?.split('&')[0];
+        if (token) {
+          setResetToken(token);
+          setInitialRoute('ResetPassword');
+        }
+      }
+    };
+
+    // Vérifier si l'app a été ouverte via un lien profond
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink({ url });
+      }
+    });
+
+    // Ajouter les listeners pour les liens profonds
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
   return (
     <SafeAreaProvider>
       <ReduxProvider store={store}>
         <PaperProvider theme={theme}>
           <LanguageProvider>
-            <AuthProvider>
-              <AppWithLanguage>
-                <NavigationContainer>
-                  <AppNavigator />
-                  <StatusBar style="auto" />
-                </NavigationContainer>
-              </AppWithLanguage>
-            </AuthProvider>
+            <NavigationContainer
+              linking={{
+                prefixes: [
+                  'koachreader://',
+                  'exp://',
+                  'exp://192.168.70.160:8081',
+                  'exp://127.0.0.1:8081',
+                  'exp://localhost:8081'
+                ],
+                config: {
+                  screens: {
+                    ResetPassword: {
+                      path: 'reset-password',
+                      parse: {
+                        token: (token: string) => token,
+                      },
+                    },
+                  },
+                },
+              }}
+            >
+              <AppNavigator initialRoute={initialRoute} resetToken={resetToken} />
+            </NavigationContainer>
           </LanguageProvider>
         </PaperProvider>
       </ReduxProvider>
+      <StatusBar style="light" />
+      <Toast />
     </SafeAreaProvider>
   );
 } 

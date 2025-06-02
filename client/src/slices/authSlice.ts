@@ -1,146 +1,51 @@
-import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { RootState } from '../store';
+import { supabase } from '../lib/supabase';
 
 // Types
 interface User {
-  id: number;
-  username: string;
+  id: string;
   email: string;
-  isPremium: boolean;
-  koachPoints: number;
-  readingStreak: number;
+  username: string;
+  is_premium: boolean;
+  koach_points: number;
+  reading_streak: number;
   preferences?: {
-    readingFrequency?: 'daily' | 'weekly' | 'monthly';
-    ageRange?: 'child' | 'teen' | 'adult';
-    preferredCategories?: string[];
-    spiritualGoals?: string[];
-    preferredReadingFormat?: 'text' | 'audio';
-    preferredReadingTime?: string;
+    reading_frequency?: 'daily' | 'weekly' | 'monthly' | 'few_weekly' | 'occasionally';
+    age_group?: string;
+    preferred_categories?: string[];
+    discovery_sources?: string[];
     language?: string;
     theme?: 'light' | 'dark' | 'system';
   };
-  createdAt: string;
-  hasCompletedOnboarding?: boolean;
+  created_at: string;
+  updated_at: string;
+  is_admin: boolean;
+  has_completed_onboarding: boolean;
 }
 
 interface AuthState {
   user: User | null;
-  token: string | null;
   isLoading: boolean;
   error: string | null;
 }
 
 interface LoginCredentials {
-  username: string;
-  password: string;
-}
-
-interface RegisterData {
-  username: string;
   email: string;
   password: string;
 }
 
-interface UpdateProfileData {
-  username?: string;
-  email?: string;
-  preferences?: User['preferences'];
-  hasCompletedOnboarding?: boolean;
-}
-
-interface UpdatePreferencesData {
-  preferences: User['preferences'];
-}
-
-interface UpdateLanguageData {
-  language: string;
+interface RegisterData {
+  email: string;
+  password: string;
+  username: string;
 }
 
 // Initial state
 const initialState: AuthState = {
   user: null,
-  token: null,
   isLoading: false,
   error: null,
-};
-
-// Mock API functions (to be replaced with real API calls)
-const authAPI = {
-  login: async (credentials: LoginCredentials): Promise<{ user: User; token: string }> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simulated API response
-    if (credentials.username === 'demo' && credentials.password === 'password') {
-      return {
-        user: {
-          id: 1,
-          username: 'demo',
-          email: 'demo@example.com',
-          isPremium: false,
-          koachPoints: 120,
-          readingStreak: 5,
-          preferences: {
-            readingFrequency: 'daily',
-            theme: 'light',
-          },
-          createdAt: new Date().toISOString(),
-        },
-        token: 'mock-token-12345',
-      };
-    } else {
-      throw new Error('Invalid credentials');
-    }
-  },
-  
-  register: async (userData: RegisterData): Promise<{ user: User; token: string }> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Check if username is taken (in a real app, this would be a server-side check)
-    if (userData.username === 'demo') {
-      throw new Error('Username already taken');
-    }
-    
-    // Simulated API response
-    return {
-      user: {
-        id: 2,
-        username: userData.username,
-        email: userData.email,
-        isPremium: false,
-        koachPoints: 0,
-        readingStreak: 0,
-        preferences: {
-          readingFrequency: 'daily',
-          theme: 'light',
-        },
-        createdAt: new Date().toISOString(),
-        hasCompletedOnboarding: false,
-      },
-      token: 'mock-token-67890',
-    };
-  },
-  
-  updateProfile: async (data: UpdateProfileData): Promise<User> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simulated API response - would update the user based on the provided data
-    return {
-      id: 1,
-      username: data.username || 'demo',
-      email: data.email || 'demo@example.com',
-      isPremium: false,
-      koachPoints: 120,
-      readingStreak: 5,
-      preferences: data.preferences || {
-        readingFrequency: 'daily',
-        theme: 'light',
-      },
-      createdAt: new Date().toISOString(),
-    };
-  },
 };
 
 // Async thunks
@@ -148,8 +53,30 @@ export const login = createAsyncThunk(
   'auth/login',
   async (credentials: LoginCredentials, { rejectWithValue }) => {
     try {
-      const response = await authAPI.login(credentials);
-      return response;
+      console.log('Starting login process...');
+      
+      const { data: { user }, error } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
+      });
+
+      if (error) throw error;
+      if (!user) throw new Error('No user returned from auth');
+
+      console.log('Authentication successful, fetching user profile...');
+
+      // Fetch user profile
+      const { data: profile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      console.log('User profile fetched:', profile);
+
+      return profile;
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
@@ -158,219 +85,176 @@ export const login = createAsyncThunk(
 
 export const register = createAsyncThunk(
   'auth/register',
-  async (userData: RegisterData, { rejectWithValue }) => {
+  async (data: RegisterData, { rejectWithValue }) => {
     try {
-      const response = await authAPI.register(userData);
-      return response;
+      const { data: { user }, error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (error) throw error;
+
+      // Create user profile
+      const { data: profile, error: profileError } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: user?.id,
+            username: data.username,
+            email: data.email,
+            has_completed_onboarding: false,
+          },
+        ])
+        .select()
+        .single();
+
+      if (profileError) throw profileError;
+
+      return profile;
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-export const logout = createAsyncThunk('auth/logout', async () => {
-  // In a real app, you would call an API endpoint to invalidate the token
-  return null;
-});
-
-export const fetchCurrentUser = createAsyncThunk(
-  'auth/fetchCurrentUser',
+export const logout = createAsyncThunk(
+  'auth/logout',
   async (_, { rejectWithValue }) => {
     try {
-      // In a real app, this would be a fetch to get the current user using the stored token
-      return {
-        user: {
-          id: 1,
-          username: 'demo',
-          email: 'demo@example.com',
-          isPremium: false,
-          koachPoints: 120,
-          readingStreak: 5,
-          preferences: {
-            readingFrequency: 'daily',
-            theme: 'light',
-          },
-          createdAt: new Date().toISOString(),
-        },
-      };
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-export const updateProfile = createAsyncThunk(
-  'auth/updateProfile',
-  async (profileData: UpdateProfileData, { rejectWithValue }) => {
+export const setOnboardingCompleted = createAsyncThunk(
+  'auth/setOnboardingCompleted',
+  async (_, { getState, rejectWithValue }) => {
     try {
-      const user = await authAPI.updateProfile(profileData);
-      return { user };
+      const state = getState() as RootState;
+      const userId = state.auth.user?.id;
+
+      if (!userId) throw new Error('No user ID found');
+
+      const { data, error } = await supabase
+        .from('users')
+        .update({ has_completed_onboarding: true })
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-export const updatePreferences = createAsyncThunk(
-  'auth/updatePreferences',
-  async (data: UpdatePreferencesData, { rejectWithValue }) => {
+export const updateUserPreferences = createAsyncThunk(
+  'auth/updateUserPreferences',
+  async (preferences: Partial<User['preferences']>, { getState, rejectWithValue }) => {
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Here you would make an actual API call to update preferences
-      // For now, we'll just return the updated preferences
-      return data.preferences;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update preferences');
+      const state = getState() as RootState;
+      const userId = state.auth.user?.id;
+
+      if (!userId) throw new Error('No user ID found');
+
+      const { data, error } = await supabase
+        .from('users')
+        .update({ preferences })
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.message);
     }
   }
 );
 
-export const updateLanguage = createAsyncThunk(
-  'auth/updateLanguage',
-  async (data: UpdateLanguageData, { rejectWithValue }) => {
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Here you would make an actual API call to update language
-      // For now, we'll just return the updated language
-      return data.language;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update language');
-    }
-  }
-);
-
-// Auth slice
+// Slice
 const authSlice = createSlice({
   name: 'auth',
   initialState,
-  reducers: {
-    // Add any synchronous actions here
-    clearError: (state) => {
-      state.error = null;
-    },
-    setOnboardingCompleted: (state, action: PayloadAction<boolean>) => {
-      if (state.user) {
-        state.user.hasCompletedOnboarding = action.payload;
-      }
-    },
-    setLanguage: (state, action: PayloadAction<string>) => {
-      if (state.user && state.user.preferences) {
-        state.user.preferences.language = action.payload;
-      } else if (state.user) {
-        state.user.preferences = { language: action.payload };
-      }
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
+    // Login
     builder
-      // Login
       .addCase(login.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(login.fulfilled, (state, action: PayloadAction<{ user: User; token: string }>) => {
+      .addCase(login.fulfilled, (state, action) => {
+        console.log('Login fulfilled with payload:', action.payload);
         state.isLoading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
+        state.user = action.payload;
+        state.error = null;
+        console.log('New state after login:', state);
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload as string || 'Login failed';
+        state.error = action.payload as string;
       })
-      // Register
+
+    // Register
+    builder
       .addCase(register.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(register.fulfilled, (state, action: PayloadAction<{ user: User; token: string }>) => {
+      .addCase(register.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
+        state.user = action.payload;
+        state.error = null;
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload as string || 'Registration failed';
-      })
-      // Logout
-      .addCase(logout.fulfilled, (state) => {
-        state.user = null;
-        state.token = null;
-      })
-      // Fetch current user
-      .addCase(fetchCurrentUser.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(fetchCurrentUser.fulfilled, (state, action: PayloadAction<{ user: User }>) => {
-        state.isLoading = false;
-        state.user = action.payload.user;
-      })
-      .addCase(fetchCurrentUser.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string || 'Failed to fetch user';
-      })
-      // Update profile
-      .addCase(updateProfile.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(updateProfile.fulfilled, (state, action: PayloadAction<{ user: User }>) => {
-        state.isLoading = false;
-        state.user = action.payload.user;
-      })
-      .addCase(updateProfile.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string || 'Failed to update profile';
-      })
-      // Update preferences
-      .addCase(updatePreferences.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(updatePreferences.fulfilled, (state, action: PayloadAction<User['preferences']>) => {
-        state.isLoading = false;
-        if (state.user) {
-          state.user.preferences = action.payload;
-        }
-      })
-      .addCase(updatePreferences.rejected, (state, action) => {
-        state.isLoading = false;
         state.error = action.payload as string;
       })
-      // Update language
-      .addCase(updateLanguage.pending, (state) => {
+
+    // Logout
+    builder
+      .addCase(logout.fulfilled, (state) => {
+        state.user = null;
+        state.error = null;
+      })
+
+    // Set Onboarding Completed
+    builder
+      .addCase(setOnboardingCompleted.fulfilled, (state, action) => {
+        if (state.user) {
+          state.user = action.payload;
+        }
+      })
+
+    // Update User Preferences
+    builder
+      .addCase(updateUserPreferences.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(updateLanguage.fulfilled, (state, action: PayloadAction<string>) => {
+      .addCase(updateUserPreferences.fulfilled, (state, action) => {
         state.isLoading = false;
-        if (state.user) {
-          if (!state.user.preferences) {
-            state.user.preferences = {};
-          }
-          state.user.preferences.language = action.payload;
-        }
+        state.user = action.payload;
+        state.error = null;
       })
-      .addCase(updateLanguage.rejected, (state, action) => {
+      .addCase(updateUserPreferences.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });
   },
 });
 
-// Export actions
-export const { clearError, setOnboardingCompleted, setLanguage } = authSlice.actions;
-
-// Export selectors
+// Selectors
 export const selectUser = (state: RootState) => state.auth.user;
-export const selectIsLoggedIn = (state: RootState) => !!state.auth.user;
 export const selectIsLoading = (state: RootState) => state.auth.isLoading;
 export const selectError = (state: RootState) => state.auth.error;
-export const selectToken = (state: RootState) => state.auth.token;
+export const selectHasCompletedOnboarding = (state: RootState) => 
+  state.auth.user?.has_completed_onboarding ?? false;
 
-// Export reducer
 export default authSlice.reducer;

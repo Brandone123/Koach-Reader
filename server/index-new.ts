@@ -1,3 +1,4 @@
+import dotenv from "dotenv";
 import { createServer, IncomingMessage, ServerResponse } from "http";
 import { storage } from "./storage";
 import { hashPassword, comparePasswords } from "./utils/auth";
@@ -10,6 +11,7 @@ import {
   type InsertReadingPlan
 } from "../shared/schema";
 
+dotenv.config();
 // Define interface types for our application
 interface RequestBody {
   // User registration/login
@@ -29,6 +31,7 @@ interface RequestBody {
   fileUrl?: string;
   audioUrl?: string;
   coverImageUrl?: string;
+  isbn?: string;
   
   // Reading plan properties
   bookId?: number;
@@ -37,6 +40,7 @@ interface RequestBody {
   frequency?: 'daily' | 'weekly';
   pagesPerSession?: number;
   notes?: string;
+  totalPages?: number;
   
   // Other common properties
   [key: string]: any;
@@ -187,15 +191,14 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
           const bookToCreate: InsertBook = {
             title: body.title,
             author: body.author,
-            pageCount: body.pageCount || 0,
+            description: body.description || '',
+            page_count: body.pageCount || 0,
             category: body.category || 'General',
-            description: body.description || null,
-            language: body.language || 'English',
-            isPublic: typeof body.isPublic === 'boolean' ? body.isPublic : true,
-            uploadedById: body.uploadedById || 1, // Default to user 1 for now
-            fileUrl: body.fileUrl || null,
-            audioUrl: body.audioUrl || null,
-            coverUrl: body.coverImageUrl || null
+            language: body.language || 'en',
+            is_public: typeof body.isPublic === 'boolean' ? body.isPublic : true,
+            uploaded_by: body.uploadedById?.toString() || '1',
+            cover_url: body.coverImageUrl || '',
+            isbn: body.isbn || null
           };
           
           const newBook = await storage.createBook(bookToCreate);
@@ -212,11 +215,10 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
     
     // Reading plans endpoints
     else if (resourceType === 'reading-plans') {
-      // GET /api/reading-plans - Get all reading plans for the current user
-      if (!params.id && method === 'GET') {
+      // GET /api/users/:id/reading-plans
+      if (pathSegments[2] && pathSegments[3] === 'reading-plans' && method === 'GET') {
         try {
-          // For now, hard-code user ID 1 as we don't have authentication yet
-          const userId = 1;  
+          const userId = pathSegments[2];  // Already a string
           const plans = await storage.getReadingPlansByUser(userId);
           res.writeHead(200);
           res.end(JSON.stringify(plans));
@@ -251,36 +253,26 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
       if (!params.id && method === 'POST') {
         try {
           // Basic validation
-          if (!body.bookId || !body.startDate || !body.endDate) {
+          if (!body.userId || !body.bookId || !body.startDate || !body.endDate) {
             res.writeHead(400);
-            res.end(JSON.stringify({ error: 'Book ID, start date, and end date are required' }));
+            res.end(JSON.stringify({ error: 'User ID, Book ID, start date, and end date are required' }));
             return;
           }
-          
-          // For now, hard-code user ID 1
-          const userId = 1;
-          
-          // Convertir les chaînes de date en objets Date
-          const startDate = new Date(body.startDate);
-          const endDate = new Date(body.endDate);
-          
-          // Construire le plan de lecture en fonction du schéma actuel de la base de données
-          const readingPlanToCreate = {
-            userId: userId,
-            bookId: Number(body.bookId),
-            startDate: startDate,
-            endDate: endDate,
+
+          const readingPlanToCreate: InsertReadingPlan = {
+            user_id: body.userId.toString(),
+            book_id: Number(body.bookId),
+            title: body.title || `Reading Plan for Book ${body.bookId}`,
+            start_date: new Date(body.startDate).toISOString(),
+            end_date: new Date(body.endDate).toISOString(),
             frequency: body.frequency || 'daily',
-            pagesPerSession: body.pagesPerSession || 10,
-            title: body.title || `Plan de lecture: ${body.bookId}`,
-            total_pages: body.totalPages || 100,
+            pages_per_session: Number(body.pagesPerSession) || 10,
+            total_pages: Number(body.totalPages) || 0,
             current_page: 0,
-            notes: body.notes || ''
+            notes: body.notes || null
           };
-          
-          // Utiliser la méthode createReadingPlanSimple qui évite les problèmes de schéma
-          const newPlan = await storage.createReadingPlanSimple(readingPlanToCreate);
-          
+
+          const newPlan = await storage.createReadingPlan(readingPlanToCreate);
           res.writeHead(201);
           res.end(JSON.stringify(newPlan));
         } catch (error) {
@@ -293,96 +285,63 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
     }
     
     // User authentication endpoints
-    else if (resourceType === 'register' && method === 'POST') {
+    else if (resourceType === 'auth' && pathSegments[2] === 'register' && method === 'POST') {
       try {
         // Basic validation
-        if (!body.username || !body.email || !body.password) {
+        if (!body.email || !body.username || !body.password) {
           res.writeHead(400);
-          res.end(JSON.stringify({ error: 'Username, email, and password are required' }));
+          res.end(JSON.stringify({ error: 'Email, username and password are required' }));
           return;
         }
-        
-        // Check if username already exists
-        const existingUser = await storage.getUserByUsername(body.username);
-        if (existingUser) {
-          res.writeHead(409);
-          res.end(JSON.stringify({ error: 'Username already exists' }));
-          return;
-        }
-        
-        // Check if email already exists
-        const existingEmail = await storage.getUserByEmail(body.email);
-        if (existingEmail) {
-          res.writeHead(409);
-          res.end(JSON.stringify({ error: 'Email already in use' }));
-          return;
-        }
-        
-        // Hash password
-        const hashedPassword = await hashPassword(body.password);
-        
-        // Create user
+
+        const hashedPassword = await hashPassword(body.password as string);
         const userToCreate: InsertUser = {
-          username: body.username,
           email: body.email,
-          password: hashedPassword,
-          koachPoints: 0,
-          isPremium: false,
-          preferences: {}
+          username: body.username,
+          is_premium: false,
+          koach_points: 0,
+          reading_streak: 0,
+          preferences: {},
+          last_login: null,
+          avatar_url: null
         };
-        
+
         const user = await storage.createUser(userToCreate);
-        
-        // Remove password from response
-        const { password, ...userWithoutPassword } = user;
-        
+        const userWithoutPassword = { ...user };
         res.writeHead(201);
         res.end(JSON.stringify(userWithoutPassword));
       } catch (error) {
         console.error('Error registering user:', error);
         res.writeHead(500);
-        res.end(JSON.stringify({ error: 'Registration failed' }));
+        res.end(JSON.stringify({ error: 'Failed to register user' }));
       }
       return;
     }
     
-    else if (resourceType === 'login' && method === 'POST') {
+    else if (resourceType === 'auth' && pathSegments[2] === 'login' && method === 'POST') {
       try {
         // Basic validation
-        if (!body.username || !body.password) {
+        if (!body.email) {
           res.writeHead(400);
-          res.end(JSON.stringify({ error: 'Username and password are required' }));
+          res.end(JSON.stringify({ error: 'Email is required' }));
           return;
         }
-        
-        // Find user
-        const user = await storage.getUserByUsername(body.username);
+
+        const user = await storage.getUserByEmail(body.email);
         if (!user) {
           res.writeHead(401);
           res.end(JSON.stringify({ error: 'Invalid credentials' }));
           return;
         }
-        
-        // Verify password
-        const passwordMatch = await comparePasswords(body.password, user.password);
-        if (!passwordMatch) {
-          res.writeHead(401);
-          res.end(JSON.stringify({ error: 'Invalid credentials' }));
-          return;
-        }
-        
-        // Remove password from response
-        const { password, ...userWithoutPassword } = user;
-        
+
+        // Puisque nous utilisons Supabase Auth, nous n'avons plus besoin de vérifier le mot de passe ici
+        const userWithoutPassword = { ...user };
         res.writeHead(200);
-        res.end(JSON.stringify({
-          user: userWithoutPassword,
-          message: 'Login successful'
-        }));
+        res.end(JSON.stringify(userWithoutPassword));
       } catch (error) {
         console.error('Error logging in:', error);
         res.writeHead(500);
-        res.end(JSON.stringify({ error: 'Login failed' }));
+        res.end(JSON.stringify({ error: 'Failed to log in' }));
       }
       return;
     }
@@ -403,11 +362,10 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
         return;
       }
       
-      // GET /api/badges/user - Get badges for current user
-      if (method === 'GET' && url.includes('/api/badges/user')) {
+      // GET /api/users/:id/badges - Get user badges
+      if (pathSegments[2] && pathSegments[3] === 'badges' && method === 'GET') {
         try {
-          // For now, hard-code user ID 1
-          const userId = 1;
+          const userId = pathSegments[2];  // Already a string
           const userBadges = await storage.getUserBadges(userId);
           res.writeHead(200);
           res.end(JSON.stringify(userBadges));

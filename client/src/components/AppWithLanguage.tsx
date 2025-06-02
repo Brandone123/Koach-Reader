@@ -8,8 +8,11 @@ const AppWithLanguage: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   // Forcer un rafraîchissement quand la langue change
   useEffect(() => {
-    setKey(Date.now());
-  }, [currentLanguage]);
+    if (!isChangingLanguage) {
+      // Only update the key after language change is complete
+      setKey(Date.now());
+    }
+  }, [currentLanguage, isChangingLanguage]);
 
   if (isChangingLanguage) {
     return (

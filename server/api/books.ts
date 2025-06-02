@@ -1,6 +1,5 @@
 import { Express, Request, Response } from "express";
 import { storage } from "../storage";
-import { isAuthenticated, isPremiumUser } from "../middleware/auth";
 import { InsertBook } from "../../shared/schema";
 import { asyncHandler } from "../utils/routeHandler";
 
@@ -15,7 +14,7 @@ interface BookComment {
   createdAt: string;
 }
 
-export function setupBooksRoutes(app: Express, verifyJWT: any, isPremiumUser: any) {
+export function setupBooksRoutes(app: Express, verifyJWT: any) {
   // Get all books
   app.get("/api/books", verifyJWT, asyncHandler(async (req: Request, res: Response) => {
     const { category, search } = req.query;
@@ -68,7 +67,7 @@ export function setupBooksRoutes(app: Express, verifyJWT: any, isPremiumUser: an
   }));
 
   // Upload a new book (premium users only)
-  app.post("/api/books", [verifyJWT, isPremiumUser], asyncHandler(async (req: Request, res: Response) => {
+  app.post("/api/books", [verifyJWT], asyncHandler(async (req: Request, res: Response) => {
     // Validate request body
     const { title, author, description, pageCount, category, language, isPublic, fileUrl, audioUrl } = req.body;
     

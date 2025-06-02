@@ -7,9 +7,12 @@ import { AuthUser } from '../hooks/useAuth';
 interface Book {
   id: number;
   title: string;
+  subtitle?: string;
   author: string;
   description: string;
   pageCount: number;
+  views?: number;
+  totalRating?: number;
   category: string;
   language: string;
   isPublic: boolean;
@@ -84,9 +87,12 @@ const mockBooks: Book[] = [
   {
     id: 1,
     title: 'The Power of Habit',
+    subtitle: '',
     author: 'Charles Duhigg',
     description: 'Why we do what we do in life and business. A great book about habits and how to change them.',
     pageCount: 371,
+    views: 900,
+    totalRating: 3,
     category: 'Self-help',
     language: 'English',
     isPublic: true,
@@ -98,9 +104,12 @@ const mockBooks: Book[] = [
   {
     id: 2,
     title: 'Atomic Habits',
+    subtitle: '',
     author: 'James Clear',
     description: 'An Easy & Proven Way to Build Good Habits & Break Bad Ones.',
     pageCount: 320,
+    views: 1000,
+    totalRating: 5,
     category: 'Self-help',
     language: 'English',
     isPublic: true,
@@ -112,9 +121,12 @@ const mockBooks: Book[] = [
   {
     id: 3,
     title: 'Deep Work',
+    subtitle: '',
     author: 'Cal Newport',
     description: 'Rules for Focused Success in a Distracted World.',
     pageCount: 296,
+    views: 300,
+    totalRating: 2.5,
     category: 'Productivity',
     language: 'English',
     isPublic: true,
@@ -348,9 +360,12 @@ export async function mockFetchApi(
         const newBook: Book = {
           id: mockBooks.length + 1,
           title: body.title,
+          subtitle: body.subtitle,
           author: body.author,
           description: body.description,
           pageCount: body.pageCount,
+          views: body.views || 0,
+          totalRating: body.totalRating || 0,
           category: body.category,
           language: body.language || 'English',
           isPublic: body.isPublic || false,
@@ -363,6 +378,17 @@ export async function mockFetchApi(
         };
         mockBooks.push(newBook);
         return newBook;
+      }
+      break;
+
+    // Get categories from books
+    case '/api/categories':
+      if (method === 'GET') {
+        const categories = [...new Set(mockBooks.map(book => book.category))];
+        return categories.map((category, index) => ({
+          id: index + 1,
+          name: category
+        }));
       }
       break;
     

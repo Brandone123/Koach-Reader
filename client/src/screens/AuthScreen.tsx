@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -12,13 +12,26 @@ import {
 } from 'react-native';
 import { TextInput, Button } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
-import { login, register, selectIsLoading, selectError } from '../redux/slices/authSlice';
-import { AppDispatch } from '../redux/store';
+import { 
+  login, 
+  register, 
+  selectIsLoading, 
+  selectError,
+  selectUser,
+  selectHasCompletedOnboarding
+} from '../slices/authSlice';
+import { AppDispatch } from '../store';
 import { colors } from '../utils/theme';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../types/navigation';
+
+type AuthScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Auth'>;
 
 const AuthScreen: React.FC = () => {
   const { t } = useTranslation();
+  const navigation = useNavigation<AuthScreenNavigationProp>();
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -30,6 +43,28 @@ const AuthScreen: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const isLoading = useSelector(selectIsLoading);
   const error = useSelector(selectError);
+  const user = useSelector(selectUser);
+  const hasCompletedOnboarding = useSelector(selectHasCompletedOnboarding);
+
+  // Effet pour surveiller les changements d'état
+  useEffect(() => {
+    console.log('Auth state changed:', {
+      user,
+      hasCompletedOnboarding,
+      isLoading,
+      error
+    });
+
+    if (user) {
+      if (!hasCompletedOnboarding) {
+        console.log('Redirecting to Onboarding from AuthScreen');
+        navigation.replace('Onboarding');
+      } else {
+        console.log('Redirecting to Home from AuthScreen');
+        navigation.replace('Home');
+      }
+    }
+  }, [user, hasCompletedOnboarding, navigation]);
 
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
@@ -44,18 +79,24 @@ const AuthScreen: React.FC = () => {
   const validateForm = () => {
     setValidationError(null);
 
-    if (!username.trim()) {
-      setValidationError(t('auth.errorRequired'));
-      return false;
-    }
-
-    if (!isLogin && !email.trim()) {
-      setValidationError(t('auth.errorRequired'));
-      return false;
+    if (isLogin) {
+      if (!email.trim()) {
+        setValidationError(t('auth.errorEmailRequired'));
+        return false;
+      }
+    } else {
+      if (!username.trim()) {
+        setValidationError(t('auth.errorUsernameRequired'));
+        return false;
+      }
+      if (!email.trim()) {
+        setValidationError(t('auth.errorEmailRequired'));
+        return false;
+      }
     }
 
     if (!password) {
-      setValidationError(t('auth.errorRequired'));
+      setValidationError(t('auth.errorPasswordRequired'));
       return false;
     }
 
@@ -72,13 +113,18 @@ const AuthScreen: React.FC = () => {
     return true;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    if (isLogin) {
-      dispatch(login({ username, password }));
-    } else {
-      dispatch(register({ username, email, password }));
+    try {
+      if (isLogin) {
+        await dispatch(login({ email, password })).unwrap();
+      } else {
+        await dispatch(register({ username, email, password })).unwrap();
+      }
+    } catch (err) {
+      console.error('Auth error:', err);
+      setValidationError(err instanceof Error ? err.message : 'An error occurred');
     }
   };
 
@@ -98,28 +144,28 @@ const AuthScreen: React.FC = () => {
 
               <Text style={styles.formTitle}>{isLogin ? t('auth.login') : t('auth.createAccount')}</Text>
 
-              {/* Username Field */}
-              <TextInput
-                label={t('auth.username')}
-                value={username}
-                onChangeText={setUsername}
-                style={styles.input}
-                autoCapitalize="none"
-                disabled={isLoading}
-              />
-
-              {/* Email Field (only for registration) */}
+              {/* Username Field (only for registration) */}
               {!isLogin && (
                 <TextInput
-                  label={t('auth.email')}
-                  value={email}
-                  onChangeText={setEmail}
+                  label={t('auth.username')}
+                  value={username}
+                  onChangeText={setUsername}
                   style={styles.input}
                   autoCapitalize="none"
-                  keyboardType="email-address"
                   disabled={isLoading}
                 />
               )}
+
+              {/* Email Field */}
+              <TextInput
+                label={t('auth.email')}
+                value={email}
+                onChangeText={setEmail}
+                style={styles.input}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                disabled={isLoading}
+              />
 
               {/* Password Field */}
               <TextInput

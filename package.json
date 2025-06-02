@@ -4,7 +4,11 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node ./server/index-new.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "init-db": "ts-node ./script/init-db.ts",
+    "setup-db": "node ./script/setup-db.js",
+    "start": "node dist/server/index-new.js",
+    "build": "tsc"
   },
   "keywords": [],
   "author": "",
@@ -16,17 +20,18 @@
     "@react-navigation/native": "^7.0.17",
     "@react-navigation/stack": "^7.2.1",
     "@reduxjs/toolkit": "^2.6.1",
+    "@supabase/supabase-js": "^2.49.4",
     "@types/connect-pg-simple": "^7.0.3",
     "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.1",
     "@types/express-session": "^1.18.1",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.13.10",
     "@types/passport": "^1.0.17",
     "@types/passport-local": "^1.0.38",
-    "@types/pg": "^8.11.11",
+    "@types/pg": "^8.15.2",
     "@types/react": "^19.0.12",
     "@types/react-native": "^0.72.8",
+    "axios": "^1.9.0",
     "connect-pg-simple": "^10.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -39,9 +44,10 @@
     "i18next": "^24.2.3",
     "i18next-http-backend": "^3.0.2",
     "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.2",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
-    "pg": "^8.14.1",
+    "pg": "^8.16.0",
     "react-i18next": "^15.4.1",
     "react-native": "^0.78.1",
     "react-native-gesture-handler": "~2.12.0",
@@ -49,11 +55,19 @@
     "react-native-reanimated": "~3.3.0",
     "react-native-safe-area-context": "^5.3.0",
     "react-native-screens": "^4.9.2",
+    "react-native-svg": "^15.11.2",
     "react-native-vector-icons": "^10.2.0",
     "react-navigation": "^5.0.0",
     "react-redux": "^9.2.0",
     "redux": "^5.0.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/multer": "^1.4.12",
+    "@types/uuid": "^10.0.0",
+    "find-yarn-workspace-root": "^2.0.0"
   }
 }

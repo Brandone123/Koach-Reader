@@ -31,6 +31,7 @@ import { AppDispatch } from '../store';
 import { selectUser } from '../slices/authSlice';
 import { fetchApi } from '../utils/api';
 import { mockFetchApi } from '../utils/mockApi';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type ChallengeDetailScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ChallengeDetail'>;
 type ChallengeDetailScreenRouteProp = RouteProp<RootStackParamList, 'ChallengeDetail'>;
@@ -300,6 +301,11 @@ const ChallengeDetailScreen = ({ navigation, route }: ChallengeDetailScreenProps
       return;
     }
     
+    if (!user) {
+      Alert.alert('Error', 'You must be logged in to add a comment');
+      return;
+    }
+    
     setIsLoading(true);
     try {
       // Try real API first
@@ -316,8 +322,8 @@ const ChallengeDetailScreen = ({ navigation, route }: ChallengeDetailScreenProps
         // Fall back to mock API
         const mockComment: Comment = {
           id: comments.length + 1,
-          userId: user?.id || 0,
-          username: user?.username || 'Anonymous',
+          userId: user.id,
+          username: user.username || 'Anonymous',
           challengeId,
           content: newComment,
           createdAt: new Date().toISOString()
@@ -471,7 +477,7 @@ const ChallengeDetailScreen = ({ navigation, route }: ChallengeDetailScreenProps
   };
   
   const renderComment = ({ item }: { item: Comment }) => {
-    const isCurrentUser = item.userId === user?.id;
+    const isCurrentUser = user ? item.userId === user.id : false;
     
     return (
       <Card style={[styles.commentCard, isCurrentUser && styles.currentUserCommentCard]}>
@@ -515,12 +521,14 @@ const ChallengeDetailScreen = ({ navigation, route }: ChallengeDetailScreenProps
   
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+       <LinearGradient
+        colors={['#9317ED', '#5E0D93']}
+        style={styles.header}
+      >
         <View style={styles.titleContainer}>
           <Title style={styles.title}>{challenge.title}</Title>
           <IconButton
             icon="share"
-            color="white"
             size={22}
             onPress={shareChallenge}
             disabled={isShareLoading}
@@ -528,24 +536,7 @@ const ChallengeDetailScreen = ({ navigation, route }: ChallengeDetailScreenProps
             style={styles.shareButton}
           />
         </View>
-        
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{participants.length}</Text>
-            <Text style={styles.statLabel}>Participants</Text>
-          </View>
-          
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{challenge.goalType === 'pages' ? challenge.goal : challenge.goal}</Text>
-            <Text style={styles.statLabel}>{getGoalTypeLabel(challenge.goalType)}</Text>
-          </View>
-          
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{getTimeRemaining()}</Text>
-            <Text style={styles.statLabel}>Time</Text>
-          </View>
-        </View>
-        
+      
         <View style={styles.tabsContainer}>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'details' && styles.activeTab]}
@@ -574,12 +565,30 @@ const ChallengeDetailScreen = ({ navigation, route }: ChallengeDetailScreenProps
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </LinearGradient>
       
       {activeTab === 'details' && (
         <ScrollView style={styles.scrollView}>
           <Card style={styles.detailsCard}>
             <Card.Content>
+            <View style={styles.statsContainer}>
+              
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{participants.length}</Text>
+                <Text style={styles.statLabel}>Participants</Text>
+              </View>
+              
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{challenge.goalType === 'pages' ? challenge.goal : challenge.goal}</Text>
+                <Text style={styles.statLabel}>{getGoalTypeLabel(challenge.goalType)}</Text>
+              </View>
+              
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{getTimeRemaining()}</Text>
+                <Text style={styles.statLabel}>Time</Text>
+              </View>
+            </View>
+
               <Text style={styles.description}>{challenge.description}</Text>
               
               <Divider style={styles.divider} />
@@ -744,25 +753,34 @@ const ChallengeDetailScreen = ({ navigation, route }: ChallengeDetailScreenProps
         <View style={styles.commentsContainer}>
           <Card style={styles.commentInputCard}>
             <Card.Content>
-              <TextInput
-                label="Add a comment"
-                value={newComment}
-                onChangeText={setNewComment}
-                multiline
-                numberOfLines={2}
-                style={styles.commentInput}
-              />
-              
-              <Button 
-                mode="contained" 
-                onPress={addComment}
-                style={styles.addCommentButton}
-                disabled={!newComment.trim() || isLoading}
-                loading={isLoading}
-                icon="send"
-              >
-                Post
-              </Button>
+              {user ? (
+                <>
+                  <TextInput
+                    label="Add a comment"
+                    value={newComment}
+                    onChangeText={setNewComment}
+                    multiline
+                    numberOfLines={2}
+                    style={styles.commentInput}
+                  />
+                  
+                  <Button 
+                    mode="contained" 
+                    onPress={addComment}
+                    style={styles.addCommentButton}
+                    disabled={!newComment.trim() || isLoading}
+                    loading={isLoading}
+                    icon="send"
+                  >
+                    Post
+                  </Button>
+                </>
+              ) : (
+                <View style={styles.loginPromptContainer}>
+                  <Text style={styles.loginPromptText}>You must be logged in to add comments</Text>
+                  {/* Add a login button if needed */}
+                </View>
+              )}
             </Card.Content>
           </Card>
           
@@ -790,10 +808,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: '#6200ee',
+    // backgroundColor: '#9317ED',
     padding: 24,
-    paddingTop: 20,
+    paddingTop: 0,
     paddingBottom: 0,
+
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    width: '100%'
   },
   titleContainer: {
     flexDirection: 'row',
@@ -808,6 +836,7 @@ const styles = StyleSheet.create({
   },
   shareButton: {
     margin: 0,
+    backgroundColor: 'white'
   },
   statsContainer: {
     flexDirection: 'row',
@@ -816,16 +845,23 @@ const styles = StyleSheet.create({
   },
   statItem: {
     alignItems: 'center',
+    marginBottom: 5,
+    borderRadius: 4,
+    padding: 5,
+    marginLeft: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(209, 208, 208, 0.8)',
   },
   statValue: {
-    color: 'white',
+    color: '#9317ED',
     fontSize: 16,
     fontWeight: 'bold',
   },
   statLabel: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 12,
-    marginTop: 2,
+    color: 'black',
+    fontSize: 15,
+    marginTop: 4,
+    fontWeight: 'bold',
   },
   tabsContainer: {
     flexDirection: 'row',
@@ -902,7 +938,7 @@ const styles = StyleSheet.create({
   },
   rankText: {
     fontSize: 14,
-    color: '#6200ee',
+    color: '#9317ED',
     fontWeight: 'bold',
   },
   updateProgressContainer: {
@@ -969,18 +1005,18 @@ const styles = StyleSheet.create({
   participantCard: {
     marginBottom: 12,
     borderRadius: 12,
-    elevation: 2,
+    elevation: 1,
   },
   currentUserCard: {
     borderLeftWidth: 3,
-    borderLeftColor: '#6200ee',
+    borderLeftColor: '#9317ED',
   },
   participantContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   participantRank: {
-    marginRight: 16,
+    marginRight: 10,
   },
   rankAvatar: {
     marginRight: 8,
@@ -1006,7 +1042,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   currentUserText: {
-    color: '#6200ee',
+    color: '#9317ED',
   },
   progressInfo: {
     marginBottom: 4,
@@ -1048,7 +1084,7 @@ const styles = StyleSheet.create({
   },
   currentUserCommentCard: {
     borderLeftWidth: 3,
-    borderLeftColor: '#6200ee',
+    borderLeftColor: '#9317ED',
   },
   commentHeader: {
     flexDirection: 'row',
@@ -1101,6 +1137,15 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   emptyText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  loginPromptContainer: {
+    alignItems: 'center',
+    padding: 16,
+  },
+  loginPromptText: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',

@@ -10,66 +10,24 @@ import {
   SafeAreaView,
   Animated,
   Platform,
+  Alert,
 } from 'react-native';
-import { Button, Chip, ProgressBar, Title, Paragraph, Divider } from 'react-native-paper';
+import { Button, Chip, ProgressBar, Title, Paragraph, ActivityIndicator } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
-import { useAuth } from '../hooks/useAuth';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDispatch } from 'react-redux';
-import { updatePreferences } from '../slices/authSlice';
+import { setOnboardingCompleted, updateUserPreferences } from '../slices/authSlice';
 import { useTranslation } from 'react-i18next';
+import { AppDispatch } from '../store';
+import { colors } from '../utils/theme';
 
 const { width, height } = Dimensions.get('window');
 
 type OnboardingNavigationProp = StackNavigationProp<RootStackParamList, 'Onboarding'>;
 
-// Définition des catégories chrétiennes
-const BOOK_CATEGORIES = [
-  { label: 'Bible et études bibliques', value: 'bible_studies', icon: '📖' },
-  { label: 'Théologie et doctrine chrétienne', value: 'theology', icon: '✝️' },
-  { label: 'Spiritualité et vie chrétienne', value: 'spirituality', icon: '🙏' },
-  { label: 'Livres sur Jésus Christ', value: 'jesus', icon: '👑' },
-  { label: 'Évangélisation et mission', value: 'evangelism', icon: '🌍' },
-  { label: 'Mariage famille et relation', value: 'marriage_family', icon: '👨‍👩‍👧‍👦' },
-  { label: 'Jeunesse et enfants', value: 'youth', icon: '👶' },
-  { label: 'Témoignages et biographies chrétiennes', value: 'testimonies', icon: '📚' },
-  { label: 'Prophétie et fin des temps', value: 'prophecy', icon: '⏳' },
-  { label: 'Éthique chrétienne et société', value: 'ethics', icon: '⚖️' },
-  { label: 'Guérison et délivrance', value: 'healing', icon: '🌟' },
-  { label: 'Ministère et leadership', value: 'ministry', icon: '👥' },
-  { label: 'Louange et adoration', value: 'worship', icon: '🎵' },
-  { label: 'Fictions chrétiennes', value: 'fiction', icon: '📕' },
-  { label: 'Histoire de l\'Église', value: 'church_history', icon: '⛪' },
-  { label: 'Livre d\'encouragement et motivation', value: 'encouragement', icon: '💪' },
-];
-
-const READING_FREQUENCIES = [
-  { label: 'Daily', value: 'daily', icon: '📚' },
-  { label: 'Few times a week', value: 'few_weekly', icon: '📖' },
-  { label: 'Weekly', value: 'weekly', icon: '📅' },
-  { label: 'Monthly', value: 'monthly', icon: '📆' },
-  { label: 'Occasionally', value: 'occasionally', icon: '🔍' },
-];
-
-const AGE_GROUPS = [
-  { label: 'Under 18', value: 'under_18', icon: '👶' },
-  { label: '18-24', value: '18-24', icon: '🧑' },
-  { label: '25-34', value: '25-34', icon: '👨' },
-  { label: '35-44', value: '35-44', icon: '👩' },
-  { label: '45+', value: '45_plus', icon: '👴' },
-];
-
-const DISCOVERY_SOURCES = [
-  { label: 'Friends', value: 'friends', icon: '👥' },
-  { label: 'Social Media', value: 'social_media', icon: '📱' },
-  { label: 'Bookstores', value: 'bookstores', icon: '🏪' },
-  { label: 'Online Reviews', value: 'online_reviews', icon: '⭐' },
-  { label: 'Book Clubs', value: 'book_clubs', icon: '👋' },
-  { label: 'Recommendations', value: 'recommendations', icon: '👍' },
-];
+type ReadingFrequency = 'daily' | 'few_weekly' | 'weekly' | 'monthly' | 'occasionally';
 
 // Chip selection component for multiple choice questions
 const ChipSelectionGroup = ({ 
@@ -111,234 +69,258 @@ const ChipSelectionGroup = ({
 
 const OnboardingScreen = () => {
   const navigation = useNavigation<OnboardingNavigationProp>();
-  const { updateOnboardingStatus, forceCompleteOnboarding } = useAuth();
-  const scrollViewRef = useRef<ScrollView>(null);
-  const [currentStep, setCurrentStep] = useState(0);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const dispatch = useDispatch<AppDispatch>();
   const { t } = useTranslation();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  
+  // User preferences state
+  const [selectedFrequency, setSelectedFrequency] = useState<ReadingFrequency | ''>('');
+  const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedSources, setSelectedSources] = useState<string[]>([]);
 
-  // State for user preferences
-  const [readingFrequency, setReadingFrequency] = useState<string[]>([]);
-  const [ageGroup, setAgeGroup] = useState<string[]>([]);
-  const [favoriteCategories, setFavoriteCategories] = useState<string[]>([]);
-  const [discoverySources, setDiscoverySources] = useState<string[]>([]);
+  const steps = [
+    {
+      title: t('common.welcome'),
+      description: t('onboarding.readingHabits'),
+      subtitle: t('onboarding.howOftenRead'),
+    },
+    {
+      title: t('common.continue'),
+      description: t('onboarding.ageAppropriate'),
+      subtitle: t('onboarding.ageGroup'),
+    },
+    {
+      title: t('common.continue'),
+      description: t('onboarding.selectCategories'),
+      subtitle: t('onboarding.bookTypes'),
+    },
+    {
+      title: t('common.finish'),
+      description: t('onboarding.enhanceDiscovery'),
+      subtitle: t('onboarding.bookDiscovery'),
+    },
+  ];
 
-  const totalSteps = 4; // 4 étapes au lieu de 5
+  // Constants for options
+  const readingFrequencies = [
+    { label: t('settings.daily'), value: 'daily', icon: '📚' },
+    { label: t('onboarding.fewWeekly'), value: 'few_weekly', icon: '📖' },
+    { label: t('settings.weekly'), value: 'weekly', icon: '📅' },
+    { label: t('settings.monthly'), value: 'monthly', icon: '📆' },
+    { label: t('onboarding.occasionally'), value: 'occasionally', icon: '🔍' },
+  ];
 
-  const handleNext = () => {
-    if (currentStep < totalSteps - 1) {
-      // Fade out animation
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
+  const ageGroups = [
+    { label: t('onboarding.under18'), value: 'under_18', icon: '👶' },
+    { label: t('onboarding.18to24'), value: '18-24', icon: '🧑' },
+    { label: t('onboarding.25to34'), value: '25-34', icon: '👨' },
+    { label: t('onboarding.35to44'), value: '35-44', icon: '👩' },
+    { label: t('onboarding.45plus'), value: '45_plus', icon: '👴' },
+  ];
+
+  const bookCategories = [
+    { label: t('categories.bibleStudies'), value: 'bible_studies', icon: '📖' },
+    { label: t('categories.theology'), value: 'theology', icon: '✝️' },
+    { label: t('categories.spirituality'), value: 'spirituality', icon: '🙏' },
+    { label: t('categories.jesus'), value: 'jesus', icon: '👑' },
+    { label: t('categories.evangelism'), value: 'evangelism', icon: '🌍' },
+    { label: t('categories.marriageFamily'), value: 'marriage_family', icon: '👨‍👩‍👧‍👦' },
+    { label: t('categories.youth'), value: 'youth', icon: '👶' },
+    { label: t('categories.testimonies'), value: 'testimonies', icon: '📚' },
+    { label: t('categories.prophecy'), value: 'prophecy', icon: '⏳' },
+    { label: t('categories.ethics'), value: 'ethics', icon: '⚖️' },
+    { label: t('categories.healing'), value: 'healing', icon: '🌟' },
+    { label: t('categories.ministry'), value: 'ministry', icon: '👥' },
+  ];
+
+  const sourceOptions = [
+    { label: t('onboarding.friends'), value: 'friends', icon: '👥' },
+    { label: t('onboarding.socialMedia'), value: 'social_media', icon: '📱' },
+    { label: t('onboarding.bookstores'), value: 'bookstores', icon: '🏪' },
+    { label: t('onboarding.onlineReviews'), value: 'online_reviews', icon: '⭐' },
+    { label: t('onboarding.bookClubs'), value: 'book_clubs', icon: '👋' },
+    { label: t('onboarding.recommendations'), value: 'recommendations', icon: '👍' },
+  ];
+
+  const fadeOut = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const fadeIn = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleNext = async () => {
+    if (!isValidStep()) {
+      Alert.alert(
+        t('onboarding.error.title'),
+        t('onboarding.error.selectRequired'),
+        [{ text: t('common.ok') }]
+      );
+      return;
+    }
+
+    fadeOut();
+    setTimeout(() => {
+      if (currentStep < steps.length - 1) {
         setCurrentStep(currentStep + 1);
-        // Scroll to the next step
-        scrollViewRef.current?.scrollTo({ x: width * (currentStep + 1), animated: false });
-        // Fade in animation
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }).start();
-      });
-    } else {
-      // Complete onboarding - version simplifiée
+        fadeIn();
+      } else {
+        handleComplete();
+      }
+    }, 200);
+  };
+
+  const isValidStep = () => {
+    switch (currentStep) {
+      case 0:
+        return selectedFrequency !== '';
+      case 1:
+        return selectedAgeGroup !== '';
+      case 2:
+        return selectedCategories.length > 0;
+      case 3:
+        return selectedSources.length > 0;
+      default:
+        return true;
+    }
+  };
+
+  const handleComplete = async () => {
+    setIsLoading(true);
+    try {
+      // Save user preferences
       const preferences = {
-        readingFrequency: readingFrequency[0], // Take first selection for single select
-        ageGroup: ageGroup[0], // Take first selection for single select
-        favoriteCategories,
-        discoverySources,
+        reading_frequency: selectedFrequency || undefined,
+        age_group: selectedAgeGroup,
+        preferred_categories: selectedCategories,
+        discovery_sources: selectedSources,
       };
       
-      // Log preferences for debugging but don't use Redux actions
-      console.log('Completing onboarding with preferences:', preferences);
+      await dispatch(updateUserPreferences(preferences)).unwrap();
+      await dispatch(setOnboardingCompleted()).unwrap();
       
-      // Navigation directe vers Home sans actions supplémentaires
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Home' as keyof RootStackParamList }],
-      });
-    }
-  };
-
-  const handleBack = () => {
-    if (currentStep > 0) {
-      // Fade out animation
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
-        setCurrentStep(currentStep - 1);
-        // Scroll to the previous step
-        scrollViewRef.current?.scrollTo({ x: width * (currentStep - 1), animated: false });
-        // Fade in animation
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }).start();
-      });
-    }
-  };
-
-  const handleFrequencySelect = (value: string) => {
-    setReadingFrequency([value]); // Single selection
-  };
-
-  const handleAgeGroupSelect = (value: string) => {
-    setAgeGroup([value]); // Single selection
-  };
-
-  const handleCategorySelect = (value: string) => {
-    // Toggle selection for multiple choices
-    if (favoriteCategories.includes(value)) {
-      setFavoriteCategories(favoriteCategories.filter(category => category !== value));
-    } else {
-      setFavoriteCategories([...favoriteCategories, value]);
-    }
-  };
-
-  const handleDiscoverySourceSelect = (value: string) => {
-    // Toggle selection for multiple choices
-    if (discoverySources.includes(value)) {
-      setDiscoverySources(discoverySources.filter(source => source !== value));
-    } else {
-      setDiscoverySources([...discoverySources, value]);
-    }
-  };
-
-  const getStepValidation = (step: number): boolean => {
-    switch (step) {
-      case 0: return readingFrequency.length > 0;
-      case 1: return ageGroup.length > 0;
-      case 2: return favoriteCategories.length > 0;
-      case 3: return discoverySources.length > 0;
-      default: return false;
-    }
-  };
-
-  const getStepTitle = () => {
-    switch (currentStep) {
-      case 0: return t('onboarding.howOftenRead');
-      case 1: return t('onboarding.ageGroup');
-      case 2: return t('onboarding.bookTypes');
-      case 3: return t('onboarding.bookDiscovery');
-      default: return "";
-    }
-  };
-
-  const getStepDescription = () => {
-    switch (currentStep) {
-      case 0: return t('onboarding.readingHabits');
-      case 1: return t('onboarding.ageAppropriate');
-      case 2: return t('onboarding.selectCategories');
-      case 3: return t('onboarding.enhanceDiscovery');
-      default: return "";
+      // Show loading state for a better UX
+      setTimeout(() => {
+        navigation.replace('Home');
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to complete onboarding:', error);
+      setIsLoading(false);
+      Alert.alert(
+        t('onboarding.error.title'),
+        t('onboarding.error.saveFailed'),
+        [{ text: t('common.ok') }]
+      );
     }
   };
 
   const renderContent = () => {
-    switch (currentStep) {
-      case 0:
-        return (
-          <ScrollView style={styles.optionsScrollView}>
-            <ChipSelectionGroup
-              options={READING_FREQUENCIES}
-              selectedValues={readingFrequency}
-              onSelect={handleFrequencySelect}
-              multiSelect={false}
-            />
-          </ScrollView>
-        );
-      case 1:
-        return (
-          <ScrollView style={styles.optionsScrollView}>
-            <ChipSelectionGroup
-              options={AGE_GROUPS}
-              selectedValues={ageGroup}
-              onSelect={handleAgeGroupSelect}
-              multiSelect={false}
-            />
-          </ScrollView>
-        );
-      case 2:
-        return (
-          <ScrollView style={styles.optionsScrollView}>
-            <ChipSelectionGroup
-              options={BOOK_CATEGORIES}
-              selectedValues={favoriteCategories}
-              onSelect={handleCategorySelect}
-            />
-          </ScrollView>
-        );
-      case 3:
-        return (
-          <ScrollView style={styles.optionsScrollView}>
-            <ChipSelectionGroup
-              options={DISCOVERY_SOURCES}
-              selectedValues={discoverySources}
-              onSelect={handleDiscoverySourceSelect}
-            />
-          </ScrollView>
-        );
-      default:
-        return null;
+    if (isLoading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>{t('onboarding.personalizing')}</Text>
+        </View>
+      );
     }
+
+    return (
+      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+        <View style={styles.header}>
+          <Title style={styles.title}>{steps[currentStep].title}</Title>
+          <Paragraph style={styles.description}>{steps[currentStep].description}</Paragraph>
+          <Text style={styles.subtitle}>{steps[currentStep].subtitle}</Text>
+        </View>
+
+        <ScrollView style={styles.optionsScrollView}>
+          {currentStep === 0 && (
+            <ChipSelectionGroup
+              options={readingFrequencies}
+              selectedValues={selectedFrequency ? [selectedFrequency] : []}
+              onSelect={(value) => setSelectedFrequency(value as ReadingFrequency)}
+              multiSelect={false}
+            />
+          )}
+          {currentStep === 1 && (
+            <ChipSelectionGroup
+              options={ageGroups}
+              selectedValues={selectedAgeGroup ? [selectedAgeGroup] : []}
+              onSelect={(value) => setSelectedAgeGroup(value)}
+              multiSelect={false}
+            />
+          )}
+          {currentStep === 2 && (
+            <ChipSelectionGroup
+              options={bookCategories}
+              selectedValues={selectedCategories}
+              onSelect={(value) => {
+                setSelectedCategories(prev => 
+                  prev.includes(value)
+                    ? prev.filter(v => v !== value)
+                    : [...prev, value]
+                );
+              }}
+              multiSelect={true}
+            />
+          )}
+          {currentStep === 3 && (
+            <ChipSelectionGroup
+              options={sourceOptions}
+              selectedValues={selectedSources}
+              onSelect={(value) => {
+                setSelectedSources(prev => 
+                  prev.includes(value)
+                    ? prev.filter(v => v !== value)
+                    : [...prev, value]
+                );
+              }}
+              multiSelect={true}
+            />
+          )}
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <ProgressBar
+            progress={(currentStep + 1) / steps.length}
+            color={colors.primary}
+            style={styles.progressBar}
+          />
+          <Button
+            mode="contained"
+            onPress={handleNext}
+            style={styles.button}
+            labelStyle={styles.buttonLabel}
+          >
+            {currentStep === steps.length - 1
+              ? t('common.finish')
+              : t('common.next')}
+          </Button>
+        </View>
+      </Animated.View>
+    );
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient 
-        colors={['#8A2BE2', '#4B0082']} 
+      <LinearGradient
+        colors={['#ffffff', '#f7f9fc']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={styles.gradient}
       >
-        <View style={styles.progressContainer}>
-          <Text style={styles.stepIndicator}>Step {currentStep + 1} of {totalSteps}</Text>
-          <ProgressBar 
-            progress={(currentStep + 1) / totalSteps} 
-            color="#FFF" 
-            style={styles.progressBar} 
-          />
-        </View>
-        
-        <Animated.View 
-          style={[styles.contentContainer, { opacity: fadeAnim }]}
-        >
-          <View style={styles.questionContainer}>
-            <Title style={styles.questionTitle}>{getStepTitle()}</Title>
-            <Paragraph style={styles.questionDescription}>{getStepDescription()}</Paragraph>
-          </View>
-          
-          <View style={styles.selectionContainer}>
-            {renderContent()}
-          </View>
-          
-          <View style={styles.footer}>
-            <View style={styles.buttonContainer}>
-              {currentStep > 0 && (
-                <Button
-                  mode="text"
-                  onPress={handleBack}
-                  style={styles.button}
-                  color={colors.textSecondary}
-                >
-                  {t('common.previous')}
-                </Button>
-              )}
-              <Button
-                mode="contained"
-                onPress={handleNext}
-                style={[styles.button, styles.primaryButton]}
-                disabled={!getStepValidation(currentStep)}
-              >
-                {currentStep < totalSteps - 1 ? t('common.next') : t('common.finish')}
-              </Button>
-            </View>
-          </View>
-        </Animated.View>
+        {renderContent()}
       </LinearGradient>
     </SafeAreaView>
   );
@@ -347,55 +329,38 @@ const OnboardingScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: '#ffffff',
   },
   gradient: {
     flex: 1,
-    justifyContent: 'space-between',
   },
-  progressContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  stepIndicator: {
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: 10,
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  progressBar: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-  },
-  contentContainer: {
+  content: {
     flex: 1,
     padding: 20,
-    justifyContent: 'space-between',
+    paddingTop: Platform.OS === 'ios' ? 70 : 50,
   },
-  questionContainer: {
-    marginTop: 40,
-    alignItems: 'center',
-  },
-  questionTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  questionDescription: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.8)',
-    textAlign: 'center',
+  header: {
     marginBottom: 40,
   },
-  selectionContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
+  title: {
+    fontSize: 32,
+    fontWeight: '600',
+    color: '#1a2b4b',
+    marginBottom: 12,
+    letterSpacing: 0.3,
+  },
+  description: {
+    fontSize: 17,
+    color: '#546b8c',
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  subtitle: {
+    fontSize: 19,
+    color: '#2d4168',
+    fontWeight: '500',
+    marginBottom: 16,
+    letterSpacing: 0.2,
   },
   optionsScrollView: {
     flex: 1,
@@ -403,44 +368,77 @@ const styles = StyleSheet.create({
   chipContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    gap: 12,
   },
   chip: {
-    margin: 5,
+    backgroundColor: '#ffffff',
+    borderColor: '#e5e9f2',
+    marginBottom: 10,
+    borderWidth: 1.5,
     paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#F0F0F0',
+    paddingHorizontal: 16,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
   selectedChip: {
-    backgroundColor: '#8A2BE2',
+    backgroundColor: '#4c6fff',
+    borderColor: '#4c6fff',
   },
   chipText: {
-    color: '#333',
+    color: '#546b8c',
+    fontSize: 15,
+    fontWeight: '500',
   },
   selectedChipText: {
-    color: '#FFFFFF',
+    color: '#ffffff',
+    fontWeight: '600',
   },
   chipIcon: {
-    marginRight: 5,
-    fontSize: 16,
+    marginRight: 6,
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-    marginBottom: Platform.OS === 'ios' ? 40 : 20,
+    marginTop: 30,
+    paddingBottom: Platform.OS === 'ios' ? 0 : 20,
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  progressBar: {
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#f0f3f8',
+    marginBottom: 24,
   },
   button: {
-    borderColor: '#FFFFFF',
-    borderWidth: 2,
-    borderRadius: 10,
+    backgroundColor: '#4c6fff',
+    borderRadius: 12,
+    height: 54,
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#4c6fff',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
   },
-  primaryButton: {
-    backgroundColor: '#FFFFFF',
+  buttonLabel: {
+    fontSize: 17,
+    color: '#ffffff',
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+  },
+  loadingText: {
+    color: '#2d4168',
+    fontSize: 18,
+    marginTop: 24,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });
 

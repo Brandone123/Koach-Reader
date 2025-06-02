@@ -90,27 +90,34 @@ export const register = createAsyncThunk(
       const { data: { user }, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
+        options: {
+          data: {
+            username: data.username,
+            has_completed_onboarding: false
+          }
+        }
       });
 
       if (error) throw error;
+      if (!user) throw new Error('No user returned from auth');
 
-      // Create user profile
+      // Wait a bit for the trigger to create the user
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Fetch user profile
       const { data: profile, error: profileError } = await supabase
         .from('users')
-        .insert([
-          {
-            id: user?.id,
-            username: data.username,
-            email: data.email,
-            has_completed_onboarding: false,
-          },
-        ])
-        .select()
+        .select('*')
+        .eq('id', user.id)
         .single();
 
       if (profileError) throw profileError;
+      if (!profile) throw new Error('No profile found');
 
-      return profile;
+      // Déconnexion immédiate
+      await supabase.auth.signOut();
+
+      return null; // Retourner null au lieu du profil pour éviter la redirection vers l'onboarding
     } catch (error: any) {
       return rejectWithValue(error.message);
     }

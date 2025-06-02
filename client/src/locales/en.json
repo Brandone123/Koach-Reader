@@ -57,12 +57,14 @@
     "errorRequired": "This field is required",
     "errorPasswordShort": "Password must be at least 6 characters",
     "errorPasswordsMatch": "Passwords do not match",
+    "errorPasswordRequirements": "Password must contain at least one lowercase letter, one uppercase letter, and one number",
     "validationError": "Please fill all required fields correctly",
     "joinCommunity": "Join our reading community",
     "errorInvalidEmail": "Please enter a valid email address",
     "welcomeBack": "Welcome back!",
     "termsAgreement": "By signing up, you agree to our Terms of Service and Privacy Policy",
     "registrationSuccess": "Registration successful!",
+    "pleaseLogin": "Please login with your new credentials",
     "redirectingToOnboarding": "Redirecting to onboarding...",
     "registrationError": "Registration failed",
     "loginError": "Login failed",
@@ -126,7 +128,8 @@
     "bookstores": "Bookstores",
     "onlineReviews": "Online Reviews",
     "bookClubs": "Book Clubs",
-    "recommendations": "Recommendations"
+    "recommendations": "Recommendations",
+    "personalizing": "Personalizing your experience..."
   },
   "categories": {
     "bibleStudies": "Bible and Biblical Studies",

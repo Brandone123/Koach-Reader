@@ -22,6 +22,7 @@ import { useAppDispatch } from '../store/hooks';
 import type { RootState } from '../store';
 import Toast from 'react-native-toast-message';
 import { register } from '../slices/authSlice';
+import { supabase } from '../lib/supabase';
 
 type RegisterScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Register'>;
 
@@ -48,28 +49,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
   
   const dispatch = useAppDispatch();
+  const user = useSelector((state: RootState) => state.auth.user);
   const isLoading = useSelector((state: RootState) => state.auth.isLoading);
   const error = useSelector((state: RootState) => state.auth.error);
-  const user = useSelector((state: RootState) => state.auth.user);
   
   useEffect(() => {
-    if (user) {
-      console.log('Registration successful, redirecting to onboarding');
-      setIsSubmitting(false);
-      Toast.show({
-        type: 'success',
-        text1: t('auth.registrationSuccess'),
-        text2: t('auth.redirectingToOnboarding'),
-        position: 'bottom',
-        visibilityTime: 4000,
-      });
-      navigation.replace('Onboarding');
-    }
-  }, [user, navigation, t]);
-
-  useEffect(() => {
     if (error) {
-      console.error('Registration error:', error);
       setIsSubmitting(false);
       Toast.show({
         type: 'error',
@@ -149,6 +134,18 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
       try {
         await dispatch(register({ username, email, password })).unwrap();
         console.log('Registration API call successful');
+        
+        // Afficher le message de succès
+        Toast.show({
+          type: 'success',
+          text1: t('auth.registrationSuccess'),
+          text2: t('auth.pleaseLogin'),
+          position: 'bottom',
+          visibilityTime: 4000,
+        });
+
+        // Rediriger vers la page de login
+        navigation.replace('Login');
       } catch (err) {
         console.error('Registration failed:', err);
         setIsSubmitting(false);

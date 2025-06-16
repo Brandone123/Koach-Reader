@@ -4,16 +4,12 @@ import {
   Text, 
   StyleSheet, 
   TouchableOpacity, 
-  Image, 
+  ImageBackground, 
   Dimensions, 
-  ImageBackground,
-  ImageSourcePropType,
   Share,
   Platform,
   Animated,
   PanResponder,
-  GestureResponderEvent,
-  PanResponderGestureState,
   ActivityIndicator
 } from 'react-native';
 import { FreeQuarterlyBook } from '../slices/freeQuarterlyBooksSlice';
@@ -27,14 +23,14 @@ interface FreeQuarterlyBooksSectionProps {
 }
 
 const { width } = Dimensions.get('window');
-const SWIPE_THRESHOLD = 120; // Distance minimum pour considérer comme un swipe
+const SWIPE_THRESHOLD = 120;
 
 const FreeQuarterlyBooksSection: React.FC<FreeQuarterlyBooksSectionProps> = ({ 
   books, 
   onBookPress,
   isLoading = false
 }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const slideTimer = useRef<NodeJS.Timeout | null>(null);
@@ -42,7 +38,7 @@ const FreeQuarterlyBooksSection: React.FC<FreeQuarterlyBooksSectionProps> = ({
   if (isLoading) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
-        <Text style={styles.sectionTitle}>{t('home.freeQuarterlyBooks')}</Text>
+        <Text style={styles.sectionTitle}>{t('home.freeBooks')}</Text>
         <ActivityIndicator size="large" color="#8A2BE2" style={styles.loader} />
       </View>
     );
@@ -50,10 +46,8 @@ const FreeQuarterlyBooksSection: React.FC<FreeQuarterlyBooksSectionProps> = ({
   
   if (!books || books.length === 0) return null;
   
-  // Sélectionner le livre actuellement affiché
-  const featuredBook = books[currentIndex];
+  const currentBook = books[currentIndex];
   
-  // Fonction pour passer au livre suivant
   const nextSlide = () => {
     Animated.timing(slideAnim, {
       toValue: -width,
@@ -70,7 +64,6 @@ const FreeQuarterlyBooksSection: React.FC<FreeQuarterlyBooksSectionProps> = ({
     });
   };
   
-  // Fonction pour aller au livre précédent
   const prevSlide = () => {
     Animated.timing(slideAnim, {
       toValue: width,
@@ -87,55 +80,43 @@ const FreeQuarterlyBooksSection: React.FC<FreeQuarterlyBooksSectionProps> = ({
     });
   };
   
-  // Configuration du Pan Responder pour gérer les gestes de swipe
   const panResponder = React.useRef(
     PanResponder.create({
-      // Demander à être le responder
       onStartShouldSetPanResponder: () => true,
       onStartShouldSetPanResponderCapture: () => true,
       onMoveShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponderCapture: () => true,
       
       onPanResponderGrant: () => {
-        // Arrêter le timer quand l'utilisateur commence à toucher
         if (slideTimer.current) {
           clearTimeout(slideTimer.current);
         }
       },
       
-      onPanResponderMove: (evt: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-        // Animer au fur et à mesure que l'utilisateur swipe
+      onPanResponderMove: (_, gestureState) => {
         slideAnim.setValue(gestureState.dx);
       },
       
-      onPanResponderRelease: (evt: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-        // Quand l'utilisateur relâche, déterminer si c'est un swipe gauche ou droite
+      onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dx < -SWIPE_THRESHOLD) {
-          // Swipe vers la gauche -> slide suivant
           nextSlide();
         } else if (gestureState.dx > SWIPE_THRESHOLD) {
-          // Swipe vers la droite -> slide précédent
           prevSlide();
         } else {
-          // Pas assez de mouvement, revenir à la position initiale
           Animated.spring(slideAnim, {
             toValue: 0,
             friction: 5,
             tension: 40,
             useNativeDriver: true
           }).start();
-          
-          // Redémarrer le timer
           resetTimer();
         }
       }
     })
   ).current;
   
-  // Configuration du timer pour changer automatiquement de slide toutes les 5 secondes
   useEffect(() => {
     resetTimer();
-    
     return () => {
       if (slideTimer.current) {
         clearTimeout(slideTimer.current);
@@ -147,70 +128,33 @@ const FreeQuarterlyBooksSection: React.FC<FreeQuarterlyBooksSectionProps> = ({
     if (slideTimer.current) {
       clearTimeout(slideTimer.current);
     }
-    
     slideTimer.current = setTimeout(() => {
       nextSlide();
     }, 5000);
   };
   
-  // Calculer le nombre de jours restants jusqu'à l'expiration
-  const calculateDaysLeft = (dateString: string): number => {
-    const today = new Date();
-    const expiryDate = new Date(dateString);
-    const diffTime = expiryDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 0;
-  };
-  
-  // Formater la date selon la langue actuelle
-  const formatDate = (dateString: string): string => {
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return "Date invalide";
-      }
-      const options: Intl.DateTimeFormatOptions = { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      };
-      return date.toLocaleDateString(i18n.language, options);
-    } catch (error) {
-      console.error("Erreur de formatage de date:", error);
-      return "Date invalide";
-    }
-  };
-  
-  // Fonction de partage du livre
   const handleShare = async () => {
     try {
-      const shareResult = await Share.share({
-        title: featuredBook.title,
-        message: t('book.shareMessage', { 
-          title: featuredBook.title, 
-          author: featuredBook.author 
+      await Share.share({
+        message: t('home.shareBookMessage', {
+          title: currentBook.title,
+          author: currentBook.author,
         }),
-        // URL pour Android uniquement
         ...(Platform.OS === 'android' && { url: 'https://koachreader.com' })
       });
-      
-      if (shareResult.action === Share.sharedAction) {
-        // Partagé avec succès
-        console.log('Shared successfully');
-      }
     } catch (error) {
-      console.error('Error sharing:', error);
+      console.error(t('error.sharingBook'));
     }
   };
-  
-  const daysLeft = calculateDaysLeft(featuredBook.availableUntil);
-  
+
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <View style={styles.availabilityContainer}>
-          <Text style={styles.sectionTitle}>{t('home.freeQuarterlyBooks')}</Text>
-          <Text style={styles.sectionSubtitle}>{t('home.freeQuarterlyBooksSubtitle')}</Text>
+          <Text style={styles.sectionTitle}>{t('home.freeBooks')}</Text>
+          <Text style={styles.sectionSubtitle}>
+            {t('home.freeBooksSubtitle')} • {t('home.daysRemaining', { days: currentBook.days_remaining })}
+          </Text>
         </View>
 
         <View style={styles.pageIndicator}>
@@ -223,12 +167,12 @@ const FreeQuarterlyBooksSection: React.FC<FreeQuarterlyBooksSectionProps> = ({
           </TouchableOpacity>
         </View>
       </View>
-      
+
       <View style={styles.carouselContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.featuredBookContainer} 
           onPress={() => {
-            onBookPress(featuredBook.id);
+            onBookPress(currentBook.id);
             if (slideTimer.current) {
               clearTimeout(slideTimer.current);
             }
@@ -236,56 +180,52 @@ const FreeQuarterlyBooksSection: React.FC<FreeQuarterlyBooksSectionProps> = ({
           activeOpacity={0.8}
           {...panResponder.panHandlers}
         >
-          <Animated.View 
+          <Animated.View
             style={[
               styles.bookCard,
               { transform: [{ translateX: slideAnim }] }
             ]}
           >
             <ImageBackground
-              source={featuredBook.coverImageUrl} 
+              source={{ uri: currentBook.cover_url || 'https://via.placeholder.com/150' }}
               style={styles.coverImage}
               imageStyle={styles.coverImageStyle}
             >
               <View style={styles.overlay}>
                 <View style={styles.bookInfo}>
-                  <Text style={styles.authorName}>{featuredBook.author}</Text>
+                  <Text style={styles.authorName}>{currentBook.author}</Text>
                   <Text style={styles.bookTitle} numberOfLines={2}>
-                    {featuredBook.title}
+                    {currentBook.title}
                   </Text>
                   <Text style={styles.bookQuote} numberOfLines={2}>
-                    {featuredBook.description}
+                    {currentBook.description}
                   </Text>
+                  <View style={styles.expirationContainer}>
+                    <MaterialCommunityIcons name="clock-outline" size={16} color="#fff" />
+                    <Text style={styles.expirationText}>
+                      {t('home.expiresIn', { days: currentBook.days_remaining })}
+                    </Text>
+                  </View>
                 </View>
               </View>
             </ImageBackground>
           </Animated.View>
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.bottomContainer}>
-        <View style={styles.availabilityContainer}>
-          <Text style={styles.availabilityText}>
-            {t('home.availableUntil', { date: formatDate(featuredBook.availableUntil) })}
-          </Text>
-          <Text style={styles.daysLeftText}>
-            {t('home.daysLeft', { days: daysLeft })}
-          </Text>
-        </View>
-        
         <View style={styles.pageIndicator}>
           {books.map((_, index) => (
             <TouchableOpacity 
-              key={index} 
+              key={index}
               onPress={() => setCurrentIndex(index)}
               style={[
                 styles.dot, 
                 currentIndex === index && styles.activeDot
-              ]} 
+              ]}
             />
           ))}
         </View>
-       
       </View>
     </View>
   );
@@ -368,21 +308,11 @@ const styles = StyleSheet.create({
   bottomContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     marginTop: 6,
   },
   availabilityContainer: {
     flex: 1,
-  },
-  availabilityText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  daysLeftText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#FF6B6B',
-    marginTop: 2,
   },
   pageIndicator: {
     flexDirection: 'row',
@@ -410,11 +340,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: 16,
   },
-  shareIcon: {
-    width: 24,
-    height: 24,
-    tintColor: '#fff',
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -422,6 +347,21 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginTop: 20,
+  },
+  expirationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  expirationText: {
+    color: '#fff',
+    fontSize: 12,
+    marginLeft: 4,
   },
 });
 

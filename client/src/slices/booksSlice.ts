@@ -1,95 +1,42 @@
-import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { RootState } from '../store';
+import { supabase } from '../lib/supabase';
 
 // Types
 export interface Book {
   id: number;
   title: string;
-  subtitle?: string;
   author: string;
-  description: string;
-  views?: number;
-  totalRating?: number;
-  pageCount: number;
-  category: string;
-  language: string;
-  isPublic: boolean;
-  uploadedById: number;
-  fileUrl?: string;
-  audioUrl?: string;
-  coverImageUrl?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Comment {
-  id: number;
-  bookId: number;
-  userId: number;
-  username: string;
-  content: string;
-  rating?: number;
-  createdAt: string;
+  description: string | null;
+  isbn: string | null;
+  publication_date: string | null;
+  language: string | null;
+  cover_url: string | null;
+  total_pages: number;
+  rating: number | null;
+  cover_image: string | null;
+  viewers: number | null;
+  pdf_url: string | null;
+  audio_url?: string | null;
+  categories: string[];
+  is_free: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 interface BooksState {
   books: Book[];
-  userBooks: Book[];
-  currentBook: Book | null;
-  bookComments: Comment[];
+  filteredBooks: Book[];
+  selectedCategory: string | null;
   isLoading: boolean;
   error: string | null;
-}
-
-interface GetBooksParams {
-  category?: string;
-  limit?: number;
-  offset?: number;
-}
-
-interface CreateBookData {
-  title: string;
-  subtitle?: string;
-  author: string;
-  description: string;
-  pageCount: number;
-  category: string;
-  language?: string;
-  isPublic?: boolean;
-  fileUrl?: string;
-  audioUrl?: string;
-  coverImageUrl?: string;
-}
-
-interface UpdateBookData {
-  id: number;
-  title?: string;
-  subtitle?: string;
-  author?: string;
-  description?: string;
-  pageCount?: number;
-  views?: number;
-  totalRating?: number;
-  category?: string;
-  language?: string;
-  isPublic?: boolean;
-  fileUrl?: string;
-  audioUrl?: string;
-  coverImageUrl?: string;
-}
-
-interface AddCommentData {
-  bookId: number;
-  content: string;
-  rating?: number;
 }
 
 // Initial state
 const initialState: BooksState = {
   books: [],
-  userBooks: [],
-  currentBook: null,
-  bookComments: [],
+  filteredBooks: [],
+  selectedCategory: null,
   isLoading: false,
   error: null,
 };
@@ -233,112 +180,55 @@ export const fetchBooks = createAsyncThunk(
   'books/fetchBooks',
   async (_, { rejectWithValue }) => {
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Simulated API response
-      return booksAPI.getBooks({});
+      const { data: books, error } = await supabase
+        .from('books')
+        .select(`
+          *,
+          book_categories (
+            categories (
+              id,
+              name,
+              icon_name
+            )
+          )
+        `);
+
+      if (error) throw error;
+
+      // Transform the data to include categories
+      const transformedBooks = books.map((book: any) => ({
+        ...book,
+        categories: book.book_categories.map((bc: any) => bc.categories)
+      }));
+
+      return transformedBooks;
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-export const fetchUserBooks = createAsyncThunk(
-  'books/fetchUserBooks',
-  async (_, { rejectWithValue }) => {
+export const fetchBooksByCategory = createAsyncThunk(
+  'books/fetchBooksByCategory',
+  async (categoryId: string, { rejectWithValue }) => {
     try {
-      // In a real app, this would fetch books uploaded by the current user
-      const books = await booksAPI.getBooks({});
-      // Just return the same books for demo purposes
-      return books;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
+      const { data: books, error } = await supabase
+        .from('book_categories')
+        .select(`
+          books (*),
+          categories (
+            id,
+            name
+          )
+        `)
+        .eq('category_id', categoryId);
 
-export const fetchBookById = createAsyncThunk(
-  'books/fetchBookById',
-  async (bookId: number, { rejectWithValue }) => {
-    try {
-      // In a real app, this would be a specific API call to get a book by ID
-      const books = await booksAPI.getBooks({});
-      const book = books.find(b => b.id === bookId);
-      
-      if (!book) {
-        throw new Error('Book not found');
-      }
-      
-      return book;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
+      if (error) throw error;
 
-export const createBook = createAsyncThunk(
-  'books/createBook',
-  async (bookData: CreateBookData, { rejectWithValue }) => {
-    try {
-      const book = await booksAPI.createBook(bookData);
-      return book;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-export const updateBook = createAsyncThunk(
-  'books/updateBook',
-  async (bookData: UpdateBookData, { rejectWithValue }) => {
-    try {
-      const book = await booksAPI.updateBook(bookData);
-      return book;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-export const fetchBookComments = createAsyncThunk(
-  'books/fetchBookComments',
-  async (bookId: number, { rejectWithValue }) => {
-    try {
-      // In a real app, this would fetch comments for the specific book
-      // For demo purposes, we'll return mock data
-      return [
-        {
-          id: 1,
-          bookId,
-          userId: 2,
-          username: 'user1',
-          content: 'This book changed my life!',
-          rating: 5,
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: 2,
-          bookId,
-          userId: 3,
-          username: 'user2',
-          content: 'Very insightful read.',
-          rating: 4,
-          createdAt: new Date().toISOString(),
-        },
-      ];
-    } catch (error: any) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-export const addBookComment = createAsyncThunk(
-  'books/addBookComment',
-  async (commentData: AddCommentData, { rejectWithValue }) => {
-    try {
-      const comment = await booksAPI.addBookComment(commentData);
-      return comment;
+      return books.map((item: any) => ({
+        ...item.books,
+        category: item.categories.name
+      }));
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
@@ -350,132 +240,59 @@ const booksSlice = createSlice({
   name: 'books',
   initialState,
   reducers: {
-    // Any synchronous actions here
-    clearBooksError: (state) => {
-      state.error = null;
+    setSelectedCategory: (state, action) => {
+      state.selectedCategory = action.payload;
+      if (action.payload === null) {
+        state.filteredBooks = state.books;
+      } else {
+        state.filteredBooks = state.books.filter(book => 
+          book.categories.includes(action.payload)
+        );
+      }
     },
+    clearBooks: (state) => {
+      state.books = [];
+      state.filteredBooks = [];
+      state.selectedCategory = null;
+    }
   },
   extraReducers: (builder) => {
     builder
-      // Fetch books
       .addCase(fetchBooks.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(fetchBooks.fulfilled, (state, action: PayloadAction<Book[]>) => {
+      .addCase(fetchBooks.fulfilled, (state, action) => {
         state.isLoading = false;
         state.books = action.payload;
+        state.filteredBooks = action.payload;
       })
       .addCase(fetchBooks.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload as string || 'Failed to fetch books';
+        state.error = action.payload as string;
       })
-      // Fetch user books
-      .addCase(fetchUserBooks.pending, (state) => {
+      .addCase(fetchBooksByCategory.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(fetchUserBooks.fulfilled, (state, action: PayloadAction<Book[]>) => {
+      .addCase(fetchBooksByCategory.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.userBooks = action.payload;
+        state.filteredBooks = action.payload;
       })
-      .addCase(fetchUserBooks.rejected, (state, action) => {
+      .addCase(fetchBooksByCategory.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload as string || 'Failed to fetch user books';
-      })
-      // Fetch book by ID
-      .addCase(fetchBookById.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(fetchBookById.fulfilled, (state, action: PayloadAction<Book>) => {
-        state.isLoading = false;
-        state.currentBook = action.payload;
-      })
-      .addCase(fetchBookById.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string || 'Failed to fetch book';
-      })
-      // Create book
-      .addCase(createBook.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(createBook.fulfilled, (state, action: PayloadAction<Book>) => {
-        state.isLoading = false;
-        state.books.push(action.payload);
-        state.userBooks.push(action.payload);
-      })
-      .addCase(createBook.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string || 'Failed to create book';
-      })
-      // Update book
-      .addCase(updateBook.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(updateBook.fulfilled, (state, action: PayloadAction<Book>) => {
-        state.isLoading = false;
-        
-        // Update in books array
-        const index = state.books.findIndex(book => book.id === action.payload.id);
-        if (index !== -1) {
-          state.books[index] = action.payload;
-        }
-        
-        // Update in userBooks array
-        const userIndex = state.userBooks.findIndex(book => book.id === action.payload.id);
-        if (userIndex !== -1) {
-          state.userBooks[userIndex] = action.payload;
-        }
-        
-        // Update currentBook if it's the same book
-        if (state.currentBook && state.currentBook.id === action.payload.id) {
-          state.currentBook = action.payload;
-        }
-      })
-      .addCase(updateBook.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string || 'Failed to update book';
-      })
-      // Fetch book comments
-      .addCase(fetchBookComments.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(fetchBookComments.fulfilled, (state, action: PayloadAction<Comment[]>) => {
-        state.isLoading = false;
-        state.bookComments = action.payload;
-      })
-      .addCase(fetchBookComments.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string || 'Failed to fetch comments';
-      })
-      // Add book comment
-      .addCase(addBookComment.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(addBookComment.fulfilled, (state, action: PayloadAction<Comment>) => {
-        state.isLoading = false;
-        state.bookComments.unshift(action.payload);
-      })
-      .addCase(addBookComment.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string || 'Failed to add comment';
+        state.error = action.payload as string;
       });
   },
 });
 
 // Export actions
-export const { clearBooksError } = booksSlice.actions;
+export const { setSelectedCategory, clearBooks } = booksSlice.actions;
 
 // Export selectors
 export const selectBooks = (state: RootState) => state.books.books;
-export const selectUserBooks = (state: RootState) => state.books.userBooks;
-export const selectCurrentBook = (state: RootState) => state.books.currentBook;
-export const selectBookComments = (state: RootState) => state.books.bookComments;
+export const selectFilteredBooks = (state: RootState) => state.books.filteredBooks;
+export const selectSelectedCategory = (state: RootState) => state.books.selectedCategory;
 export const selectBooksLoading = (state: RootState) => state.books.isLoading;
 export const selectBooksError = (state: RootState) => state.books.error;
 

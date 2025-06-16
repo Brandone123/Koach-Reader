@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { 
   StyleSheet, 
   View, 
@@ -26,15 +26,25 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { 
   fetchBooks, 
-  selectBooks, 
-  selectBooksLoading 
+  selectBooks,
+  selectFilteredBooks,
+  selectBooksLoading,
+  setSelectedCategory,
+  selectSelectedCategory,
+  Book
 } from '../slices/booksSlice';
+import {
+  fetchCategories,
+  selectCategories,
+  selectCategoriesLoading,
+  Category
+} from '../slices/categoriesSlice';
+import { selectUser } from '../slices/authSlice';
 import { 
   fetchReadingPlans, 
   selectReadingPlans, 
   selectReadingPlansLoading 
 } from '../slices/readingPlansSlice';
-import { selectUser } from '../slices/authSlice';
 import { 
   fetchFreeQuarterlyBooks, 
   selectFreeQuarterlyBooks, 
@@ -43,7 +53,6 @@ import {
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { AppDispatch } from '../store';
-import { Book } from '../slices/booksSlice';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from "expo-linear-gradient";
@@ -96,7 +105,7 @@ const BookCard = ({ book, onPress }: { book: Book; onPress: () => void }) => {
       onPress={onPress}
     >
       <Image 
-        source={{ uri: book.coverImageUrl || 'https://via.placeholder.com/150' }} 
+        source={{ uri: book.cover_url || book.cover_image || 'https://via.placeholder.com/150' }} 
         style={styles.bookCover} 
       />
       <Text style={[styles.bookTitle, { color: '#333333' }]} numberOfLines={2}>
@@ -138,112 +147,88 @@ const CategorySection = ({ category, books, navigation }: {
 };
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector(selectUser) as ExtendedUser;
-  const books = useSelector(selectBooks);
-  const readingPlans = useSelector(selectReadingPlans);
-  const freeQuarterlyBooks = useSelector(selectFreeQuarterlyBooks);
+  
+  // Books and categories state
+  const books = useSelector(selectFilteredBooks);
+  const categories = useSelector(selectCategories);
+  const selectedCategory = useSelector(selectSelectedCategory);
   const isBooksLoading = useSelector(selectBooksLoading);
+  const isCategoriesLoading = useSelector(selectCategoriesLoading);
+  
+  // Reading plans state
+  const readingPlans = useSelector(selectReadingPlans);
   const isPlansLoading = useSelector(selectReadingPlansLoading);
-  const isFreeQuarterlyBooksLoading = useSelector(selectFreeQuarterlyBooksLoading);
   
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  
-  // Extract user's preferred categories from profile if available
-  const userPreferredCategories = user?.preferences?.preferredCategories || [];
-  
+
   useEffect(() => {
     // Fetch initial data
     dispatch(fetchBooks());
+    dispatch(fetchCategories(i18n.language));
     dispatch(fetchReadingPlans());
-    dispatch(fetchFreeQuarterlyBooks());
-  }, [dispatch]);
-  
+  }, [dispatch, i18n.language]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([
       dispatch(fetchBooks()),
-      dispatch(fetchReadingPlans()),
-      dispatch(fetchFreeQuarterlyBooks())
+      dispatch(fetchCategories(i18n.language)),
+      dispatch(fetchReadingPlans())
     ]);
     setRefreshing(false);
-  }, [dispatch]);
-  
-  const calculateProgress = (plan: any) => {
-    return (plan.currentPage / plan.totalPages) * 100;
+  }, [dispatch, i18n.language]);
+
+  // Filter books based on search query
+  const filteredBooks = useMemo(() => {
+    return books.filter(book => {
+      const matchesSearch = !searchQuery || 
+        book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        book.author.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesSearch;
+    });
+  }, [books, searchQuery]);
+
+  // Get free books
+  const freeBooks = useMemo(() => {
+    return books.filter(book => book.is_free).map(book => {
+      const expirationDate = new Date(book.updated_at);
+      expirationDate.setMonth(expirationDate.getMonth() + 3);
+      return {
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        description: book.description || '',
+        cover_url: book.cover_url || book.cover_image || 'https://via.placeholder.com/150',
+        total_pages: book.total_pages,
+        is_free: book.is_free,
+        category: book.categories[0] || 'general',
+        updated_at: book.updated_at,
+        expiration_date: expirationDate.toISOString(),
+        days_remaining: Math.ceil((expirationDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+      };
+    });
+  }, [books]);
+
+  const handleFreeBookPress = (bookId: number) => {
+    navigation.navigate('BookDetail', { bookId: bookId.toString() });
   };
-  
-  const renderBookItem = ({ item }: { item: any }) => (
-    <Card 
-      style={styles.bookCard}
-      onPress={() => navigation.navigate('BookDetail', { bookId: item.id })}
-    >
-      <Card.Cover 
-        source={require('../../assets/list_book.jpg')} 
-        style={styles.bookCover}
-      />
-      <Card.Content>
-        <View style={styles.chipContainer}>
-          <Text style={styles.chip}>34.4k</Text>
-          <Avatar.Icon 
-            size={30} 
-            icon={'eye'} 
-            style={[
-              { backgroundColor: '#c0c0c0'}
-            ]} 
-          />
-          <Divider style={styles.divider} /> 
-          <Text style={styles.chip}>4</Text>
-          <Avatar.Icon 
-            size={30} 
-            icon={'star'} 
-            style={[
-              styles.rankIcon, 
-              { backgroundColor: '#f5b700'}
-            ]} 
-          />
-        </View>
-        <Title numberOfLines={2} style={styles.bookTitle}>{item.title}</Title>
-        <Paragraph numberOfLines={1} style={styles.bookAuthor}>{item.author}</Paragraph>
-       
-      </Card.Content>
-    </Card>
-  );
-  
-  const renderFeaturedBookItem = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={styles.featuredBookContainer}
-      onPress={() => navigation.navigate('BookDetail', { bookId: item.id })}
-    >
-      <Image 
-        source={{ uri: item.coverImageUrl || 'https://via.placeholder.com/300x450' }} 
-        style={styles.featuredBookCover}
-      />
-      <View style={styles.featuredBookOverlay}>
-        <Text style={styles.featuredBookTitle}>{item.title}</Text>
-        <Text style={styles.featuredBookAuthor}>{item.author}</Text>
-        <View style={styles.ratingContainer}>
-          <Text style={styles.ratingText}>{item.rating || '4.5'} ★</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-  
-  const renderCategoryItem = ({ item }: { item: any }) => (
+
+  const renderCategoryItem = ({ item }: { item: Category }) => (
     <TouchableOpacity
       style={[
         styles.categoryItem,
         selectedCategory === item.id && styles.selectedCategoryItem
       ]}
-      onPress={() => setSelectedCategory(item.id)}
+      onPress={() => dispatch(setSelectedCategory(selectedCategory === item.id ? null : item.id))}
     >
       <Avatar.Icon 
         size={32} 
-        icon={item.icon}
+        icon={item.icon_name || 'book'}
         style={[
           styles.categoryIcon,
           selectedCategory === item.id && styles.selectedCategoryIcon
@@ -260,85 +245,74 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       </Text>
     </TouchableOpacity>
   );
-  
-  const renderPlanItem = ({ item }: { item: any }) => (
+
+  const renderBookItem = ({ item }: { item: Book }) => (
     <Card 
-      style={styles.planCard}
-      onPress={() => navigation.navigate('ReadingPlan', { bookId: item.book?.id?.toString() || "" })}
+      style={styles.bookCard}
+      onPress={() => navigation.navigate('BookDetail', { bookId: item.id.toString() })}
     >
+      <Card.Cover 
+        source={{ uri: item.cover_url || item.cover_image || 'https://via.placeholder.com/150'}} 
+        style={styles.bookCover}
+      />
       <Card.Content>
-        <Title numberOfLines={1}>{item.title}</Title>
-        <Paragraph numberOfLines={1}>
-          {item.book?.title} by {item.book?.author}
-        </Paragraph>
-        <View style={styles.progressContainer}>
-          <View style={styles.progressTextContainer}>
-            <Text style={styles.progressText}>
-              {item.currentPage} of {item.totalPages} pages
-            </Text>
-            <Text style={styles.progressPercent}>
-              {Math.round((item.currentPage / item.totalPages) * 100)}%
-            </Text>
-          </View>
-          <ProgressBar 
-            progress={item.currentPage / item.totalPages} 
-            color="#8A2BE2"
-            style={styles.progressBar}
+        <View style={styles.chipContainer}>
+          <Text style={styles.chip}>{item.viewers || 0}</Text>
+          <Avatar.Icon 
+            size={30} 
+            icon={'eye'} 
+            style={[{ backgroundColor: '#c0c0c0'}]} 
+          />
+          <Divider style={styles.divider} /> 
+          <Text style={styles.chip}>{item.rating || 0}</Text>
+          <Avatar.Icon 
+            size={30} 
+            icon={'star'} 
+            style={[styles.rankIcon, { backgroundColor: '#f5b700'}]} 
           />
         </View>
-        <View style={styles.planDetails}>
-          <Text style={styles.planDetailText}>
-            {item.pagesPerSession} pages {item.frequency === 'daily' ? 'per day' : 'per week'}
-          </Text>
-          <Button 
-            mode="text" 
-            compact 
-            onPress={() => navigation.navigate('ReadingPlan', { bookId: item.book?.id?.toString() || "" })}
-            color="#8A2BE2"
-          >
-            Log Progress
-          </Button>
-        </View>
+        <Title numberOfLines={2} style={styles.bookTitle}>{item.title}</Title>
+        <Paragraph numberOfLines={1} style={styles.bookAuthor}>{item.author}</Paragraph>
       </Card.Content>
     </Card>
   );
-  
-  // Filter books based on search query and selected category
-  const filteredBooks = books.filter(book => {
-    const matchesSearch = !searchQuery || 
-      book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.category.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = selectedCategory === 'all' || 
-      book.category.toLowerCase() === selectedCategory.toLowerCase();
-    
-    return matchesSearch && matchesCategory;
-  });
-  
-  // Get books from user's preferred categories for the featured section
-  const featuredBooks = userPreferredCategories.length > 0
-    ? books.filter(book => 
-        userPreferredCategories.some(
-          category => book.category.toLowerCase() === category.toLowerCase()
-        )
-      )
-    : books.slice(0, 5); // If no preferences, just show first 5 books
-  
-  // Function to filter books by category
-  const filterBooksByCategory = (category: string) => {
-    // For now, return all books since we don't have enough mock data
-    // In a real app, we'd filter: return books.filter(b => b.category === category);
-    return books;
+
+  const renderPlanItem = ({ item }: { item: any }) => {
+    const book = books.find(b => b.id === item.book_id);
+    if (!book) return null;
+
+    const progress = (item.current_page / book.total_pages) * 100;
+    const daysLeft = Math.ceil((new Date(item.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+
+    return (
+      <Card style={styles.planCard}>
+        <Card.Cover 
+          source={{ uri: book.cover_url || book.cover_image || 'https://via.placeholder.com/150' }} 
+          style={styles.planCover}
+        />
+        <Card.Content>
+          <Title numberOfLines={2} style={styles.planTitle}>{book.title}</Title>
+          <View style={styles.progressContainer}>
+            <ProgressBar 
+              progress={progress / 100} 
+              color="#8A2BE2" 
+              style={styles.progressBar}
+            />
+            <Text style={styles.progressText}>{Math.round(progress)}%</Text>
+          </View>
+          <Text style={styles.daysLeft}>
+            {daysLeft} {t('home.daysLeft')}
+          </Text>
+          <Text style={styles.dailyGoal}>
+            {t('home.dailyGoal')}: {item.daily_goal} {t('home.pages')}
+          </Text>
+        </Card.Content>
+      </Card>
+    );
   };
-  
-  const handleFreeBookPress = (bookId: number) => {
-    console.log(`Navigating to BookDetail with bookId: ${bookId}`);
-    navigation.navigate('BookDetail', { bookId: bookId.toString() });
-  };
-  
+
   // Loading state
-  if ((isBooksLoading && books.length === 0) || isFreeQuarterlyBooksLoading) {
+  if ((isBooksLoading && books.length === 0) || (isCategoriesLoading && categories.length === 0)) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#6200ee" />
@@ -346,7 +320,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       </View>
     );
   }
-  
+
   return (
     <ScrollView 
       style={styles.container}
@@ -355,7 +329,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           refreshing={refreshing}
           onRefresh={onRefresh}
           colors={['#8A2BE2']}
-          style={styles.refreshControl}
         />
       }
     >
@@ -366,49 +339,24 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <Text style={styles.subHeadText}>{t('home.subHeadText')}</Text>
       </View>
 
-        {/* <LinearGradient
-          colors={["rgb(91,61,221)", "#9317ed"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.headBox}
-        >
-          <Text style={[styles.headText, { fontSize: 10 * 1.5 }]}>
-          {t('home.welcomeBack')}, {user?.name || 'Reader'}!
-          </Text>
-          <Text style={styles.subHeadText}>Record your wonderful reading</Text>
-          <View style={[styles.circle, styles.circle1]}></View>
-          <View style={[styles.circle, styles.circle2]}></View>
-          <View style={[styles.circle, styles.circle3]}></View>
-        </LinearGradient> */}
-      
-      {/* Free Quarterly Books Section */}
-      {freeQuarterlyBooks.length > 0 && (
+      <Searchbar
+        placeholder={t('home.searchPlaceholder')}
+        onChangeText={setSearchQuery}
+        value={searchQuery}
+        style={styles.searchBar}
+      />
+
+      {/* Free Books Section */}
+      {freeBooks.length > 0 && (
         <FreeQuarterlyBooksSection 
-          books={freeQuarterlyBooks} 
-          onBookPress={handleFreeBookPress} 
+          books={freeBooks}
+          onBookPress={handleFreeBookPress}
         />
       )}
-      
-      {/* {featuredBooks.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            {userPreferredCategories.length > 0 
-              ? "Recommended For You" 
-              : "Featured Books"}
-          </Text>
-          <FlatList
-            data={featuredBooks.slice(0, 5)}
-            renderItem={renderFeaturedBookItem}
-            keyExtractor={item => `featured-${item.id}`}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.featuredBooksList}
-          />
-        </View>
-      )} */}
 
-      <Divider style={styles.divider} />  
-      
+      <Divider style={styles.divider} />
+
+      {/* Reading Plans Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t('home.readingPlans')}</Text>
@@ -456,17 +404,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       </View>
       
       <Divider style={styles.divider} />
-      
+
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t('home.browseByCategory')}</Text>
-          <Button 
-            mode="text" 
-            onPress={() => {/* Navigate to categories screen */}}
-            color="#8A2BE2"
-          >
-            {t('common.viewAll')}
-          </Button>
         </View>
         <FlatList
           data={categories}
@@ -482,10 +423,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
             {searchQuery 
-              ? t('common.searchResult')
-              : (selectedCategory === 'all' 
-                  ? t('common.allBooks')
-                  : categories.find(c => c.id === selectedCategory)?.name || 'Books')}
+              ? t('common.searchResults')
+              : (selectedCategory
+                  ? categories.find(c => c.id === selectedCategory)?.name
+                  : t('common.allBooks'))}
           </Text>
         </View>
         
@@ -517,11 +458,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             columnWrapperStyle={styles.bookGrid}
             showsVerticalScrollIndicator={false}
             scrollEnabled={false}
-            ListEmptyComponent={
-              isBooksLoading ? (
-                <Text style={styles.loadingText}>Loading books...</Text>
-              ) : null
-            }
           />
         )}
       </View>
@@ -637,18 +573,10 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   planCard: {
-    width: 300,
-    marginRight: 18,
-    borderRadius: 16,
-    // Ajout d'une ombre
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 5,
-    elevation: 5,
+    width: 200,
+    marginRight: 15,
+    borderRadius: 20,
+    elevation: 4,
   },
   bookCard: {
     width: (width - 32) / 2,
@@ -700,23 +628,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginVertical: 8,
   },
-  progressTextContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
+  progressBar: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
   },
   progressText: {
+    marginLeft: 8,
     fontSize: 12,
-  },
-  progressPercent: {
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  progressBar: {
-    height: 8,
-    borderRadius: 4,
+    color: '#666',
   },
   planDetails: {
     flexDirection: 'row',
@@ -729,24 +653,21 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   emptyCard: {
-    padding: 8,
-    marginVertical: 8,
+    marginVertical: 10,
     borderRadius: 10,
   },
   emptyText: {
-    fontSize: 14,
-    color: '#666',
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
+    color: '#666',
   },
   emptyButton: {
-    borderRadius: 10,
+    marginTop: 10,
   },
   loadingText: {
-    fontSize: 14,
-    color: '#666',
     textAlign: 'center',
-    padding: 16,
+    color: '#666',
+    marginVertical: 10,
   },
   divider: {
     marginVertical: 8,
@@ -891,6 +812,40 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontStyle: 'italic',
     color: '#666666',
+  },
+  searchBar: {
+    marginBottom: 20,
+    elevation: 2,
+    borderRadius: 15,
+    backgroundColor: 'white',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  booksList: {
+    paddingVertical: 8,
+  },
+  planCover: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  planTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  daysLeft: {
+    fontSize: 12,
+    color: '#666',
+  },
+  dailyGoal: {
+    fontSize: 12,
+    color: '#666',
   },
 });
 

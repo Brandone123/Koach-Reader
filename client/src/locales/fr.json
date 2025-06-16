@@ -82,14 +82,14 @@
     "errorPasswordTooShort": "Le mot de passe doit contenir au moins 8 caractères"
   },
   "home": {
-    "welcomeBack": "Bon retour",
+    "welcomeBack": "Bienvenue",
     "todaysReading": "Lecture du jour",
     "continueReading": "Continuer la lecture",
     "finishBook": "Terminer le livre",
     "startReading": "Commencer la lecture",
     "dailyGoal": "Objectif quotidien",
     "weeklyGoal": "Objectif hebdomadaire",
-    "recommendedBooks": "Recommandés pour vous",
+    "recommendedBooks": "Recommandé pour vous",
     "viewAll": "Voir tout",
     "addBook": "Ajouter un livre",
     "readingPlans": "Mes plans de lecture",
@@ -101,11 +101,17 @@
     "recentlyAdded": "Ajoutés récemment",
     "mostPopular": "Les plus populaires",
     "subHeadText": "Révélez votre foi, un livre à la fois",
-    "freeQuarterlyBooks": "Choix gratuits du jour",
-    "freeQuarterlyBooksSubtitle": "Lectures quotidiennes, toujours gratuites !",
-    "availableUntil": "Disponible jusqu'au {date}",
-    "daysLeft": "{days} jours restants",
-    "freeQuarterlyBooksDescription": "Tous les 3 mois, profitez de 3 nouveaux livres gratuits quel que soit votre abonnement."
+    "freeBooks": "Livres Gratuits",
+    "freeBooksSubtitle": "Découvrez nos livres gratuits du moment",
+    "searchPlaceholder": "Rechercher des livres...",
+    "daysLeft": "jours restants",
+    "pages": "pages",
+    "readNow": "Lire Maintenant",
+    "shareBookMessage": "Découvrez ce livre incroyable : {{title}} par {{author}}",
+    "share": "Partager",
+    "viewDetails": "Voir les détails",
+    "daysRemaining": "{{days}} jours restants",
+    "expiresIn": "Expire dans {{days}} jours"
   },
   "onboarding": {
     "howOftenRead": "À quelle fréquence lisez-vous?",
@@ -427,5 +433,114 @@
     "finalProgress": "Progression finale",
     "notParticipating": "Vous ne participez pas encore à ce défi",
     "shareChallenge": "Partager le défi"
+  },
+  "error": {
+    "sharingBook": "Erreur lors du partage du livre"
+  },
+  "footer": {
+    "about": "À propos",
+    "contact": "Contact",
+    "privacy": "Politique de confidentialité",
+    "terms": "Conditions d'utilisation",
+    "copyright": "© 2024 Koach Reader. Tous droits réservés.",
+    "followUs": "Suivez-nous",
+    "newsletter": "Newsletter",
+    "subscribe": "S'abonner",
+    "emailPlaceholder": "Votre email",
+    "subscribeSuccess": "Merci de votre inscription !",
+    "subscribeError": "Une erreur est survenue lors de l'inscription"
+  },
+  "about": {
+    "title": "À propos de Koach Reader",
+    "description": "Koach Reader est une plateforme de lecture révolutionnaire conçue pour vous aider à développer et maintenir une habitude de lecture constante. Notre mission est de rendre la lecture accessible, agréable et enrichissante pour tous.",
+    "mission": "Notre Mission",
+    "missionDescription": "Nous croyons que la lecture est une compétence fondamentale qui ouvre les portes à la connaissance, la créativité et la croissance personnelle. Notre mission est de permettre aux lecteurs de tous niveaux de découvrir le plaisir de la lecture et de développer des habitudes de lecture durables.",
+    "vision": "Notre Vision",
+    "visionDescription": "Nous envisageons un monde où chacun a accès à des matériels de lecture de qualité et aux outils nécessaires pour devenir un lecteur confiant et enthousiaste. À travers notre plateforme, nous visons à créer une communauté mondiale de lecteurs qui se soutiennent et s'inspirent mutuellement."
+  },
+  "contact": {
+    "title": "Contactez-nous",
+    "subtitle": "Nous aimerions avoir de vos nouvelles ! Envoyez-nous un message et nous vous répondrons dès que possible.",
+    "name": "Votre Nom",
+    "email": "Votre Email",
+    "message": "Votre Message",
+    "send": "Envoyer le Message",
+    "error": {
+      "title": "Erreur",
+      "fillAllFields": "Veuillez remplir tous les champs",
+      "submissionFailed": "Échec de l'envoi du message. Veuillez réessayer plus tard."
+    },
+    "success": {
+      "title": "Succès",
+      "message": "Votre message a été envoyé avec succès. Nous vous répondrons bientôt !"
+    }
+  },
+  "privacy": {
+    "title": "Politique de Confidentialité",
+    "lastUpdated": "Dernière mise à jour : Mars 2024",
+    "collection": {
+      "title": "Informations que nous collectons",
+      "description": "Nous collectons les informations que vous nous fournissez directement, y compris votre nom, adresse e-mail et préférences de lecture. Nous collectons également des informations sur votre activité de lecture et les informations de votre appareil."
+    },
+    "usage": {
+      "title": "Comment nous utilisons vos informations",
+      "description": "Nous utilisons vos informations pour fournir et améliorer nos services, personnaliser votre expérience de lecture et communiquer avec vous concernant nos services."
+    },
+    "sharing": {
+      "title": "Partage d'informations",
+      "description": "Nous ne vendons pas vos informations personnelles. Nous pouvons partager vos informations avec des prestataires de services qui nous aident à exploiter notre plateforme."
+    },
+    "security": {
+      "title": "Sécurité des données",
+      "description": "Nous mettons en œuvre des mesures de sécurité appropriées pour protéger vos informations personnelles contre tout accès, modification ou divulgation non autorisés."
+    },
+    "rights": {
+      "title": "Vos droits",
+      "description": "Vous avez le droit d'accéder, de corriger ou de supprimer vos informations personnelles. Vous pouvez également vous désinscrire de certaines collectes et utilisations de données."
+    },
+    "contact": {
+      "title": "Contactez-nous",
+      "description": "Si vous avez des questions sur notre politique de confidentialité, veuillez nous contacter à privacy@koachreader.com"
+    }
+  },
+  "terms": {
+    "title": "Conditions d'Utilisation",
+    "lastUpdated": "Dernière mise à jour : Mars 2024",
+    "acceptance": {
+      "title": "Acceptation des conditions",
+      "description": "En accédant ou en utilisant Koach Reader, vous acceptez d'être lié par ces Conditions d'Utilisation et toutes les lois et réglementations applicables."
+    },
+    "license": {
+      "title": "Licence d'utilisation",
+      "description": "Nous vous accordons une licence limitée, non exclusive et non transférable pour accéder et utiliser Koach Reader à des fins personnelles et non commerciales."
+    },
+    "restrictions": {
+      "title": "Restrictions d'utilisation",
+      "description": "Vous ne pouvez pas utiliser Koach Reader à des fins illégales ou d'une manière qui pourrait endommager, désactiver ou altérer le service."
+    },
+    "userContent": {
+      "title": "Contenu utilisateur",
+      "description": "Vous conservez la propriété de tout contenu que vous soumettez à Koach Reader, mais nous accordez une licence pour l'utiliser, le modifier et l'afficher dans le cadre de nos services."
+    },
+    "termination": {
+      "title": "Résiliation",
+      "description": "Nous pouvons résilier ou suspendre votre accès à Koach Reader à tout moment, sans préavis, pour quelque raison que ce soit."
+    },
+    "disclaimer": {
+      "title": "Avis de non-responsabilité",
+      "description": "Koach Reader est fourni 'tel quel' sans aucune garantie, expresse ou implicite."
+    },
+    "limitation": {
+      "title": "Limitation de responsabilité",
+      "description": "Nous ne serons pas responsables des dommages indirects, accessoires, spéciaux, consécutifs ou punitifs résultant de votre utilisation de Koach Reader."
+    },
+    "changes": {
+      "title": "Modifications des conditions",
+      "description": "Nous pouvons modifier ces conditions à tout moment. Nous vous informerons de tout changement important en publiant les nouvelles conditions sur notre site web."
+    },
+    "contact": {
+      "title": "Contactez-nous",
+      "description": "Si vous avez des questions sur ces conditions, veuillez nous contacter à terms@koachreader.com"
+    }
   }
 } 

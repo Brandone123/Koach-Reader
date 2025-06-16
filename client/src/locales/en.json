@@ -101,11 +101,17 @@
     "recentlyAdded": "Recently Added",
     "mostPopular": "Most Popular",
     "subHeadText": "Reveal your faith, one book at a time",
-    "freeQuarterlyBooks": "Free Books of the Day",
-    "freeQuarterlyBooksSubtitle": "Daily readings, always free!",
-    "availableUntil": "Available until {date}",
-    "daysLeft": "{days} days left",
-    "freeQuarterlyBooksDescription": "Every 3 months, enjoy 3 new free books regardless of your subscription plan."
+    "freeBooks": "Free Books",
+    "freeBooksSubtitle": "Discover our current free books",
+    "searchPlaceholder": "Search books...",
+    "daysLeft": "days left",
+    "pages": "pages",
+    "readNow": "Read Now",
+    "shareBookMessage": "Check out this amazing book: {{title}} by {{author}}",
+    "share": "Share",
+    "viewDetails": "View Details",
+    "daysRemaining": "{{days}} days remaining",
+    "expiresIn": "Expires in {{days}} days"
   },
   "onboarding": {
     "howOftenRead": "How often do you read?",
@@ -427,5 +433,114 @@
     "dateMustBeFuture": "Date must be in the future",
     "required": "This field is required",
     "invalidFormat": "Invalid format"
+  },
+  "error": {
+    "sharingBook": "Error sharing book"
+  },
+  "footer": {
+    "about": "About",
+    "contact": "Contact",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Use",
+    "copyright": "© 2024 Koach Reader. All rights reserved.",
+    "followUs": "Follow Us",
+    "newsletter": "Newsletter",
+    "subscribe": "Subscribe",
+    "emailPlaceholder": "Your email",
+    "subscribeSuccess": "Thank you for subscribing!",
+    "subscribeError": "An error occurred while subscribing"
+  },
+  "about": {
+    "title": "About Koach Reader",
+    "description": "Koach Reader is a revolutionary reading platform designed to help you develop and maintain a consistent reading habit. Our mission is to make reading accessible, enjoyable, and rewarding for everyone.",
+    "mission": "Our Mission",
+    "missionDescription": "We believe that reading is a fundamental skill that opens doors to knowledge, creativity, and personal growth. Our mission is to empower readers of all levels to discover the joy of reading and develop lifelong reading habits.",
+    "vision": "Our Vision",
+    "visionDescription": "We envision a world where everyone has access to quality reading materials and the tools they need to become confident, enthusiastic readers. Through our platform, we aim to create a global community of readers who support and inspire each other."
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "We'd love to hear from you! Send us a message and we'll get back to you as soon as possible.",
+    "name": "Your Name",
+    "email": "Your Email",
+    "message": "Your Message",
+    "send": "Send Message",
+    "error": {
+      "title": "Error",
+      "fillAllFields": "Please fill in all fields",
+      "submissionFailed": "Failed to send message. Please try again later."
+    },
+    "success": {
+      "title": "Success",
+      "message": "Your message has been sent successfully. We'll get back to you soon!"
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated: March 2024",
+    "collection": {
+      "title": "Information We Collect",
+      "description": "We collect information that you provide directly to us, including your name, email address, and reading preferences. We also collect information about your reading activity and device information."
+    },
+    "usage": {
+      "title": "How We Use Your Information",
+      "description": "We use your information to provide and improve our services, personalize your reading experience, and communicate with you about our services."
+    },
+    "sharing": {
+      "title": "Information Sharing",
+      "description": "We do not sell your personal information. We may share your information with service providers who assist us in operating our platform."
+    },
+    "security": {
+      "title": "Data Security",
+      "description": "We implement appropriate security measures to protect your personal information from unauthorized access, alteration, or disclosure."
+    },
+    "rights": {
+      "title": "Your Rights",
+      "description": "You have the right to access, correct, or delete your personal information. You can also opt out of certain data collection and use."
+    },
+    "contact": {
+      "title": "Contact Us",
+      "description": "If you have any questions about our privacy policy, please contact us at privacy@koachreader.com"
+    }
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "lastUpdated": "Last updated: March 2024",
+    "acceptance": {
+      "title": "Acceptance of Terms",
+      "description": "By accessing or using Koach Reader, you agree to be bound by these Terms of Service and all applicable laws and regulations."
+    },
+    "license": {
+      "title": "License to Use",
+      "description": "We grant you a limited, non-exclusive, non-transferable license to access and use Koach Reader for your personal, non-commercial purposes."
+    },
+    "restrictions": {
+      "title": "Use Restrictions",
+      "description": "You may not use Koach Reader for any illegal purpose or in any manner that could damage, disable, or impair the service."
+    },
+    "userContent": {
+      "title": "User Content",
+      "description": "You retain ownership of any content you submit to Koach Reader, but grant us a license to use, modify, and display it in connection with our services."
+    },
+    "termination": {
+      "title": "Termination",
+      "description": "We may terminate or suspend your access to Koach Reader at any time, without notice, for any reason."
+    },
+    "disclaimer": {
+      "title": "Disclaimer",
+      "description": "Koach Reader is provided 'as is' without any warranties, express or implied."
+    },
+    "limitation": {
+      "title": "Limitation of Liability",
+      "description": "We shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of Koach Reader."
+    },
+    "changes": {
+      "title": "Changes to Terms",
+      "description": "We may modify these terms at any time. We will notify you of any material changes by posting the new terms on our website."
+    },
+    "contact": {
+      "title": "Contact Us",
+      "description": "If you have any questions about these terms, please contact us at terms@koachreader.com"
+    }
   }
 } 

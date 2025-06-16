@@ -5,11 +5,13 @@ import readingPlansReducer from './slices/readingPlansSlice';
 import koachReducer from './slices/koachSlice';
 import challengesReducer from './slices/challengesSlice';
 import freeQuarterlyBooksReducer from './slices/freeQuarterlyBooksSlice';
+import categoriesReducer from './slices/categoriesSlice';
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     books: booksReducer,
+    categories: categoriesReducer,
     readingPlans: readingPlansReducer,
     koach: koachReducer,
     challenges: challengesReducer,

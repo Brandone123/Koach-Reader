@@ -1,27 +1,22 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
 import { Book } from './booksSlice';
+import { supabase } from '../lib/supabase';
 
 // Types
 export interface ReadingPlan {
   id: number;
-  userId: number;
-  bookId: number;
-  title: string;
-  startDate: string;
-  endDate: string;
-  totalPages: number;
-  currentPage: number;
-  frequency: 'daily' | 'weekly';
-  pagesPerSession: number;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  book?: {
-    title: string;
-    author: string;
-    coverImageUrl?: string;
-  };
+  user_id: string;
+  book_id: number;
+  start_date: string;
+  end_date: string;
+  current_page: number;
+  daily_goal: number;
+  notes: string | null;
+  last_read_date: string | null;
+  status: 'active' | 'completed' | 'paused';
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ReadingSession {
@@ -40,7 +35,7 @@ interface ReadingPlansState {
   plans: ReadingPlan[];
   currentPlan: ReadingPlan | null;
   readingSessions: ReadingSession[];
-  isLoading: boolean;
+  loading: boolean;
   error: string | null;
 }
 
@@ -79,7 +74,7 @@ const initialState: ReadingPlansState = {
   plans: [],
   currentPlan: null,
   readingSessions: [],
-  isLoading: false,
+  loading: false,
   error: null,
 };
 
@@ -93,41 +88,27 @@ const readingPlansAPI = {
     const plans: { [key: number]: ReadingPlan } = {
       1: {
         id: 1,
-        userId: 1,
+        userId: "1",
         bookId: 1,
-        title: 'Read The Bible in 90 Days',
-        startDate: new Date().toISOString(),
-        endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-        totalPages: 1200,
-        currentPage: 120,
-        frequency: 'daily',
-        pagesPerSession: 14,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        book: {
-          title: 'The Bible',
-          author: 'Various Authors',
-          coverImageUrl: 'https://via.placeholder.com/150',
-        },
+        start_date: new Date().toISOString(),
+        end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+        current_page: 120,
+        daily_goal: 14,
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
       2: {
         id: 2,
-        userId: 1,
+        userId: "1",
         bookId: 2,
-        title: 'Purpose Driven Life Study',
-        startDate: new Date().toISOString(),
-        endDate: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString(),
-        totalPages: 368,
-        currentPage: 45,
-        frequency: 'daily',
-        pagesPerSession: 10,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        book: {
-          title: 'The Purpose Driven Life',
-          author: 'Rick Warren',
-          coverImageUrl: 'https://via.placeholder.com/150',
-        },
+        start_date: new Date().toISOString(),
+        end_date: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString(),
+        current_page: 45,
+        daily_goal: 10,
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
     };
     
@@ -142,41 +123,27 @@ const readingPlansAPI = {
     const plans: { [key: number]: ReadingPlan } = {
       1: {
         id: 1,
-        userId: 1,
+        userId: "1",
         bookId: 1,
-        title: 'Read The Bible in 90 Days',
-        startDate: new Date().toISOString(),
-        endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-        totalPages: 1200,
-        currentPage: 120,
-        frequency: 'daily',
-        pagesPerSession: 14,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        book: {
-          title: 'The Bible',
-          author: 'Various Authors',
-          coverImageUrl: 'https://via.placeholder.com/150',
-        },
+        start_date: new Date().toISOString(),
+        end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+        current_page: 120,
+        daily_goal: 14,
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
       2: {
         id: 2,
-        userId: 1,
+        userId: "1",
         bookId: 2,
-        title: 'Purpose Driven Life Study',
-        startDate: new Date().toISOString(),
-        endDate: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString(),
-        totalPages: 368,
-        currentPage: 45,
-        frequency: 'daily',
-        pagesPerSession: 10,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        book: {
-          title: 'The Purpose Driven Life',
-          author: 'Rick Warren',
-          coverImageUrl: 'https://via.placeholder.com/150',
-        },
+        start_date: new Date().toISOString(),
+        end_date: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString(),
+        current_page: 45,
+        daily_goal: 10,
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
     };
     
@@ -196,15 +163,15 @@ const readingPlansAPI = {
     // Simulated API response
     return {
       id: Math.floor(Math.random() * 1000), // Simulated ID
-      userId: 1, // Assuming the current user's ID
-      ...planData,
-      currentPage: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      book: {
-        title: 'Newly Added Book',
-        author: 'Author Name',
-      },
+      userId: "1", // Assuming the current user's ID
+      bookId: planData.bookId,
+      start_date: planData.startDate,
+      end_date: planData.endDate,
+      current_page: 0,
+      daily_goal: planData.pagesPerSession,
+      status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
   },
   
@@ -215,22 +182,15 @@ const readingPlansAPI = {
     // For simplicity, we'll return a mock updated plan
     return {
       id: planData.id,
-      userId: 1,
+      userId: "1",
       bookId: 1,
-      title: planData.title || 'Updated Reading Plan',
-      startDate: planData.startDate || new Date().toISOString(),
-      endDate: planData.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      totalPages: 300,
-      currentPage: planData.currentPage || 0,
-      frequency: planData.frequency || 'daily',
-      pagesPerSession: planData.pagesPerSession || 10,
-      notes: planData.notes,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      book: {
-        title: 'Sample Book',
-        author: 'Sample Author',
-      },
+      start_date: planData.startDate || new Date().toISOString(),
+      end_date: planData.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      current_page: planData.currentPage || 0,
+      daily_goal: planData.pagesPerSession || 10,
+      status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
   },
   
@@ -298,36 +258,62 @@ const readingPlansAPI = {
 // Async thunks
 export const fetchReadingPlans = createAsyncThunk(
   'readingPlans/fetchReadingPlans',
-  async (_, { rejectWithValue }) => {
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Simulated API response
-      return readingPlansAPI.getReadingPlans();
-    } catch (error: any) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
+  async (_, { getState }) => {
+    const state = getState() as RootState;
+    const user = state.auth.user;
 
-export const fetchReadingPlanById = createAsyncThunk(
-  'readingPlans/fetchReadingPlanById',
-  async (planId: number, { rejectWithValue }) => {
-    try {
-      const plan = await readingPlansAPI.getReadingPlanById(planId);
-      return plan;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    if (!user) {
+      throw new Error('User not authenticated');
     }
+
+    const { data, error } = await supabase
+      .from('reading_plans')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    return data as ReadingPlan[];
   }
 );
 
 export const createReadingPlan = createAsyncThunk(
   'readingPlans/createReadingPlan',
-  async (planData: CreatePlanData, { rejectWithValue }) => {
+  async ({ 
+    userId, 
+    bookId, 
+    startDate, 
+    endDate, 
+    dailyGoal,
+    notes 
+  }: {
+    userId: string;
+    bookId: number;
+    startDate: string;
+    endDate: string;
+    dailyGoal: number;
+    notes?: string;
+  }, { rejectWithValue }) => {
     try {
-      const plan = await readingPlansAPI.createReadingPlan(planData);
+      const { data: plan, error } = await supabase
+        .from('reading_plans')
+        .insert([{
+          user_id: userId,
+          book_id: bookId,
+          start_date: startDate,
+          end_date: endDate,
+          daily_goal: dailyGoal,
+          notes,
+          current_page: 0,
+          status: 'active'
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
       return plan;
     } catch (error: any) {
       return rejectWithValue(error.message);
@@ -335,11 +321,35 @@ export const createReadingPlan = createAsyncThunk(
   }
 );
 
-export const updateReadingPlan = createAsyncThunk(
-  'readingPlans/updateReadingPlan',
-  async (planData: UpdatePlanData, { rejectWithValue }) => {
+export const updateReadingProgress = createAsyncThunk(
+  'readingPlans/updateReadingProgress',
+  async ({ 
+    planId, 
+    currentPage,
+    status
+  }: {
+    planId: number;
+    currentPage: number;
+    status?: 'active' | 'completed' | 'abandoned';
+  }, { rejectWithValue }) => {
     try {
-      const plan = await readingPlansAPI.updateReadingPlan(planData);
+      const updateData: any = {
+        current_page: currentPage,
+        last_read_date: new Date().toISOString()
+      };
+
+      if (status) {
+        updateData.status = status;
+      }
+
+      const { data: plan, error } = await supabase
+        .from('reading_plans')
+        .update(updateData)
+        .eq('id', planId)
+        .select()
+        .single();
+
+      if (error) throw error;
       return plan;
     } catch (error: any) {
       return rejectWithValue(error.message);
@@ -371,7 +381,7 @@ export const logReadingSession = createAsyncThunk(
         const plan = state.readingPlans.plans.find(p => p.id === sessionData.readingPlanId);
         
         if (plan) {
-          const updatedCurrentPage = plan.currentPage + sessionData.pagesRead;
+          const updatedCurrentPage = plan.current_page + sessionData.pagesRead;
           // In a real application, we would call an API to update the plan
           // For now, we'll just include this information to be handled in the reducer
           return { session, planId: sessionData.readingPlanId, updatedCurrentPage };
@@ -391,7 +401,8 @@ const readingPlansSlice = createSlice({
   initialState,
   reducers: {
     // Any synchronous actions here
-    clearReadingPlansError: (state) => {
+    clearReadingPlans: (state) => {
+      state.plans = [];
       state.error = null;
     },
   },
@@ -399,83 +410,53 @@ const readingPlansSlice = createSlice({
     builder
       // Fetch reading plans
       .addCase(fetchReadingPlans.pending, (state) => {
-        state.isLoading = true;
+        state.loading = true;
         state.error = null;
       })
-      .addCase(fetchReadingPlans.fulfilled, (state, action: PayloadAction<ReadingPlan[]>) => {
-        state.isLoading = false;
+      .addCase(fetchReadingPlans.fulfilled, (state, action) => {
+        state.loading = false;
         state.plans = action.payload;
       })
       .addCase(fetchReadingPlans.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string || 'Failed to fetch reading plans';
-      })
-      // Fetch reading plan by ID
-      .addCase(fetchReadingPlanById.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(fetchReadingPlanById.fulfilled, (state, action: PayloadAction<ReadingPlan>) => {
-        state.isLoading = false;
-        state.currentPlan = action.payload;
-      })
-      .addCase(fetchReadingPlanById.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string || 'Failed to fetch reading plan';
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch reading plans';
       })
       // Create reading plan
       .addCase(createReadingPlan.pending, (state) => {
-        state.isLoading = true;
+        state.loading = true;
         state.error = null;
       })
-      .addCase(createReadingPlan.fulfilled, (state, action: PayloadAction<ReadingPlan>) => {
-        state.isLoading = false;
-        state.plans.push(action.payload);
-        state.currentPlan = action.payload;
+      .addCase(createReadingPlan.fulfilled, (state, action) => {
+        state.loading = false;
+        state.plans.unshift(action.payload);
       })
       .addCase(createReadingPlan.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string || 'Failed to create reading plan';
+        state.loading = false;
+        state.error = action.payload as string;
       })
-      // Update reading plan
-      .addCase(updateReadingPlan.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(updateReadingPlan.fulfilled, (state, action: PayloadAction<ReadingPlan>) => {
-        state.isLoading = false;
-        
-        // Update in plans array
+      // Update reading progress
+      .addCase(updateReadingProgress.fulfilled, (state, action) => {
         const index = state.plans.findIndex(plan => plan.id === action.payload.id);
         if (index !== -1) {
           state.plans[index] = action.payload;
         }
-        
-        // Update currentPlan if it's the same plan
-        if (state.currentPlan && state.currentPlan.id === action.payload.id) {
-          state.currentPlan = action.payload;
-        }
-      })
-      .addCase(updateReadingPlan.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string || 'Failed to update reading plan';
       })
       // Fetch reading sessions
       .addCase(fetchReadingSessions.pending, (state) => {
-        state.isLoading = true;
+        state.loading = true;
         state.error = null;
       })
       .addCase(fetchReadingSessions.fulfilled, (state, action: PayloadAction<ReadingSession[]>) => {
-        state.isLoading = false;
+        state.loading = false;
         state.readingSessions = action.payload;
       })
       .addCase(fetchReadingSessions.rejected, (state, action) => {
-        state.isLoading = false;
+        state.loading = false;
         state.error = action.payload as string || 'Failed to fetch reading sessions';
       })
       // Log reading session
       .addCase(logReadingSession.pending, (state) => {
-        state.isLoading = true;
+        state.loading = true;
         state.error = null;
       })
       .addCase(
@@ -488,39 +469,36 @@ const readingPlansSlice = createSlice({
             updatedCurrentPage?: number;
           }>
         ) => {
-          state.isLoading = false;
+          state.loading = false;
           state.readingSessions.unshift(action.payload.session);
           
           // If this session was part of a reading plan, update the plan's currentPage
           if (action.payload.planId && action.payload.updatedCurrentPage !== undefined) {
             const planIndex = state.plans.findIndex(plan => plan.id === action.payload.planId);
             if (planIndex !== -1) {
-              state.plans[planIndex].currentPage = action.payload.updatedCurrentPage;
-              
-              // Also update currentPlan if it's the same plan
-              if (state.currentPlan && state.currentPlan.id === action.payload.planId) {
-                state.currentPlan.currentPage = action.payload.updatedCurrentPage;
-              }
+              state.plans[planIndex].current_page = action.payload.updatedCurrentPage;
             }
           }
         }
       )
       .addCase(logReadingSession.rejected, (state, action) => {
-        state.isLoading = false;
+        state.loading = false;
         state.error = action.payload as string || 'Failed to log reading session';
       });
   },
 });
 
 // Export actions
-export const { clearReadingPlansError } = readingPlansSlice.actions;
+export const { clearReadingPlans } = readingPlansSlice.actions;
 
 // Export selectors
 export const selectReadingPlans = (state: RootState) => state.readingPlans.plans;
 export const selectCurrentPlan = (state: RootState) => state.readingPlans.currentPlan;
 export const selectReadingSessions = (state: RootState) => state.readingPlans.readingSessions;
-export const selectReadingPlansLoading = (state: RootState) => state.readingPlans.isLoading;
+export const selectReadingPlansLoading = (state: RootState) => state.readingPlans.loading;
 export const selectReadingPlansError = (state: RootState) => state.readingPlans.error;
+export const selectBookReadingPlan = (state: RootState, bookId: number) => 
+  state.readingPlans.plans.find(plan => plan.book_id === bookId);
 
 // Export reducer
 export default readingPlansSlice.reducer;

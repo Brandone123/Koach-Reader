@@ -39,7 +39,9 @@
     "noBooksFound": "Aucun livre correspondant à votre recherche.",
     "noBooksAvailable": "Aucun livre disponible dans cette catégorie.",
     "of": "sur",
-    "create": "Créer"
+    "create": "Créer",
+    "minutesShort": "min",
+    "great": "Super !"
   },
   "auth": {
     "login": "Connexion",
@@ -181,7 +183,14 @@
     "bio": "Biographie",
     "logoutConfirmation": "Êtes-vous sûr de vouloir vous déconnecter ?",
     "confirmLogout": "Oui, me déconnecter",
-    "levelReader": "Niveau {{level}} Lecteur"
+    "levelReader": "Niveau {{level}} Lecteur",
+    "koachPoints": "Points Koach",
+    "readingStreak": "Série de jours",
+    "deleteProfileTitle": "Supprimer le profil",
+    "deleteWarning": "Êtes-vous sûr de vouloir supprimer votre profil ? Cette action est irréversible.",
+    "confirmDelete": "Supprimer",
+    "interests": "Intérêts",
+    "logoutError": "Échec de la déconnexion."
   },
   "book": {
     "details": "Détails du livre",
@@ -209,7 +218,8 @@
     "yourRating": "Votre note",
     "yourComment": "Votre commentaire",
     "beFirstToComment": "Soyez le premier à laisser un commentaire !",
-    "lastRead": "Dernière lecture il y a"
+    "lastRead": "Dernière lecture il y a",
+    "publishedYear": "Année de pub."
   },
   "challenges": {
     "title": "Défis de lecture",
@@ -329,15 +339,93 @@
     "title": "Plan de lecture",
     "edit": "Modifier le plan",
     "create": "Créer un plan",
-    "createPlan": "Créer un plan de lecture",
-    "dailyGoal": "Objectif quotidien",
     "weeklyGoal": "Objectif hebdomadaire",
     "setReminder": "Définir un rappel",
     "selectBooks": "Sélectionner des livres",
+    "estimatedCompletion": "Achèvement estimé",
+    "planInfo": "Plan de lecture: {current} sur {total} pages",
+    "yourProgress": "Vos progrès",
+    "pagesRead": "Pages lues",
+    "dailyGoal": "Objectif quotidien (pages)",
+    "pagesPerDay": "pages/jour",
+    "updateProgress": "Mettre à jour les progrès",
+    "createPlan": "Créer un plan de lecture",
+    "createDescription": "Configurez un plan pour suivre votre lecture de ce livre.",
+    "startPlan": "Démarrer un plan de lecture",
+    "invalidGoal": "Veuillez entrer un nombre valide pour votre objectif quotidien.",
+    "notes": "Notes",
+    "notesLabel": "Notes (Facultatif)",
+    "planFor": "Plan pour",
+    "newPlan": "Nouveau plan de lecture",
+    "planNameLabel": "Nom du plan",
+    "startDateLabel": "Date de début",
+    "finishDateLabel": "Date de fin cible",
+    "pagesPerDayLabel": "Pages par jour",
+    "editPlanTitle": "Modifier le plan de lecture",
+    "updatePlanButton": "Mettre à jour le plan",
+    "updateSuccessMessage": "Plan de lecture mis à jour avec succès.",
+    "createPlanButton": "Créer le plan",
+    "logSessionTitle": "Enregistrer une session de lecture",
+    "pagesReadLabel": "Pages lues",
+    "minutesSpentLabel": "Minutes passées",
+    "logButton": "Enregistrer",
+    "selectBookForNewPlan": "Veuillez d'abord sélectionner un livre pour créer un nouveau plan de lecture.",
+    "noPlanToEdit": "Aucun plan sélectionné pour modification.",
+    "noPlanDetails": "Détails du plan non trouvés.",
+    "noPlanSelected": "Aucun plan de lecture sélectionné.",
+    "createPlanFor": "Créer un plan pour : {{title}}",
+    "history": "Historique de lecture",
+    "historyCols": {
+      "date": "Date",
+      "pages": "Pages",
+      "time": "Temps (min)"
+    },
+    "noSessions": "Aucune session de lecture enregistrée pour l'instant.",
+    "remaining": "Restant",
     "startDate": "Date de début",
     "endDate": "Date de fin",
-    "estimatedCompletion": "Achèvement estimé",
-    "planInfo": "Plan de lecture: {current} sur {total} pages"
+    "step1": {
+      "title": "Nommez votre plan",
+      "description": "Donnez un nom descriptif à votre plan de lecture et définissez une date de début."
+    },
+    "step2": {
+      "title": "Définissez votre objectif",
+      "description": "Comment voulez-vous lire ? En définissant un objectif de pages quotidien ou une date de fin cible ?"
+    },
+    "step3": {
+      "title": "Vérifiez votre plan",
+      "description": "Tout semble correct ? Vous pouvez revenir en arrière pour modifier les détails."
+    },
+    "goalType": {
+      "pagesPerDay": "Pages par jour",
+      "finishByDate": "Finir avant le"
+    },
+    "summary": {
+      "title": "Titre",
+      "startDate": "Date de début",
+      "goal": "Objectif",
+      "estimatedFinish": "Fin estimée dans",
+      "days": "jours",
+      "targetFinishDate": "Date de fin cible",
+      "calculatedGoal": "Objectif calculé"
+    },
+    "success": {
+      "title": "Plan créé !",
+      "message": "Votre nouveau plan de lecture est prêt. Bonne lecture !"
+    },
+    "errors": {
+      "titleRequired": "Le nom du plan est requis.",
+      "invalidPages": "Veuillez entrer un nombre de pages valide.",
+      "pagesExceedTotal": "Le nombre de pages quotidien ne peut pas dépasser le total des pages du livre ({{totalPages}}).",
+      "endDateAfterStart": "La date de fin cible doit être postérieure à la date de début.",
+      "failedCreate": "Échec de la création du plan de lecture. Veuillez réessayer.",
+      "failedUpdate": "Échec de la mise à jour du plan de lecture. Veuillez réessayer."
+    },
+    "warnings": {
+        "noTotalPages": "Le nombre total de pages du livre n'est pas disponible. Les calculs d'objectifs pourraient être moins précis."
+    },
+    "logSession": "Enregistrer la session",
+    "editPlanButton": "Modifier le plan"
   },
   "readingSession": {
     "title": "Enregistrer une session de lecture",
@@ -352,7 +440,9 @@
     "logReading": "Noter la lecture",
     "validPagesRequired": "Veuillez entrer un nombre valide de pages",
     "validTimeRequired": "Veuillez entrer un nombre valide de minutes",
-    "pointsEarned": "Vous avez enregistré {count} pages et gagné {count} points Koach !"
+    "pointsEarned": "Vous avez enregistré {count} pages et gagné {count} points Koach !",
+    "bookCompleteTitle": "Livre terminé !",
+    "bookCompleteMessage": "Félicitations pour avoir terminé ce livre ! Vous avez gagné des points Koach supplémentaires !"
   },
   "badges": {
     "title": "Badges et réussites",

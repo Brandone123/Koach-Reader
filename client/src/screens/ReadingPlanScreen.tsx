@@ -22,173 +22,177 @@ import {
   Chip,
   DataTable,
   FAB,
-  Modal
+  Modal,
+  useTheme,
+  HelperText
 } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import CreatePlanModal from '../components/CreatePlanModal'; // Import the new modal
 import { 
   fetchBookById, 
   selectCurrentBook,
   selectBooksLoading 
 } from '../slices/booksSlice';
 import { 
-  createReadingPlan, 
+  // createReadingPlan, // Handled by CreatePlanModal
   updateReadingPlan,
   fetchReadingPlanById,
   fetchReadingSessions,
   logReadingSession,
   selectCurrentPlan,
   selectReadingSessions,
-  selectReadingPlansLoading
+  selectReadingPlansLoading,
+  fetchReadingPlans // To refresh list after creation/update
 } from '../slices/readingPlansSlice';
 import { selectUser } from '../slices/authSlice';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList } from '../../App';
+// import { StackNavigationProp } from '@react-navigation/stack'; // Not directly used in this snippet
+// import { RouteProp } from '@react-navigation/native'; // Not directly used in this snippet
+// import { RootStackParamList } from '../../App'; // Might be needed for full navigation typing
 import { AppDispatch } from '../store';
+import { useTranslation } from 'react-i18next';
+
 
 interface ReadingPlanScreenProps {
-  route: any;
-  navigation: any;
+  route: any; // Type this properly based on your navigation setup
+  navigation: any; // Type this properly
 }
 
 const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation }) => {
-  const { planId, bookId } = route.params || {};
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const { planId, bookId, openCreateModal } = route.params || {}; // Added openCreateModal
   const dispatch = useDispatch<AppDispatch>();
   
   const user = useSelector(selectUser);
-  const book = useSelector(selectCurrentBook);
-  const plan = useSelector(selectCurrentPlan);
+  const bookForNewPlan = useSelector(selectCurrentBook); // For when bookId is passed for new plan
+  const planToEdit = useSelector(selectCurrentPlan); // Renamed for clarity
   const sessions = useSelector(selectReadingSessions);
   const isBookLoading = useSelector(selectBooksLoading);
   const isPlanLoading = useSelector(selectReadingPlansLoading);
   
   const [refreshing, setRefreshing] = useState(false);
+  const [isCreateModalVisible, setIsCreateModalVisible] = useState(openCreateModal || false);
+
+  // Form states for EDITING a plan (Create is handled by modal)
+  const [editTitle, setEditTitle] = useState('');
+  const [editStartDate, setEditStartDate] = useState(new Date());
+  const [editEndDate, setEditEndDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+  // const [editFrequency, setEditFrequency] = useState<'daily' | 'weekly'>('daily'); // Keep if needed for edit
+  const [editDailyGoal, setEditDailyGoal] = useState('');
+  const [editNotes, setEditNotes] = useState('');
   
-  // Form states for creating or editing a plan
-  const [title, setTitle] = useState('');
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)); // Default to 30 days from now
-  const [frequency, setFrequency] = useState<'daily' | 'weekly'>('daily');
-  const [pagesPerSession, setPagesPerSession] = useState('');
-  const [notes, setNotes] = useState('');
-  
-  // Reading session tracking
+  const [titleError, setTitleError] = useState('');
+  const [dailyGoalError, setDailyGoalError] = useState('');
+
+  // Reading session tracking (remains the same)
   const [logSessionVisible, setLogSessionVisible] = useState(false);
   const [pagesRead, setPagesRead] = useState('');
   const [minutesSpent, setMinutesSpent] = useState('');
   
-  // Date picker states
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  // Date picker states for EDITING
+  const [showEditStartDatePicker, setShowEditStartDatePicker] = useState(false);
+  const [showEditEndDatePicker, setShowEditEndDatePicker] = useState(false);
   
-  const isEditMode = !!planId;
+  const isEditMode = !!planId; // This determines if we are viewing/editing an existing plan
   
   useEffect(() => {
-    // If we have a book ID but no plan ID, fetch the book for creating a new plan
-    if (bookId && !planId) {
-      dispatch(fetchBookById(bookId));
+    if (bookId && !planId) { // If bookId is provided, it's for creating a new plan
+      dispatch(fetchBookById(bookId)); // Fetch book details for the modal
+      // If `openCreateModal` is true, modal will open. Or trigger here:
+      // setIsCreateModalVisible(true);
     }
     
-    // If we have a plan ID, fetch the plan and its sessions
-    if (planId) {
+    if (planId) { // If planId is provided, fetch this specific plan for viewing/editing
       dispatch(fetchReadingPlanById(planId));
-      dispatch(fetchReadingSessions());
+      dispatch(fetchReadingSessions()); // Assuming sessions are tied to a plan
     }
   }, [dispatch, bookId, planId]);
   
-  // When plan data is loaded, populate form fields for editing
+  // Populate edit form when planToEdit data is loaded
   useEffect(() => {
-    if (plan && isEditMode) {
-      setTitle(plan.title);
-      setStartDate(new Date(plan.startDate));
-      setEndDate(new Date(plan.endDate));
-      setFrequency(plan.frequency);
-      setPagesPerSession(plan.pagesPerSession.toString());
-      setNotes(plan.notes || '');
+    if (planToEdit && isEditMode) {
+      setEditTitle(planToEdit.title || (planToEdit.book ? `Plan for ${planToEdit.book.title}`: 'My Reading Plan'));
+      setEditStartDate(new Date(planToEdit.start_date));
+      setEditEndDate(new Date(planToEdit.end_date));
+      setEditDailyGoal(planToEdit.daily_goal?.toString() || '');
+      // setEditFrequency(planToEdit.frequency); // If frequency is part of your model
+      setEditNotes(planToEdit.notes || '');
     }
-  }, [plan, isEditMode]);
-  
+  }, [planToEdit, isEditMode]);
+
   const onRefresh = async () => {
     setRefreshing(true);
-    
-    if (bookId && !planId) {
-      await dispatch(fetchBookById(bookId));
+    if (isEditMode && planId) {
+      await dispatch(fetchReadingPlanById(planId));
+      await dispatch(fetchReadingSessions());
+    } else if (bookId && !planId) {
+      await dispatch(fetchBookById(bookId)); // For the create modal context
     }
-    
-    if (planId) {
-      await Promise.all([
-        dispatch(fetchReadingPlanById(planId)),
-        dispatch(fetchReadingSessions())
-      ]);
-    }
-    
+    // Potentially refresh all plans if this screen shows a list
+    // await dispatch(fetchReadingPlans());
     setRefreshing(false);
   };
   
   const formatDate = (date: Date): string => {
-    return date.toLocaleDateString();
+    return date.toLocaleDateString(t('common.locale'), { year: 'numeric', month: 'long', day: 'numeric' });
   };
-  
-  const calculateProgress = (plan) => {
-    return (plan.currentPage / plan.totalPages) * 100;
+    
+  const handleUpdatePlan = () => {
+    if (!planToEdit) return;
+
+    let isValid = true;
+    if (!editTitle.trim()) {
+      setTitleError(t('readingPlan.errors.titleRequired'));
+      isValid = false;
+    } else {
+      setTitleError('');
+    }
+
+    const goal = parseInt(editDailyGoal, 10);
+    if (isNaN(goal) || goal <= 0) {
+      setDailyGoalError(t('readingPlan.errors.invalidPages'));
+      isValid = false;
+    } else {
+      setDailyGoalError('');
+    }
+
+    if (editStartDate >= editEndDate) {
+      Alert.alert(t('common.errorText'), t('readingPlan.errors.endDateAfterStart'));
+      isValid = false;
+    }
+    if (!isValid) return;
+
+    dispatch(updateReadingPlan({
+      id: planToEdit.id,
+      title: editTitle,
+      startDate: editStartDate.toISOString(),
+      endDate: editEndDate.toISOString(),
+      dailyGoal: goal,
+      notes: editNotes.trim() || undefined,
+      // frequency: editFrequency, // if frequency is part of your model
+    })).then((result) => {
+      if (updateReadingPlan.fulfilled.match(result)) {
+        Alert.alert(t('common.successTitle'), t('readingPlan.updateSuccessMessage'));
+        navigation.goBack(); // Or navigate to plan details
+      } else {
+        Alert.alert(t('common.errorText'), result.payload as string || t('readingPlan.errors.failedUpdate'));
+      }
+    });
   };
-  
-  const handleCreateOrUpdatePlan = () => {
-    // Validate form
-    if (!title.trim()) {
-      Alert.alert('Error', 'Please enter a title for your reading plan');
-      return;
-    }
-    
-    if (!pagesPerSession.trim() || isNaN(parseInt(pagesPerSession)) || parseInt(pagesPerSession) <= 0) {
-      Alert.alert('Error', 'Please enter a valid number of pages per session');
-      return;
-    }
-    
-    if (startDate >= endDate) {
-      Alert.alert('Error', 'End date must be after start date');
-      return;
-    }
-    
-    if (isEditMode && plan) {
-      // Update existing plan
-      dispatch(updateReadingPlan({
-        id: plan.id,
-        title,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        frequency,
-        pagesPerSession: parseInt(pagesPerSession),
-        notes: notes.trim() || undefined
-      }));
-      
-      Alert.alert('Success', 'Reading plan updated successfully');
-    } else if (book) {
-      // Create new plan
-      dispatch(createReadingPlan({
-        bookId: book.id,
-        title,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        totalPages: book.pageCount,
-        frequency,
-        pagesPerSession: parseInt(pagesPerSession),
-        notes: notes.trim() || undefined
-      }));
-      
-      Alert.alert(
-        'Success', 
-        'Reading plan created successfully',
-        [
-          { 
-            text: 'OK', 
-            onPress: () => navigation.navigate('Home')
-          }
-        ]
-      );
+
+  const handlePlanCreatedInModal = (newPlan: any) => {
+    setIsCreateModalVisible(false);
+    dispatch(fetchReadingPlans()); // Refresh all plans
+    // Navigate to the new plan's detail screen or home
+    // For now, let's assume it stays on this screen or goes back.
+    // If this screen is a list of plans, it should update.
+    // If it was opened specifically for creation, maybe navigate away.
+    if (route.params?.openCreateModal) { // If opened specifically for creation
+        navigation.goBack(); // Or navigate to 'Home' or the new plan's detail
     }
   };
-  
+
   const handleLogSession = () => {
     if (!plan) return;
     
@@ -223,373 +227,209 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
     );
   };
   
-  // Render the form for creating or editing a plan
-  const renderPlanForm = () => (
-    <Card style={styles.card}>
-      <Card.Content>
-        <Title>{isEditMode ? 'Edit Reading Plan' : 'Create Reading Plan'}</Title>
-        
-        {!isEditMode && book && (
-          <View style={styles.bookInfo}>
-            <Title style={styles.bookTitle}>{book.title}</Title>
-            <Paragraph style={styles.bookAuthor}>by {book.author}</Paragraph>
-            <Chip style={styles.bookPageCount}>{book.pageCount} pages</Chip>
-          </View>
-        )}
-        
-        <TextInput
-          label="Plan Title"
-          value={title}
-          onChangeText={setTitle}
-          style={styles.input}
-        />
-        
-        <View style={styles.dateContainer}>
-          <View style={styles.dateField}>
-            <Text style={styles.dateLabel}>Start Date:</Text>
-            <Button 
-              mode="outlined" 
-              onPress={() => setShowStartDatePicker(true)}
-              style={styles.dateButton}
-            >
-              {formatDate(startDate)}
-            </Button>
-            <Portal>
-              <Dialog visible={showStartDatePicker} onDismiss={() => setShowStartDatePicker(false)}>
-                <Dialog.Title>Select Start Date</Dialog.Title>
-                <Dialog.Content>
-                  <View style={styles.datePickerContent}>
-                    <View style={styles.datePickerHeader}>
-                      <Button 
-                        onPress={() => {
-                          const prevMonth = new Date(startDate);
-                          prevMonth.setMonth(prevMonth.getMonth() - 1);
-                          setStartDate(prevMonth);
-                        }}
-                      >
-                        Prev
-                      </Button>
-                      <Text style={styles.monthYearText}>
-                        {startDate.toLocaleDateString('default', { month: 'long', year: 'numeric' })}
-                      </Text>
-                      <Button 
-                        onPress={() => {
-                          const nextMonth = new Date(startDate);
-                          nextMonth.setMonth(nextMonth.getMonth() + 1);
-                          setStartDate(nextMonth);
-                        }}
-                      >
-                        Next
-                      </Button>
-                    </View>
-                    
-                    <View style={styles.calendar}>
-                      {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-                        <Text key={day} style={styles.dayHeader}>{day}</Text>
-                      ))}
-                      
-                      {Array.from({ length: 42 }).map((_, index) => {
-                        const currentMonth = startDate.getMonth();
-                        const currentYear = startDate.getFullYear();
-                        
-                        const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-                        const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
-                        
-                        const startOffset = firstDayOfMonth.getDay();
-                        const daysInMonth = lastDayOfMonth.getDate();
-                        
-                        const day = index - startOffset + 1;
-                        
-                        if (day < 1 || day > daysInMonth) {
-                          return <View key={index} style={styles.dayPlaceholder} />;
-                        }
-                        
-                        const date = new Date(currentYear, currentMonth, day);
-                        const isSelected = date.getDate() === startDate.getDate() && 
-                                          date.getMonth() === startDate.getMonth() && 
-                                          date.getFullYear() === startDate.getFullYear();
-                        
-                        return (
-                          <TouchableOpacity
-                            key={index}
-                            style={[styles.day, isSelected && styles.selectedDay]}
-                            onPress={() => {
-                              const selectedDate = new Date(startDate);
-                              selectedDate.setDate(day);
-                              setStartDate(selectedDate);
-                            }}
-                          >
-                            <Text style={[styles.dayText, isSelected && styles.selectedDayText]}>
-                              {day}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </View>
-                </Dialog.Content>
-                <Dialog.Actions>
-                  <Button onPress={() => setShowStartDatePicker(false)}>Cancel</Button>
-                  <Button onPress={() => setShowStartDatePicker(false)}>OK</Button>
-                </Dialog.Actions>
-              </Dialog>
-            </Portal>
-          </View>
+  // Render the form for EDITING a plan
+  const renderEditPlanForm = () => {
+    if (!planToEdit) return <Text>{t('readingPlan.noPlanToEdit')}</Text>;
+
+    return (
+      <Card style={styles.card}>
+        <Card.Content>
+          <Title>{t('readingPlan.editPlanTitle')}</Title>
           
-          <View style={styles.dateField}>
-            <Text style={styles.dateLabel}>End Date:</Text>
-            <Button 
-              mode="outlined" 
-              onPress={() => setShowEndDatePicker(true)}
-              style={styles.dateButton}
-            >
-              {formatDate(endDate)}
-            </Button>
-            <Portal>
-              <Dialog visible={showEndDatePicker} onDismiss={() => setShowEndDatePicker(false)}>
-                <Dialog.Title>Select End Date</Dialog.Title>
-                <Dialog.Content>
-                  <View style={styles.datePickerContent}>
-                    <View style={styles.datePickerHeader}>
-                      <Button 
-                        onPress={() => {
-                          const prevMonth = new Date(endDate);
-                          prevMonth.setMonth(prevMonth.getMonth() - 1);
-                          setEndDate(prevMonth);
-                        }}
-                      >
-                        Prev
-                      </Button>
-                      <Text style={styles.monthYearText}>
-                        {endDate.toLocaleDateString('default', { month: 'long', year: 'numeric' })}
-                      </Text>
-                      <Button 
-                        onPress={() => {
-                          const nextMonth = new Date(endDate);
-                          nextMonth.setMonth(nextMonth.getMonth() + 1);
-                          setEndDate(nextMonth);
-                        }}
-                      >
-                        Next
-                      </Button>
-                    </View>
-                    
-                    <View style={styles.calendar}>
-                      {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-                        <Text key={day} style={styles.dayHeader}>{day}</Text>
-                      ))}
-                      
-                      {Array.from({ length: 42 }).map((_, index) => {
-                        const currentMonth = endDate.getMonth();
-                        const currentYear = endDate.getFullYear();
-                        
-                        const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-                        const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
-                        
-                        const startOffset = firstDayOfMonth.getDay();
-                        const daysInMonth = lastDayOfMonth.getDate();
-                        
-                        const day = index - startOffset + 1;
-                        
-                        if (day < 1 || day > daysInMonth) {
-                          return <View key={index} style={styles.dayPlaceholder} />;
-                        }
-                        
-                        const date = new Date(currentYear, currentMonth, day);
-                        const isSelected = date.getDate() === endDate.getDate() && 
-                                          date.getMonth() === endDate.getMonth() && 
-                                          date.getFullYear() === endDate.getFullYear();
-                        
-                        return (
-                          <TouchableOpacity
-                            key={index}
-                            style={[styles.day, isSelected && styles.selectedDay]}
-                            onPress={() => {
-                              const selectedDate = new Date(endDate);
-                              selectedDate.setDate(day);
-                              setEndDate(selectedDate);
-                            }}
-                          >
-                            <Text style={[styles.dayText, isSelected && styles.selectedDayText]}>
-                              {day}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </View>
-                </Dialog.Content>
-                <Dialog.Actions>
-                  <Button onPress={() => setShowEndDatePicker(false)}>Cancel</Button>
-                  <Button onPress={() => setShowEndDatePicker(false)}>OK</Button>
-                </Dialog.Actions>
-              </Dialog>
-            </Portal>
-          </View>
-        </View>
-        
-        <Text style={styles.sectionLabel}>Reading Frequency:</Text>
-        <View style={styles.frequencyButtons}>
+          {planToEdit.book && (
+            <View style={styles.bookInfo}>
+              <Chip
+                icon="book"
+                style={styles.bookChip}
+                textStyle={styles.bookChipText}
+                onPress={() => navigation.navigate('BookDetail', { bookId: planToEdit.book.id.toString() })}
+              >
+                {planToEdit.book.title}
+              </Chip>
+            </View>
+          )}
+
+          <TextInput
+            label={t('readingPlan.planNameLabel')}
+            value={editTitle}
+            onChangeText={setEditTitle}
+            style={styles.input}
+            mode="outlined"
+            error={!!titleError}
+            theme={{ colors: { primary: theme.colors.primary, background: theme.colors.surface } }}
+          />
+          <HelperText type="error" visible={!!titleError}>{titleError}</HelperText>
+
+          <TouchableOpacity onPress={() => setShowEditStartDatePicker(true)} style={styles.dateDisplay}>
+            <TextInput
+              label={t('readingPlan.startDateLabel')}
+              value={formatDate(editStartDate)}
+              editable={false}
+              mode="outlined"
+              style={styles.input}
+              right={<TextInput.Icon icon="calendar" />}
+              theme={{ colors: { primary: theme.colors.primary, background: theme.colors.surface } }}
+            />
+          </TouchableOpacity>
+          {showEditStartDatePicker && (
+            <DateTimePicker
+              value={editStartDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(event, date) => { setShowEditStartDatePicker(false); if (date) setEditStartDate(date);}}
+            />
+          )}
+
+          <TouchableOpacity onPress={() => setShowEditEndDatePicker(true)} style={styles.dateDisplay}>
+            <TextInput
+              label={t('readingPlan.finishDateLabel')}
+              value={formatDate(editEndDate)}
+              editable={false}
+              mode="outlined"
+              style={styles.input}
+              right={<TextInput.Icon icon="calendar" />}
+              theme={{ colors: { primary: theme.colors.primary, background: theme.colors.surface } }}
+            />
+          </TouchableOpacity>
+          {showEditEndDatePicker && (
+            <DateTimePicker
+              value={editEndDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(event, date) => { setShowEditEndDatePicker(false); if (date) setEditEndDate(date);}}
+              minimumDate={new Date(editStartDate.getTime() + 24 * 60 * 60 * 1000)}
+            />
+          )}
+
+          <TextInput
+            label={t('readingPlan.dailyGoalLabel')}
+            value={editDailyGoal}
+            onChangeText={setEditDailyGoal}
+            keyboardType="number-pad"
+            style={styles.input}
+            mode="outlined"
+            error={!!dailyGoalError}
+            theme={{ colors: { primary: theme.colors.primary, background: theme.colors.surface } }}
+          />
+          <HelperText type="error" visible={!!dailyGoalError}>{dailyGoalError}</HelperText>
+
+          <TextInput
+            label={t('readingPlan.notesLabel')}
+            value={editNotes}
+            onChangeText={setEditNotes}
+            multiline
+            numberOfLines={3}
+            style={styles.input}
+            mode="outlined"
+            theme={{ colors: { primary: theme.colors.primary, background: theme.colors.surface } }}
+          />
+
           <Button
-            mode={frequency === 'daily' ? 'contained' : 'outlined'}
-            onPress={() => setFrequency('daily')}
-            style={[styles.frequencyButton, { marginRight: 8 }]}
+            mode="contained"
+            onPress={handleUpdatePlan}
+            style={styles.submitButton}
+            loading={isPlanLoading}
+            disabled={isPlanLoading}
+            buttonColor={theme.colors.primary}
           >
-            Daily
+            {t('readingPlan.updatePlanButton')}
           </Button>
-          <Button
-            mode={frequency === 'weekly' ? 'contained' : 'outlined'}
-            onPress={() => setFrequency('weekly')}
-            style={styles.frequencyButton}
-          >
-            Weekly
-          </Button>
-        </View>
-        
-        <TextInput
-          label="Pages Per Session"
-          value={pagesPerSession}
-          onChangeText={setPagesPerSession}
-          keyboardType="number-pad"
-          style={styles.input}
-        />
-        
-        <TextInput
-          label="Notes (Optional)"
-          value={notes}
-          onChangeText={setNotes}
-          multiline
-          numberOfLines={3}
-          style={styles.input}
-        />
-        
-        <Button 
-          mode="contained" 
-          onPress={handleCreateOrUpdatePlan}
-          style={styles.submitButton}
-          loading={isPlanLoading}
-          disabled={isPlanLoading}
-        >
-          {isEditMode ? 'Update Plan' : 'Create Plan'}
-        </Button>
-      </Card.Content>
-    </Card>
-  );
+        </Card.Content>
+      </Card>
+    );
+  }
   
-  // Render plan details view
+  // Render plan details view (remains mostly the same, simplified for brevity)
   const renderPlanDetails = () => {
-    if (!plan) return null;
+    if (!planToEdit) return <Text>{t('readingPlan.noPlanDetails')}</Text>; // Or some placeholder/loading
     
-    const progress = plan.currentPage / plan.totalPages;
+    const progress = planToEdit.current_page / (planToEdit.book?.total_pages || planToEdit.total_pages || 1); // Handle missing book/totalPages
     const progressPercent = Math.round(progress * 100);
-    const remainingPages = plan.totalPages - plan.currentPage;
+    const remainingPages = (planToEdit.book?.total_pages || planToEdit.total_pages || 0) - planToEdit.current_page;
     
     return (
       <View>
         <Card style={styles.card}>
           <Card.Content>
-            <Title style={styles.planTitle}>{plan.title}</Title>
+            <Title style={styles.planTitle}>{planToEdit.title}</Title>
             
-            {plan.book && (
-              <View style={styles.bookInfo}>
-                <Paragraph style={styles.bookDetails}>
-                  {plan.book.title} by {plan.book.author}
-                </Paragraph>
-                <Chip style={styles.bookPageCount}>{plan.totalPages} pages</Chip>
-              </View>
+            {planToEdit.book && (
+              <Chip icon="book" style={styles.bookChip} onPress={() => navigation.navigate('BookDetail', { bookId: planToEdit.book.id.toString() })}>
+                {planToEdit.book.title} - {planToEdit.book.author}
+              </Chip>
             )}
             
             <View style={styles.progressContainer}>
               <View style={styles.progressTextContainer}>
                 <Text style={styles.progressText}>
-                  {plan.currentPage} of {plan.totalPages} pages
+                  {planToEdit.current_page} of {planToEdit.book?.total_pages || planToEdit.total_pages || 'N/A'} {t('book.pages')}
                 </Text>
-                <Text style={styles.progressPercent}>
-                  {progressPercent}% Complete
+                <Text style={[styles.progressPercent, {color: theme.colors.primary}]}>
+                  {progressPercent}% {t('common.complete')}
                 </Text>
               </View>
               <ProgressBar 
                 progress={progress}
-                color="#6200ee"
+                color={theme.colors.primary}
                 style={styles.progressBar}
               />
             </View>
             
+            {/* Simplified stats for brevity, can be expanded */}
             <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Remaining</Text>
-                <Text style={styles.statValue}>{remainingPages} pages</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Reading</Text>
-                <Text style={styles.statValue}>
-                  {plan.pagesPerSession} pages {plan.frequency === 'daily' ? 'per day' : 'per week'}
-                </Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Duration</Text>
-                <Text style={styles.statValue}>
-                  {formatDate(new Date(plan.startDate))} - {formatDate(new Date(plan.endDate))}
-                </Text>
-              </View>
+                <View style={styles.statItem}><Text style={styles.statLabel}>{t('readingPlan.dailyGoal')}</Text><Text style={styles.statValue}>{planToEdit.daily_goal} {t('readingPlan.pagesPerDay')}</Text></View>
+                <View style={styles.statItem}><Text style={styles.statLabel}>{t('readingPlan.remaining')}</Text><Text style={styles.statValue}>{remainingPages} {t('book.pages')}</Text></View>
+            </View>
+             <View style={styles.statsContainer}>
+                <View style={styles.statItem}><Text style={styles.statLabel}>{t('readingPlan.startDate')}</Text><Text style={styles.statValue}>{formatDate(new Date(planToEdit.start_date))}</Text></View>
+                <View style={styles.statItem}><Text style={styles.statLabel}>{t('readingPlan.endDate')}</Text><Text style={styles.statValue}>{formatDate(new Date(planToEdit.end_date))}</Text></View>
             </View>
             
-            {plan.notes && (
+            {planToEdit.notes && (
               <View style={styles.notesContainer}>
-                <Title style={styles.sectionTitle}>Notes</Title>
-                <Paragraph style={styles.notes}>{plan.notes}</Paragraph>
+                <Title style={styles.sectionTitle}>{t('readingPlan.notes')}</Title>
+                <Paragraph style={styles.notes}>{planToEdit.notes}</Paragraph>
               </View>
             )}
             
             <View style={styles.actionButtons}>
               <Button 
                 mode="contained" 
+                icon="plus-circle-outline"
                 onPress={() => setLogSessionVisible(true)}
-                style={[styles.actionButton, { marginRight: 8 }]}
+                style={[styles.actionButton, { marginRight: 8, backgroundColor: theme.colors.primary }]}
               >
-                Log Reading Session
+                {t('readingPlan.logSession')}
               </Button>
               <Button 
                 mode="outlined" 
-                onPress={() => navigation.navigate('ReadingPlan', { planId: plan.id, isEdit: true })}
-                style={styles.actionButton}
+                icon="pencil-outline"
+                onPress={() => navigation.setParams({ isEditingPlan: true })} // Trigger edit mode on this screen
+                style={[styles.actionButton, {borderColor: theme.colors.primary}]}
+                textColor={theme.colors.primary}
               >
-                Edit Plan
+                {t('readingPlan.editPlanButton')}
               </Button>
             </View>
           </Card.Content>
         </Card>
         
+        {/* Reading History (simplified) */}
         <Card style={styles.card}>
           <Card.Content>
-            <Title style={styles.sectionTitle}>Reading History</Title>
-            
-            {sessions.length === 0 ? (
-              <Text style={styles.emptyText}>
-                No reading sessions recorded yet. Start logging your progress!
-              </Text>
+            <Title style={styles.sectionTitle}>{t('readingPlan.history')}</Title>
+            {sessions.filter(s => s.readingPlanId === planToEdit.id).length === 0 ? (
+              <Text style={styles.emptyText}>{t('readingPlan.noSessions')}</Text>
             ) : (
               <DataTable>
                 <DataTable.Header>
-                  <DataTable.Title>Date</DataTable.Title>
-                  <DataTable.Title numeric>Pages</DataTable.Title>
-                  <DataTable.Title numeric>Minutes</DataTable.Title>
-                  <DataTable.Title numeric>Koach Points</DataTable.Title>
+                  <DataTable.Title>{t('readingPlan.historyCols.date')}</DataTable.Title>
+                  <DataTable.Title numeric>{t('readingPlan.historyCols.pages')}</DataTable.Title>
+                  <DataTable.Title numeric>{t('readingPlan.historyCols.time')}</DataTable.Title>
                 </DataTable.Header>
-                
-                {sessions
-                  .filter(session => session.readingPlanId === plan.id)
-                  .slice(0, 5) // Show only the 5 most recent sessions
-                  .map((session, index) => (
-                    <DataTable.Row key={session.id || index}>
-                      <DataTable.Cell>
-                        {new Date(session.createdAt).toLocaleDateString()}
-                      </DataTable.Cell>
-                      <DataTable.Cell numeric>{session.pagesRead}</DataTable.Cell>
-                      <DataTable.Cell numeric>{session.minutesSpent}</DataTable.Cell>
-                      <DataTable.Cell numeric>{session.koachEarned}</DataTable.Cell>
-                    </DataTable.Row>
-                  ))}
+                {sessions.filter(s => s.readingPlanId === planToEdit.id).slice(0,5).map(s => (
+                  <DataTable.Row key={s.id}><DataTable.Cell>{new Date(s.createdAt).toLocaleDateString()}</DataTable.Cell><DataTable.Cell numeric>{s.pagesRead}</DataTable.Cell><DataTable.Cell numeric>{s.minutesSpent || 0}</DataTable.Cell></DataTable.Row>
+                ))}
               </DataTable>
             )}
           </Card.Content>
@@ -598,54 +438,98 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
     );
   };
   
-  const isLoading = isBookLoading || isPlanLoading;
+  const isLoading = isBookLoading || (isPlanLoading && !planToEdit); // Show loading if plan data isn't there yet for edit/view
+  const isActuallyEditing = route.params?.isEditingPlan === true && isEditMode;
   
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
       <ScrollView
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-          />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]}/>}
       >
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <Text>Loading...</Text>
-          </View>
-        ) : (
-          <>
-            {isEditMode && !route.params.isEdit ? renderPlanDetails() : renderPlanForm()}
-          </>
+        {isLoading && <ActivityIndicator animating={true} color={theme.colors.primary} size="large" style={styles.loadingIndicator} />}
+
+        {!isLoading && isEditMode && !isActuallyEditing && renderPlanDetails()}
+        {!isLoading && isEditMode && isActuallyEditing && renderEditPlanForm()}
+        {!isLoading && !isEditMode && bookForNewPlan && ( // Should open modal automatically or guide user
+            <View style={styles.centeredMessage}>
+                <Button icon="plus-circle" mode="contained" onPress={() => setIsCreateModalVisible(true)}>
+                    {t('readingPlan.createPlanFor', { title: bookForNewPlan.title })}
+                </Button>
+            </View>
         )}
+         {!isLoading && !isEditMode && !bookForNewPlan && (
+             <View style={styles.centeredMessage}>
+                <Text>{t('readingPlan.noPlanSelected')}</Text>
+                {/* Optionally, add a button to navigate to book selection or home */}
+             </View>
+         )}
       </ScrollView>
       
+      {/* Create Plan Modal Triggered by navigation param or button */}
+      {bookForNewPlan && (
+        <CreatePlanModal
+          visible={isCreateModalVisible}
+          onClose={() => {
+            setIsCreateModalVisible(false);
+            // If modal was opened by param, go back or clear param
+            if (route.params?.openCreateModal) navigation.setParams({ openCreateModal: false });
+          }}
+          bookId={bookForNewPlan.id}
+          bookTitle={bookForNewPlan.title}
+          totalPages={bookForNewPlan.total_pages || bookForNewPlan.pageCount}
+          onPlanCreated={handlePlanCreatedInModal}
+        />
+      )}
+
+      {/* Log Session Dialog (existing) */}
       <Portal>
-        <Dialog visible={logSessionVisible} onDismiss={() => setLogSessionVisible(false)}>
-          <Dialog.Title>Log Reading Session</Dialog.Title>
+        <Dialog visible={logSessionVisible} onDismiss={() => setLogSessionVisible(false)} style={{backgroundColor: theme.colors.surface}}>
+          <Dialog.Title style={{color: theme.colors.text}}>{t('readingPlan.logSessionTitle')}</Dialog.Title>
           <Dialog.Content>
             <TextInput
-              label="Pages Read"
+              label={t('readingPlan.pagesReadLabel')}
               value={pagesRead}
               onChangeText={setPagesRead}
               keyboardType="number-pad"
               style={styles.dialogInput}
+              mode="outlined"
+              theme={{ colors: { primary: theme.colors.primary, background: theme.colors.surface } }}
             />
             <TextInput
-              label="Minutes Spent"
+              label={t('readingPlan.minutesSpentLabel')}
               value={minutesSpent}
               onChangeText={setMinutesSpent}
               keyboardType="number-pad"
               style={styles.dialogInput}
+              mode="outlined"
+              theme={{ colors: { primary: theme.colors.primary, background: theme.colors.surface } }}
             />
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setLogSessionVisible(false)}>Cancel</Button>
-            <Button onPress={handleLogSession}>Log Session</Button>
+            <Button onPress={() => setLogSessionVisible(false)} textColor={theme.colors.text}>{t('common.cancel')}</Button>
+            <Button onPress={handleLogSession} textColor={theme.colors.primary}>{t('readingPlan.logButton')}</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
+       <FAB
+        icon="plus"
+        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+        onPress={() => {
+          // If there's a book context (e.g. from a previous navigation or a default one)
+          // dispatch(fetchBookById(SOME_DEFAULT_OR_LAST_BOOK_ID_IF_AVAILABLE));
+          // Then open modal. For now, assumes bookForNewPlan might be available or needs selection.
+          // This FAB might be better on a screen listing books if no book context here.
+          if (bookId) { // If a book context exists (e.g. from a previous screen or default)
+            dispatch(fetchBookById(bookId)); // Ensure book details are loaded
+            setIsCreateModalVisible(true);
+          } else {
+            // TODO: Implement book selection flow before opening create plan modal
+            Alert.alert(t('common.infoTitle'), t('readingPlan.selectBookForNewPlan'));
+            // navigation.navigate('BookSelectionScreen'); // Example
+          }
+        }}
+        visible={!isEditMode} // Show FAB only if not editing/viewing a specific plan
+      />
     </View>
   );
 };
@@ -653,74 +537,51 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    // backgroundColor: '#f5f5f5', // Handled by theme
   },
   loadingContainer: {
+  loadingIndicator: {
+    marginTop: 50,
+  },
+  centeredMessage: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: 20,
+    minHeight: 200, // Ensure it's visible
   },
   card: {
     margin: 16,
     marginBottom: 8,
-    elevation: 2,
+    elevation: 2, // For Android shadow
+    shadowColor: '#000', // For iOS shadow
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
   },
   bookInfo: {
-    marginTop: 8,
     marginBottom: 16,
   },
-  bookTitle: {
-    fontSize: 20,
+  bookChip: {
+    // backgroundColor: theme.colors.surfaceVariant, // Example theming
   },
-  bookAuthor: {
-    color: '#666',
-  },
-  bookPageCount: {
-    marginTop: 8,
-    alignSelf: 'flex-start',
-  },
-  bookDetails: {
-    fontSize: 16,
-    color: '#666',
+  bookChipText: {
+    // color: theme.colors.onSurfaceVariant, // Example theming
   },
   input: {
-    marginBottom: 16,
-    backgroundColor: 'white',
+    marginBottom: 8, // Reduced margin for denser form
+    // backgroundColor: 'white', // Handled by theme
   },
-  dateContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  dateField: {
-    flex: 1,
-    marginRight: 8,
-  },
-  dateLabel: {
+  dateDisplay: { // For TouchableOpacity wrapping TextInput
     marginBottom: 8,
-    fontSize: 16,
-  },
-  dateButton: {
-    justifyContent: 'center',
-  },
-  sectionLabel: {
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  frequencyButtons: {
-    flexDirection: 'row',
-    marginBottom: 16,
-  },
-  frequencyButton: {
-    flex: 1,
   },
   submitButton: {
-    marginTop: 8,
+    marginTop: 16,
+    paddingVertical: 8, // Make button larger
   },
   planTitle: {
-    fontSize: 24,
-    marginBottom: 8,
+    fontSize: 22, // Slightly smaller than modal
+    marginBottom: 12,
   },
   progressContainer: {
     marginVertical: 16,
@@ -732,109 +593,77 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 14,
-    color: '#666',
+    // color: '#666', // Handled by theme
   },
   progressPercent: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#6200ee',
+    // color: '#6200ee', // Handled by theme
   },
   progressBar: {
-    height: 10,
-    borderRadius: 5,
+    height: 8, // Slightly thicker
+    borderRadius: 4,
   },
   statsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
+    justifyContent: 'space-around', // Better distribution
+    marginVertical: 8, // Reduced margin
   },
   statItem: {
-    flex: 1,
+    alignItems: 'center', // Center align stat items
     padding: 8,
+    flex: 1,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    // color: '#666', // Handled by theme
     marginBottom: 4,
   },
   statValue: {
-    fontSize: 14,
+    fontSize: 15, // Slightly larger
     fontWeight: 'bold',
   },
-  sectionTitle: {
+  sectionTitle: { // For "Notes", "Reading History"
     fontSize: 18,
+    fontWeight: '600',
+    marginTop: 16,
     marginBottom: 8,
   },
   notesContainer: {
-    marginVertical: 16,
+    marginVertical: 8,
   },
   notes: {
     lineHeight: 20,
+    fontSize: 14,
   },
   actionButtons: {
     flexDirection: 'row',
-    marginTop: 16,
+    justifyContent: 'space-around', // Space out buttons
+    marginTop: 20,
+    marginBottom: 10,
   },
   actionButton: {
-    flex: 1,
+    flex: 1, // Make buttons take equal width
+    marginHorizontal: 8, // Add space between buttons
   },
   emptyText: {
     textAlign: 'center',
-    color: '#666',
+    // color: '#666', // Handled by theme
     marginVertical: 16,
+    fontSize: 14,
   },
   dialogInput: {
     marginBottom: 16,
-    backgroundColor: 'white',
+    // backgroundColor: 'white', // Handled by theme
   },
-  // Date picker custom styles
-  datePickerContent: {
-    padding: 8,
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
   },
-  datePickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  monthYearText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  calendar: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  dayHeader: {
-    width: '14.28%',
-    textAlign: 'center',
-    fontWeight: 'bold',
-    marginBottom: 8,
-    fontSize: 12,
-  },
-  day: {
-    width: '14.28%',
-    aspectRatio: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  dayPlaceholder: {
-    width: '14.28%',
-    aspectRatio: 1,
-  },
-  dayText: {
-    textAlign: 'center',
-  },
-  selectedDay: {
-    backgroundColor: '#6200ee',
-    borderRadius: 20,
-  },
-  selectedDayText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
+  // Custom date picker styles from original form are removed as they are no longer used
+  // Ensure styles for TextInput used with date pickers are appropriate (e.g., styles.input)
 });
 
 export default ReadingPlanScreen;

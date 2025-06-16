@@ -6,7 +6,8 @@ import {
   FlatList, 
   Image, 
   TouchableOpacity, 
-  ActivityIndicator
+  // ActivityIndicator, // Will use LoadingAnimation
+  Dimensions // For grid layout
 } from 'react-native';
 import { 
   Card, 
@@ -15,8 +16,11 @@ import {
   Chip, 
   Divider, 
   Button,
-  Searchbar
+  Searchbar,
+  useTheme // Import useTheme
 } from 'react-native-paper';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'; // For placeholder
+import LoadingAnimation from '../components/LoadingAnimation'; // Import LoadingAnimation
 import { useDispatch, useSelector } from 'react-redux';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
@@ -27,9 +31,15 @@ import {
   selectBadges, 
   selectUserBadges, 
   selectIsLoading,
-  Badge,
+  Badge, // Make sure Badge type includes all necessary fields like iconUrl or similar
   UserBadge
-} from '../slices/koachSlice';
+} from '../slices/koachSlice'; // Assuming koachSlice exports Badge and UserBadge types
+
+const { width } = Dimensions.get('window');
+const NUM_COLUMNS = 2; // Or 3, depending on desired card size
+const ITEM_MARGIN = 8;
+const ITEM_WIDTH = (width - (ITEM_MARGIN * (NUM_COLUMNS + 1))) / NUM_COLUMNS;
+
 
 type BadgesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Badges'>;
 
@@ -38,6 +48,7 @@ interface BadgesScreenProps {
 }
 
 const BadgesScreen: React.FC<BadgesScreenProps> = ({ navigation }) => {
+  const theme = useTheme(); // Get theme
   const dispatch = useDispatch<AppDispatch>();
   const badges = useSelector(selectBadges);
   const userBadges = useSelector(selectUserBadges);
@@ -102,94 +113,112 @@ const BadgesScreen: React.FC<BadgesScreenProps> = ({ navigation }) => {
     const earnedDate = getEarnedDate(item.id);
     
     return (
-      <Card style={[styles.badgeCard, earned ? styles.earnedBadge : styles.unearnedBadge]}>
+      <Card
+        style={[
+          styles.badgeCard,
+          { backgroundColor: earned ? theme.colors.elevation.level3 : theme.colors.surfaceDisabled },
+          earned && styles.earnedBadgeHighlight // Extra style for earned
+        ]}
+        elevation={earned ? 4 : 1}
+      >
         <Card.Content style={styles.badgeContent}>
-          <Image 
-            source={{ uri: item.imageUrl }} 
-            style={styles.badgeImage} 
-            resizeMode="contain"
-          />
-          <View style={styles.badgeInfo}>
-            <Title style={earned ? styles.earnedTitle : styles.unearnedTitle}>
-              {item.name}
-            </Title>
-            <Paragraph style={styles.badgeDescription}>
-              {item.description}
-            </Paragraph>
-            <Divider style={styles.divider} />
-            <View style={styles.badgeDetails}>
-              <Text style={styles.requirementLabel}>Requirement:</Text>
-              <Text style={styles.requirement}>{item.requirement}</Text>
-            </View>
-            <View style={styles.badgeDetails}>
-              <Text style={styles.pointsLabel}>Points:</Text>
-              <Text style={styles.points}>{item.points}</Text>
-            </View>
-            {earned && earnedDate && (
-              <Chip icon="calendar" style={styles.dateChip}>
-                Earned on {earnedDate}
-              </Chip>
-            )}
-          </View>
+          {item.imageUrl ? (
+            <Image
+              source={{ uri: item.imageUrl }}
+              style={styles.badgeImage}
+              resizeMode="contain"
+            />
+          ) : (
+            <MaterialCommunityIcons
+              name="trophy-variant-outline"
+              size={ITEM_WIDTH * 0.5}
+              color={earned ? theme.colors.primary : theme.colors.onSurfaceDisabled}
+              style={styles.badgeImagePlaceholder}
+            />
+          )}
+          <Title style={[styles.badgeTitle, { color: earned ? theme.colors.primary : theme.colors.onSurface }]}>
+            {item.name}
+          </Title>
+          <Paragraph style={[styles.badgeDescription, { color: theme.colors.onSurfaceVariant }]}>
+            {item.description}
+          </Paragraph>
+          {/* <Divider style={[styles.divider, {backgroundColor: theme.colors.outline}]} /> */}
+          {/* Details like requirement and points can be added if space allows or on a detail screen */}
+          {/* <Text style={[styles.badgeDetailText, {color: theme.colors.onSurfaceVariant}]}>Requirement: {item.requirement}</Text> */}
+          {/* <Text style={[styles.badgeDetailText, {color: theme.colors.onSurfaceVariant}]}>Points: {item.points}</Text> */}
+          {earned && earnedDate && (
+            <Chip
+              icon="check-decagram"
+              style={[styles.dateChip, {backgroundColor: theme.colors.primaryContainer}]}
+              textStyle={{color: theme.colors.onPrimaryContainer, fontSize: 10}}
+            >
+              Earned: {earnedDate}
+            </Chip>
+          )}
+          {!earned && (
+             <Chip
+              icon="lock-outline"
+              style={[styles.dateChip, {backgroundColor: theme.colors.surfaceVariant}]}
+              textStyle={{color: theme.colors.onSurfaceVariant, fontSize: 10}}
+            >
+              Locked
+            </Chip>
+          )}
         </Card.Content>
       </Card>
     );
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Title style={styles.title}>My Badges</Title>
-        <Text style={styles.subtitle}>
-          {userBadges?.length || 0} earned out of {badges?.length || 0} total badges
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.colors.primaryContainer }]}>
+        <Title style={[styles.title, { color: theme.colors.onPrimaryContainer }]}>My Badges</Title>
+        <Text style={[styles.subtitle, { color: theme.colors.onPrimaryContainer }]}>
+          {userBadges?.length || 0} earned out of {badges?.length || 0} total
         </Text>
         
         <Searchbar
           placeholder="Search badges"
           onChangeText={setSearchQuery}
           value={searchQuery}
-          style={styles.searchBar}
+          style={[styles.searchBar, {backgroundColor: theme.colors.surface, elevation: 1}]}
+          inputStyle={{color: theme.colors.onSurface}}
+          placeholderTextColor={theme.colors.onSurfaceVariant}
+          iconColor={theme.colors.primary}
         />
         
         <View style={styles.filterContainer}>
-          <TouchableOpacity
-            style={[styles.filterButton, filter === 'all' && styles.activeFilter]}
-            onPress={() => setFilter('all')}
-          >
-            <Text style={[styles.filterText, filter === 'all' && styles.activeFilterText]}>
-              All
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterButton, filter === 'earned' && styles.activeFilter]}
-            onPress={() => setFilter('earned')}
-          >
-            <Text style={[styles.filterText, filter === 'earned' && styles.activeFilterText]}>
-              Earned
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterButton, filter === 'unearned' && styles.activeFilter]}
-            onPress={() => setFilter('unearned')}
-          >
-            <Text style={[styles.filterText, filter === 'unearned' && styles.activeFilterText]}>
-              Unearned
-            </Text>
-          </TouchableOpacity>
+          {(['all', 'earned', 'unearned'] as const).map(filterType => (
+            <TouchableOpacity
+              key={filterType}
+              style={[
+                styles.filterButton,
+                { borderColor: theme.colors.primary },
+                filter === filterType && { backgroundColor: theme.colors.primary }
+              ]}
+              onPress={() => setFilter(filterType)}
+            >
+              <Text style={[
+                styles.filterText,
+                { color: filter === filterType ? theme.colors.onPrimary : theme.colors.primary }
+              ]}>
+                {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
       
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6200ee" />
-          <Text style={styles.loadingText}>Loading badges...</Text>
-        </View>
+      {isLoading && !badges?.length ? ( // Show full screen loader only if no badges are loaded yet
+        <LoadingAnimation />
       ) : displayBadges.length > 0 ? (
         <FlatList
           data={displayBadges}
           renderItem={renderBadge}
           keyExtractor={item => item.id.toString()}
+          numColumns={NUM_COLUMNS} // For grid layout
           contentContainerStyle={styles.badgesList}
+          style={styles.listStyle} // Added for potential list-specific styling
         />
       ) : (
         <View style={styles.emptyContainer}>
@@ -219,130 +248,110 @@ const BadgesScreen: React.FC<BadgesScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    // backgroundColor: theme.colors.background, // Applied in component
   },
   header: {
-    backgroundColor: '#6200ee',
+    // backgroundColor: theme.colors.primaryContainer, // Applied in component
     padding: 16,
-    paddingTop: 24,
-    paddingBottom: 24,
+    paddingTop: Platform.OS === 'ios' ? 40 : 24, // SafeArea for iOS
   },
   title: {
-    color: 'white',
-    fontSize: 24,
+    // color: theme.colors.onPrimaryContainer, // Applied in component
+    fontSize: 26, // Larger title
     fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 4,
   },
   subtitle: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 4,
+    // color: theme.colors.onPrimaryContainer, // Applied in component
+    textAlign: 'center',
     marginBottom: 16,
+    fontSize: 14,
   },
   searchBar: {
     marginBottom: 16,
-    elevation: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    // backgroundColor: theme.colors.surface, // Applied in component
   },
   filterContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-evenly', // Use space-evenly for better distribution
+    marginBottom: 8, // Add some margin below filters
   },
   filterButton: {
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12, // Adjust padding
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'white',
+    borderWidth: 1.5, // Slightly thicker border
+    // borderColor: theme.colors.primary, // Applied in component
   },
   filterText: {
-    color: 'white',
+    // color: theme.colors.primary, // Applied in component
+    fontWeight: '600', // Semibold for filter text
+    fontSize: 13,
   },
-  activeFilter: {
-    backgroundColor: 'white',
-  },
-  activeFilterText: {
-    color: '#6200ee',
-    fontWeight: 'bold',
-  },
-  loadingContainer: {
+  // activeFilter style is now inline based on theme.colors.primary and onPrimary
+  // activeFilterText style is now inline based on theme.colors.onPrimary
+
+  loadingContainer: { // Kept for potential specific loading scenarios if needed
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
-  },
   badgesList: {
-    padding: 16,
+    paddingHorizontal: ITEM_MARGIN / 2, // Half margin for sides of the list
+    paddingVertical: ITEM_MARGIN,
+  },
+  listStyle: {
+    flex: 1, // Ensure FlatList takes available space
   },
   badgeCard: {
-    marginBottom: 16,
+    width: ITEM_WIDTH,
+    marginHorizontal: ITEM_MARGIN / 2, // Half margin for items
+    marginBottom: ITEM_MARGIN * 1.5, // Increased bottom margin for cards
     borderRadius: 12,
-    elevation: 3,
+    // backgroundColor, elevation handled inline
   },
-  earnedBadge: {
-    borderLeftWidth: 6,
-    borderLeftColor: '#4CAF50',
+  earnedBadgeHighlight: { // Specific highlight for earned badges
+     borderColor: theme.colors.primary, // Use theme from hook
+     borderWidth: 2,
   },
-  unearnedBadge: {
-    opacity: 0.7,
-    borderLeftWidth: 6,
-    borderLeftColor: '#9E9E9E',
-  },
-  badgeContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  badgeContent: { // Changed to column layout
+    padding: 12,
+    alignItems: 'center', // Center content
   },
   badgeImage: {
-    width: 80,
-    height: 80,
-    marginRight: 16,
+    width: ITEM_WIDTH * 0.6, // Responsive image size
+    height: ITEM_WIDTH * 0.6,
+    marginBottom: 12, // Space below image
   },
-  badgeInfo: {
-    flex: 1,
+  badgeImagePlaceholder: {
+    marginBottom: 12,
+    opacity: 0.5,
   },
-  earnedTitle: {
+  badgeTitle: { // Centered title
+    fontSize: 15, // Adjusted size
     fontWeight: 'bold',
-    color: '#4CAF50',
-  },
-  unearnedTitle: {
-    fontWeight: 'bold',
-    color: '#666',
+    textAlign: 'center',
+    marginBottom: 4,
+    minHeight: 30, // Ensure consistent height for 1 or 2 lines
   },
   badgeDescription: {
-    fontSize: 14,
+    fontSize: 12, // Smaller description
+    textAlign: 'center',
     marginBottom: 8,
+    minHeight: 40, // Ensure consistent height
   },
-  divider: {
-    marginVertical: 8,
+  badgeDetailText: { // For requirement/points if added back
+    fontSize: 11,
+    textAlign: 'center',
+    marginBottom: 2,
   },
-  badgeDetails: {
-    flexDirection: 'row',
-    marginBottom: 4,
-  },
-  requirementLabel: {
-    fontWeight: 'bold',
-    width: 100,
-    fontSize: 13,
-  },
-  requirement: {
-    flex: 1,
-    fontSize: 13,
-  },
-  pointsLabel: {
-    fontWeight: 'bold',
-    width: 100,
-    fontSize: 13,
-  },
-  points: {
-    flex: 1,
-    fontSize: 13,
-  },
-  dateChip: {
-    marginTop: 8,
-    alignSelf: 'flex-start',
-    backgroundColor: '#E8F5E9',
+  dateChip: { // Common styling for chips
+    marginTop: 10,
+    paddingHorizontal: 4, // Smaller padding for chip
+    height: 28, // Smaller chip height
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyContainer: {
     flex: 1,

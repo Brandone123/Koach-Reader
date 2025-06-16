@@ -1,144 +1,201 @@
-import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Dimensions, 
-  ActivityIndicator,
+import React, { useState, useEffect } from 'react';
+import {
+  StyleSheet,
+  View,
   Text,
   TouchableOpacity,
   SafeAreaView,
-  Alert 
+  ActivityIndicator,
+  Dimensions,
+  Alert,
 } from 'react-native';
-import { WebView } from 'react-native-webview';
-import { IconButton } from 'react-native-paper';
-import * as FileSystem from 'expo-file-system';
+import Pdf from 'react-native-pdf';
+import { IconButton, useTheme } from 'react-native-paper';
+import Slider from '@react-native-community/slider'; // For page scrubbing
 
 interface PDFViewerProps {
   uri: string;
   onClose?: () => void;
   onError?: (error: Error) => void;
   title?: string;
-  bookId?: number;
-  onPageChange?: (page: number, totalPages: number) => void;
+  bookId?: number; // Keep if used for other purposes, not directly by react-native-pdf
+  // onPageChange is implicitly handled by react-native-pdf's `onPageChanged` prop
 }
 
-const PDFViewer: React.FC<PDFViewerProps> = ({ 
-  uri, 
-  onClose, 
+const PDFViewer: React.FC<PDFViewerProps> = ({
+  uri,
+  onClose,
   onError,
-  title = "Document",
-  bookId,
-  onPageChange
+  title = 'Document',
+  // bookId,
 }) => {
+  const theme = useTheme();
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  
-  // Function to check if file exists and is accessible
-  const checkFileExists = async () => {
-    try {
-      // For remote URLs, we can't check directly, but we can check for local files
-      if (uri.startsWith('file://')) {
-        const fileInfo = await FileSystem.getInfoAsync(uri);
-        if (!fileInfo.exists) {
-          throw new Error('File does not exist');
-        }
-      }
-      return true;
-    } catch (error) {
-      console.error('Error checking file:', error);
-      if (onError) onError(error as Error);
-      Alert.alert('Error', 'Could not access the PDF file. Please try again later.');
-      return false;
+  const [isLoading, setIsLoading] = useState(true);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const pdfRef = React.useRef<Pdf>(null);
+
+  useEffect(() => {
+    if (!uri) {
+      setPdfError('No PDF URI provided.');
+      setIsLoading(false);
+      if (onError) onError(new Error('No PDF URI provided.'));
     }
+  }, [uri, onError]);
+
+  const handleLoadComplete = (numberOfPages: number, filePath: string) => {
+    setTotalPages(numberOfPages);
+    setCurrentPage(1); // Start at page 1
+    setIsLoading(false);
+    setPdfError(null);
+    console.log(`PDF loaded from ${filePath} with ${numberOfPages} pages.`);
   };
 
-  // Check file on component mount
-  React.useEffect(() => {
-    checkFileExists();
-  }, [uri]);
-
-  const handleLoadComplete = () => {
-    setLoading(false);
-    // Note: WebView doesn't provide page count information directly
-    setTotalPages(1); // Default to 1 since we can't get total pages easily
+  const handlePageChanged = (page: number, numberOfPages: number) => {
+    setCurrentPage(page);
+    // console.log(`Current page: ${page}/${numberOfPages}`);
   };
 
   const handleError = (error: any) => {
-    setLoading(false);
-    console.error('Error loading PDF:', error);
-    // Convert any error object to an Error instance
-    const errorObj = error instanceof Error ? error : new Error(String(error));
-    if (onError) onError(errorObj);
-    Alert.alert('Error', 'Failed to load the PDF. Please try again later.');
+    setIsLoading(false);
+    const errorMessage = error.message || 'An unknown error occurred while loading the PDF.';
+    setPdfError(errorMessage);
+    if (onError) onError(error instanceof Error ? error : new Error(String(error)));
+    // Alert.alert('Error', `Failed to load PDF: ${errorMessage}`);
+    console.error('PDF Loading Error:', error);
   };
 
   const goToNextPage = () => {
-    // This is a placeholder - WebView doesn't directly support page navigation for PDFs
-    Alert.alert("Info", "Next page functionality not available in this viewer");
+    if (currentPage < totalPages && pdfRef.current) {
+      pdfRef.current.setPage(currentPage + 1);
+    }
   };
 
   const goToPreviousPage = () => {
-    // This is a placeholder - WebView doesn't directly support page navigation for PDFs
-    Alert.alert("Info", "Previous page functionality not available in this viewer");
+    if (currentPage > 1 && pdfRef.current) {
+      pdfRef.current.setPage(currentPage - 1);
+    }
   };
 
+  const onSliderValueChange = (value: number) => {
+    const newPage = Math.round(value);
+    if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage && pdfRef.current) {
+       // pdfRef.current.setPage(newPage); // This can be too laggy if updated live
+    }
+  };
+
+  const onSlidingComplete = (value: number) => {
+    const newPage = Math.round(value);
+    if (newPage >= 1 && newPage <= totalPages && pdfRef.current) {
+      pdfRef.current.setPage(newPage);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={[styles.messageText, { color: theme.colors.text }]}>Loading PDF...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (pdfError) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.header}>
+          <IconButton
+            icon="close"
+            iconColor={theme.colors.onPrimary}
+            size={24}
+            onPress={onClose}
+          />
+          <Text style={[styles.title, { color: theme.colors.onPrimary }]} numberOfLines={1}>
+            {title}
+          </Text>
+          <View style={styles.spacer} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.messageText, { color: theme.colors.error }]}>Error: {pdfError}</Text>
+          <TouchableOpacity onPress={onClose} style={[styles.button, {backgroundColor: theme.colors.errorContainer}]}>
+            <Text style={{color: theme.colors.onErrorContainer}}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const source = { uri, cache: true };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.surfaceVariant }]}>
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
         <IconButton
-          icon="close"
-          style={styles.closeButton as any}
+          icon="arrow-left" // More conventional for back
+          iconColor={theme.colors.onPrimary}
           size={24}
-          onPress={onClose}
+          onPress={onClose} // Assuming close means going back
         />
-        <Text style={styles.title}>{title}</Text>
+        <Text style={[styles.title, { color: theme.colors.onPrimary }]} numberOfLines={1}>
+          {title}
+        </Text>
         <View style={styles.spacer} />
       </View>
 
+      {/* PDF Content */}
       <View style={styles.pdfContainer}>
-        {loading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#6200ee" />
-            <Text style={styles.loadingText}>Loading PDF...</Text>
-          </View>
-        )}
-        
-        <WebView
-          source={{ uri }}
+        <Pdf
+          ref={pdfRef}
+          source={source}
+          onLoadComplete={handleLoadComplete}
+          onPageChanged={handlePageChanged}
+          onError={handleError}
           style={styles.pdf}
-          onLoadEnd={() => handleLoadComplete()}
-          onError={(event) => handleError(event.nativeEvent.description)}
-          originWhitelist={['*']}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          startInLoadingState={true}
-          renderLoading={() => <ActivityIndicator size="large" color="#6200ee" />}
+          trustAllCerts={false} // Important for security with remote URLs
+          enablePaging={true} // Enables swipe between pages
+          horizontal={false} // Vertical scrolling/paging
         />
       </View>
 
-      <View style={styles.footer}>
-        <TouchableOpacity 
-          style={[styles.navButton, currentPage === 1 && styles.disabledButton]}
+      {/* Footer */}
+      <View style={[styles.footer, { backgroundColor: theme.colors.surface }]}>
+        <IconButton
+          icon="chevron-left"
+          size={32}
           onPress={goToPreviousPage}
           disabled={currentPage === 1}
-        >
-          <IconButton icon="chevron-left" size={24} disabled={currentPage === 1} />
-          <Text style={currentPage === 1 ? styles.disabledText : styles.navText}>Previous</Text>
-        </TouchableOpacity>
-        
-        <Text style={styles.pageInfo}>
-          PDF Viewer
-        </Text>
-        
-        <TouchableOpacity 
-          style={[styles.navButton, currentPage === totalPages && styles.disabledButton]}
+          iconColor={currentPage === 1 ? theme.colors.disabled : theme.colors.primary}
+        />
+        <View style={styles.pageInfoContainer}>
+          <Text style={[styles.pageInfoText, {color: theme.colors.onSurface}]}>
+            Page {currentPage} of {totalPages}
+          </Text>
+          {totalPages > 1 && (
+            <Slider
+              style={styles.slider}
+              minimumValue={1}
+              maximumValue={totalPages}
+              step={1}
+              value={currentPage}
+              onValueChange={onSliderValueChange} // Use if you want live update (can be laggy)
+              onSlidingComplete={onSlidingComplete} // Preferred for performance
+              minimumTrackTintColor={theme.colors.primary}
+              maximumTrackTintColor={theme.colors.onSurfaceDisabled}
+              thumbTintColor={theme.colors.primary}
+            />
+          )}
+        </View>
+        <IconButton
+          icon="chevron-right"
+          size={32}
           onPress={goToNextPage}
           disabled={currentPage === totalPages}
-        >
-          <Text style={currentPage === totalPages ? styles.disabledText : styles.navText}>Next</Text>
-          <IconButton icon="chevron-right" size={24} disabled={currentPage === totalPages} />
-        </TouchableOpacity>
+          iconColor={currentPage === totalPages ? theme.colors.disabled : theme.colors.primary}
+        />
       </View>
     </SafeAreaView>
   );
@@ -147,86 +204,72 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  messageText: {
+    marginTop: 16,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  button: {
+    marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#6200ee',
     paddingHorizontal: 8,
     paddingVertical: 10,
-  },
-  closeButton: {
-    tintColor: 'white',
+    height: 56, // Standard app bar height
   },
   title: {
+    flex: 1, // Allow title to take available space
     fontSize: 18,
     fontWeight: 'bold',
-    color: 'white',
-    flex: 1,
     textAlign: 'center',
+    marginHorizontal: 8, // Add some space around title
   },
-  spacer: {
-    width: 40, // Match close button width for balanced layout
+  spacer: { // To balance the IconButton on the left
+    width: 40,
   },
   pdfContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: theme.colors.surfaceDisabled, // Themed background
   },
   pdf: {
     flex: 1,
     width: Dimensions.get('window').width,
-    height: Dimensions.get('window').height,
-    backgroundColor: '#f5f5f5',
-  },
-  loadingContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    zIndex: 10,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
+    // height is managed by flex: 1 on parent
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'white',
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: theme.colors.outlineVariant, // Themed border color
   },
-  navButton: {
-    flexDirection: 'row',
+  pageInfoContainer: {
+    flex: 1,
     alignItems: 'center',
+    marginHorizontal: 10,
   },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  navText: {
-    fontSize: 16,
-    color: '#6200ee',
-    fontWeight: '500',
-  },
-  disabledText: {
-    fontSize: 16,
-    color: '#aaa',
-    fontWeight: '500',
-  },
-  pageInfo: {
+  pageInfoText: {
     fontSize: 14,
-    color: '#666',
+    marginBottom: 4, // Space between text and slider
+  },
+  slider: {
+    width: '100%',
+    height: 40, // Standard slider height
   },
 });
 

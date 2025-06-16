@@ -1,11 +1,11 @@
 import { DefaultTheme } from 'react-native-paper';
 
 export const colors = {
-  primary: '#9317ED',
-  primaryLight: '#B14EF0',
-  primaryLighter: '#D08AF5',
+  primary: '#8A2BE2', // Changed to BlueViolet
+  primaryLight: '#A052E8', // Adjusted lighter shade
+  primaryLighter: '#D08AF5', // Kept, or could be adjusted based on new primaryLight
   primaryLightest: '#F0D7FB',
-  primaryDark: '#7A12C4',
+  primaryDark: '#7322C3', // Adjusted darker shade
   
   secondary: '#1CB0F6',
   secondaryLight: '#64C8F9',

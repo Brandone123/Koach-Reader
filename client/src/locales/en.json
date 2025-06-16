@@ -39,7 +39,9 @@
     "noBooksAvailable": "No books available in this category.",
     "of": "of",
     "create": "Create",
-    "ok": "OK"
+    "ok": "OK",
+    "minutesShort": "min",
+    "great": "Great!"
   },
   "auth": {
     "login": "Login",
@@ -181,7 +183,14 @@
     "bio": "Biography",
     "logoutConfirmation": "Are you sure you want to log out?",
     "confirmLogout": "Yes, log out",
-    "levelReader": "Level {{level}} Reader"
+    "levelReader": "Level {{level}} Reader",
+    "koachPoints": "Koach Points",
+    "readingStreak": "Day Streak",
+    "deleteProfileTitle": "Delete Profile",
+    "deleteWarning": "Are you sure you want to delete your profile? This action cannot be undone.",
+    "confirmDelete": "Delete",
+    "interests": "Interests",
+    "logoutError": "Failed to log out."
   },
   "book": {
     "details": "Book Details",
@@ -209,7 +218,8 @@
     "yourRating": "Your Rating",
     "yourComment": "Your comment",
     "beFirstToComment": "Be the first to leave a comment!",
-    "lastRead": "Last read"
+    "lastRead": "Last read",
+    "publishedYear": "Published Year"
   },
   "challenges": {
     "title": "Reading Challenges",
@@ -380,15 +390,93 @@
     "title": "Reading Plan",
     "edit": "Edit Plan",
     "create": "Create Plan",
-    "createPlan": "Create Reading Plan",
-    "dailyGoal": "Daily Goal",
     "weeklyGoal": "Weekly Goal",
     "setReminder": "Set Reminder",
     "selectBooks": "Select Books",
+    "estimatedCompletion": "Estimated Completion",
+    "planInfo": "Reading Plan: {current} of {total} pages",
+    "yourProgress": "Your Progress",
+    "pagesRead": "Pages Read",
+    "dailyGoal": "Daily Goal (pages)",
+    "pagesPerDay": "pages/day",
+    "updateProgress": "Update Progress",
+    "createPlan": "Create Reading Plan",
+    "createDescription": "Set up a plan to track your reading for this book.",
+    "startPlan": "Start a Reading Plan",
+    "invalidGoal": "Please enter a valid number for your daily goal.",
+    "notes": "Notes",
+    "notesLabel": "Notes (Optional)",
+    "planFor": "Plan for",
+    "newPlan": "New Reading Plan",
+    "planNameLabel": "Plan Name",
+    "startDateLabel": "Start Date",
+    "finishDateLabel": "Target Finish Date",
+    "pagesPerDayLabel": "Pages per day",
+    "editPlanTitle": "Edit Reading Plan",
+    "updatePlanButton": "Update Plan",
+    "updateSuccessMessage": "Reading plan updated successfully.",
+    "createPlanButton": "Create Plan",
+    "logSessionTitle": "Log Reading Session",
+    "pagesReadLabel": "Pages Read",
+    "minutesSpentLabel": "Minutes Spent",
+    "logButton": "Log Session",
+    "selectBookForNewPlan": "Please select a book first to create a new reading plan.",
+    "noPlanToEdit": "No plan selected for editing.",
+    "noPlanDetails": "Plan details not found.",
+    "noPlanSelected": "No reading plan selected.",
+    "createPlanFor": "Create plan for: {{title}}",
+    "history": "Reading History",
+    "historyCols": {
+      "date": "Date",
+      "pages": "Pages",
+      "time": "Time (min)"
+    },
+    "noSessions": "No reading sessions recorded yet.",
+    "remaining": "Remaining",
     "startDate": "Start Date",
     "endDate": "End Date",
-    "estimatedCompletion": "Estimated Completion",
-    "planInfo": "Reading Plan: {current} of {total} pages"
+    "step1": {
+      "title": "Name Your Plan",
+      "description": "Give your reading plan a descriptive name and set a start date."
+    },
+    "step2": {
+      "title": "Set Your Goal",
+      "description": "How do you want to read? By setting a daily page goal or a target finish date?"
+    },
+    "step3": {
+      "title": "Review Your Plan",
+      "description": "Does everything look good? You can go back to change details."
+    },
+    "goalType": {
+      "pagesPerDay": "Daily Pages",
+      "finishByDate": "Finish by Date"
+    },
+    "summary": {
+      "title": "Title",
+      "startDate": "Start Date",
+      "goal": "Goal",
+      "estimatedFinish": "Est. finish in",
+      "days": "days",
+      "targetFinishDate": "Target Finish Date",
+      "calculatedGoal": "Calculated Goal"
+    },
+    "success": {
+      "title": "Plan Created!",
+      "message": "Your new reading plan is ready. Happy reading!"
+    },
+    "errors": {
+      "titleRequired": "Plan name is required.",
+      "invalidPages": "Please enter a valid number of pages.",
+      "pagesExceedTotal": "Daily pages cannot exceed total pages of the book ({{totalPages}}).",
+      "endDateAfterStart": "Target finish date must be after the start date.",
+      "failedCreate": "Failed to create reading plan. Please try again.",
+      "failedUpdate": "Failed to update reading plan. Please try again."
+    },
+    "warnings": {
+        "noTotalPages": "Book's total page count is not available. Goal calculations might be less accurate."
+    },
+    "logSession": "Log Session",
+    "editPlanButton": "Edit Plan"
   },
   "readingSession": {
     "title": "Log Reading Session",
@@ -403,7 +491,9 @@
     "logReading": "Log Reading",
     "validPagesRequired": "Please enter a valid number of pages",
     "validTimeRequired": "Please enter a valid number of minutes",
-    "pointsEarned": "You've logged {count} pages and earned {count} Koach points!"
+    "pointsEarned": "You've logged {count} pages and earned {count} Koach points!",
+    "bookCompleteTitle": "Book Finished!",
+    "bookCompleteMessage": "Congratulations on completing this book! You've earned extra Koach Points!"
   },
   "badges": {
     "title": "Badges & Achievements",

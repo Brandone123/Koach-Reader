@@ -49,8 +49,8 @@ export const AppNavigator = () => {
     <NavigationContainer>
       <Stack.Navigator 
         screenOptions={{ 
-          headerShown: false,
-          animationEnabled: false
+          headerShown: false
+          // animationEnabled: false, // Removed to allow animations
         }}
       >
         {!user ? (
@@ -66,21 +66,61 @@ export const AppNavigator = () => {
           <Stack.Screen 
             name="Onboarding" 
             component={OnboardingScreen} 
-            options={{ gestureEnabled: false }}
+            options={{ gestureEnabled: false, animation: 'fade' }} // Onboarding can have a fade
           />
         ) : (
           // Authentifié et a complété l'onboarding
           <>
-            <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="BookDetail" component={BookDetailScreen} />
-            <Stack.Screen name="ReadingPlan" component={ReadingPlanScreen} />
-            <Stack.Screen name="Profile" component={ProfileScreen} />
-            <Stack.Screen name="ReadingSession" component={ReadingSessionScreen} />
-            <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
-            <Stack.Screen name="Challenges" component={ChallengesScreen} />
-            <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
-            <Stack.Screen name="Notifications" component={NotificationsScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen
+              name="Home"
+              component={HomeScreen}
+              options={{ animation: 'slide_from_right' }} // Example transition
+            />
+            <Stack.Screen
+              name="BookDetail"
+              component={BookDetailScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="ReadingPlan"
+              component={ReadingPlanScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="ReadingSession"
+              component={ReadingSessionScreen}
+              options={{ animation: 'slide_from_bottom' }} // Example of different transition
+            />
+            <Stack.Screen
+              name="Leaderboard"
+              component={LeaderboardScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="Challenges"
+              component={ChallengesScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="ChallengeDetail"
+              component={ChallengeDetailScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="Notifications"
+              component={NotificationsScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="Settings"
+              component={SettingsScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
           </>
         )}
       </Stack.Navigator>

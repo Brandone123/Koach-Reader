@@ -6,11 +6,18 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
-  ActivityIndicator
+  // ActivityIndicator, // Will use Paper's ActivityIndicator
+  Image, // Added for artwork
+  Dimensions,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
-import { IconButton } from 'react-native-paper';
+import { IconButton, useTheme, ActivityIndicator as PaperActivityIndicator } from 'react-native-paper'; // Added useTheme
 import { Audio } from 'expo-av';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'; // Added for icons
+import Animated, { useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated'; // Added for animations
+
+const { width: screenWidth } = Dimensions.get('window');
+const ARTWORK_SIZE = screenWidth * 0.8;
 
 interface AudioPlayerProps {
   uri: string;
@@ -22,14 +29,12 @@ interface AudioPlayerProps {
   artwork?: string;
 }
 
-// Format seconds to MM:SS format
 const formatTime = (seconds: number): string => {
   const min = Math.floor(seconds / 60);
   const sec = Math.floor(seconds % 60);
   return `${min < 10 ? '0' + min : min}:${sec < 10 ? '0' + sec : sec}`;
 };
 
-// Type pour le statut de lecture Audio
 type PlaybackStatus = {
   isLoaded: boolean;
   isBuffering?: boolean;
@@ -47,27 +52,25 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   onClose,
   onError,
   bookId,
-  artwork
+  artwork,
 }) => {
+  const theme = useTheme();
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isBuffering, setIsBuffering] = useState(true);
+  const [isBuffering, setIsBuffering] = useState(true); // Start with true until first status update
   const [duration, setDuration] = useState(0);
   const [position, setPosition] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekValue, setSeekValue] = useState(0);
-  const [speed, setSpeed] = useState(1);
+  const [currentSpeed, setCurrentSpeed] = useState(1); // Renamed from 'speed' for clarity
   
   const soundRef = useRef<Audio.Sound | null>(null);
-  const statusUpdateIntervalRef = useRef<number | null>(null);
 
-  // Set up audio when component mounts
   useEffect(() => {
     let isMounted = true;
-    
-    const setupAudio = async () => {
+    const loadAudio = async () => {
+      setIsBuffering(true);
       try {
-        // Set audio mode for playback
         await Audio.setAudioModeAsync({
           allowsRecordingIOS: false,
           staysActiveInBackground: true,
@@ -76,57 +79,59 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
           playThroughEarpieceAndroid: false,
         });
         
-        // Load the audio file
-        const { sound } = await Audio.Sound.createAsync(
+        const { sound, status } = await Audio.Sound.createAsync(
           { uri },
-          { shouldPlay: false, positionMillis: 0, progressUpdateIntervalMillis: 200 },
-          onPlaybackStatusUpdate
+          {
+            shouldPlay: false, // Don't auto-play initially
+            progressUpdateIntervalMillis: 500
+          },
+          (newStatus) => onPlaybackStatusUpdate(newStatus as PlaybackStatus) // Ensure type safety
         );
         
         if (isMounted) {
           soundRef.current = sound;
-          setIsReady(true);
-          setIsBuffering(false);
+          if ((status as PlaybackStatus).isLoaded) { // Type assertion
+            setIsReady(true);
+            setDuration((status as PlaybackStatus).durationMillis! / 1000);
+            setIsBuffering(false);
+          }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error loading audio:', error);
-        if (onError && isMounted) onError(error as Error);
-        Alert.alert('Error', 'Could not load the audio file. Please try again later.');
+        if (isMounted && onError) onError(error);
+        Alert.alert('Error', 'Could not load the audio file.');
+        setIsBuffering(false);
       }
     };
     
-    setupAudio();
+    loadAudio();
     
-    // Cleanup function
     return () => {
       isMounted = false;
-      if (statusUpdateIntervalRef.current !== null) {
-        clearInterval(statusUpdateIntervalRef.current);
-      }
-      if (soundRef.current) {
-        soundRef.current.unloadAsync();
-      }
+      soundRef.current?.unloadAsync();
     };
   }, [uri]);
 
   const onPlaybackStatusUpdate = (status: PlaybackStatus) => {
-    if (!status.isLoaded) return;
-    
-    setIsBuffering(status.isBuffering || false);
+    if (!status.isLoaded) {
+      if (status.error) {
+        console.error(`Audio Error: ${status.error}`);
+        setIsBuffering(false);
+        setIsReady(false);
+        // Optionally call onError prop
+      }
+      return;
+    }
     setIsPlaying(status.isPlaying || false);
-    
-    if (status.durationMillis) {
-      setDuration(status.durationMillis / 1000);
-    }
-    
-    if (status.positionMillis) {
-      setPosition(status.positionMillis / 1000);
-    }
+    setIsBuffering(status.isBuffering || false);
+    setDuration(status.durationMillis ? status.durationMillis / 1000 : 0);
+    setPosition(status.positionMillis ? status.positionMillis / 1000 : 0);
+    setCurrentSpeed(status.rate || 1);
+    setIsReady(true); // Mark as ready once loaded
   };
 
   const togglePlayback = async () => {
-    if (!isReady || !soundRef.current) return;
-    
+    if (!isReady || !soundRef.current || isBuffering) return;
     try {
       if (isPlaying) {
         await soundRef.current.pauseAsync();
@@ -139,151 +144,141 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     }
   };
 
-  const skipForward = async () => {
+  const skipTime = async (amount: number) => { // amount in seconds
     if (!isReady || !soundRef.current) return;
-    
+    const newPositionMillis = Math.max(0, Math.min(position + amount, duration)) * 1000;
     try {
-      await soundRef.current.setPositionAsync(Math.min((position + 10) * 1000, duration * 1000));
+      await soundRef.current.setPositionAsync(newPositionMillis);
+      // If paused, playing from new position might be desired, or just set position
+      // if (isPlaying) await soundRef.current.playFromPositionAsync(newPositionMillis);
+      // else await soundRef.current.setPositionAsync(newPositionMillis);
     } catch (error) {
-      console.error('Error skipping forward:', error);
-    }
-  };
-
-  const skipBackward = async () => {
-    if (!isReady || !soundRef.current) return;
-    
-    try {
-      await soundRef.current.setPositionAsync(Math.max(0, (position - 10) * 1000));
-    } catch (error) {
-      console.error('Error skipping backward:', error);
+      console.error(`Error skipping time by ${amount}s:`, error);
     }
   };
 
   const changePlaybackSpeed = async () => {
     if (!isReady || !soundRef.current) return;
-    
-    // Cycle through speeds: 1x -> 1.25x -> 1.5x -> 2x -> 0.75x -> 1x
-    let newSpeed;
-    if (speed === 1) newSpeed = 1.25;
-    else if (speed === 1.25) newSpeed = 1.5;
-    else if (speed === 1.5) newSpeed = 2;
-    else if (speed === 2) newSpeed = 0.75;
-    else newSpeed = 1;
-    
+    const speeds = [1, 1.25, 1.5, 2, 0.75];
+    const currentIndex = speeds.indexOf(currentSpeed);
+    const nextIndex = (currentIndex + 1) % speeds.length;
+    const newSpeed = speeds[nextIndex];
     try {
       await soundRef.current.setRateAsync(newSpeed, true);
-      setSpeed(newSpeed);
+      setCurrentSpeed(newSpeed);
     } catch (error) {
       console.error('Error changing playback speed:', error);
     }
   };
 
   const onSliderValueChange = (value: number) => {
-    setIsSeeking(true);
+    if (!isSeeking) setIsSeeking(true); // Set seeking only if not already
     setSeekValue(value);
   };
 
   const onSlidingComplete = async (value: number) => {
     if (!isReady || !soundRef.current) return;
-    
     try {
       await soundRef.current.setPositionAsync(value * 1000);
-      setIsSeeking(false);
+      setPosition(value); // Optimistically update position
     } catch (error) {
       console.error('Error seeking:', error);
+    } finally {
+      setIsSeeking(false);
     }
   };
 
-  const getPlaybackStateIcon = () => {
-    if (isBuffering) return 'loading';
-    if (isPlaying) return 'pause';
-    return 'play';
-  };
+  // Animated styles for play/pause button
+  const playIconStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(isPlaying ? 0 : 1, { duration: 150, easing: Easing.linear }),
+    transform: [{ scale: withTiming(isPlaying ? 0.8 : 1, { duration: 150 }) }],
+  }));
+  const pauseIconStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(isPlaying ? 1 : 0, { duration: 150, easing: Easing.linear }),
+    transform: [{ scale: withTiming(isPlaying ? 1 : 0.8, { duration: 150 }) }],
+  }));
 
-  const getPlaybackStateText = () => {
-    if (isBuffering) return 'Buffering...';
-    if (isPlaying) return 'Playing';
-    if (!isPlaying && isReady) return 'Paused';
-    return 'Loading...';
-  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <IconButton
-          icon="close"
-          size={24}
-          onPress={onClose}
-          iconColor="white"
-        />
-        <Text style={styles.headerTitle}>Audio Player</Text>
-        <View style={styles.spacer} />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.colors.elevation.level2, borderColor: theme.colors.outline }]}>
+        <IconButton icon="chevron-down" size={28} onPress={onClose} iconColor={theme.colors.onSurface} />
+        <Text style={[styles.headerTitle, { color: theme.colors.onSurface }]}>Now Playing</Text>
+        <IconButton icon="dots-vertical" size={24} onPress={() => {}} iconColor={theme.colors.onSurface} />
       </View>
 
       <View style={styles.content}>
-        <View style={styles.artwork}>
-          <View style={styles.artworkPlaceholder}>
-            <Text style={styles.artworkPlaceholderText}>📚</Text>
-          </View>
+        <View style={[styles.artworkContainer, { backgroundColor: theme.colors.surfaceVariant }]}>
+          {artwork ? (
+            <Image source={{ uri: artwork }} style={styles.artworkImage} resizeMode="cover" />
+          ) : (
+            <MaterialCommunityIcons name="book-music" size={ARTWORK_SIZE * 0.5} color={theme.colors.onSurfaceVariant} />
+          )}
         </View>
 
-        <View style={styles.info}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.artist}>{artist}</Text>
-          <Text style={styles.status}>{getPlaybackStateText()}</Text>
+        <View style={styles.infoContainer}>
+          <Text style={[styles.title, { color: theme.colors.onBackground }]} numberOfLines={1}>{title}</Text>
+          <Text style={[styles.artist, { color: theme.colors.secondary }]}>{artist}</Text>
         </View>
 
         <View style={styles.sliderContainer}>
-          <Text style={styles.time}>
+          <Text style={[styles.timeText, { color: theme.colors.onSurfaceVariant }]}>
             {isSeeking ? formatTime(seekValue) : formatTime(position)}
           </Text>
           <Slider
-            value={isSeeking ? seekValue : position}
+            style={styles.slider}
+            value={isSeeking ? seekValue : position} // Use current position when not seeking
             minimumValue={0}
-            maximumValue={duration > 0 ? duration : 100}
+            maximumValue={duration > 0 ? duration : 1} // Prevent NaN if duration is 0
+            disabled={!isReady || isBuffering}
+            minimumTrackTintColor={theme.colors.primary}
+            maximumTrackTintColor={theme.colors.surfaceDisabled} // Or theme.colors.outline
+            thumbTintColor={theme.colors.primary}
             onValueChange={onSliderValueChange}
             onSlidingComplete={onSlidingComplete}
-            disabled={!isReady}
-            style={styles.slider}
-            minimumTrackTintColor="#6200ee"
-            maximumTrackTintColor="#d8d8d8"
-            thumbTintColor="#6200ee"
           />
-          <Text style={styles.time}>{formatTime(duration)}</Text>
+          <Text style={[styles.timeText, { color: theme.colors.onSurfaceVariant }]}>{formatTime(duration)}</Text>
         </View>
 
-        <View style={styles.controls}>
-          <TouchableOpacity onPress={changePlaybackSpeed} style={styles.speedButton}>
-            <Text style={styles.speedText}>{speed}x</Text>
+        <View style={styles.controlsContainer}>
+          <TouchableOpacity onPress={changePlaybackSpeed} style={[styles.speedControlButton, {borderColor: theme.colors.primary}]}>
+            <Text style={[styles.speedControlText, { color: theme.colors.primary }]}>{currentSpeed}x</Text>
           </TouchableOpacity>
 
           <IconButton
             icon="rewind-10"
-            size={36}
-            onPress={skipBackward}
-            disabled={!isReady}
+            size={38}
+            onPress={() => skipTime(-10)}
+            disabled={!isReady || isBuffering}
+            iconColor={theme.colors.onSurface}
             style={styles.controlButton}
           />
 
-          <IconButton
-            icon={getPlaybackStateIcon()}
-            size={64}
-            onPress={togglePlayback}
-            disabled={!isReady || isBuffering}
-            style={[styles.controlButton, styles.playButton]}
-          />
+          <View style={styles.playPauseButtonContainer}>
+            {isBuffering && !isReady ? ( // Show main loader only if not ready yet. Buffering during play is handled by icon state.
+              <PaperActivityIndicator animating={true} color={theme.colors.primary} size="large" />
+            ) : (
+              <TouchableOpacity onPress={togglePlayback} style={styles.playPauseTouchable} disabled={!isReady || isBuffering}>
+                <Animated.View style={[StyleSheet.absoluteFill, styles.iconContainer, playIconStyle]}>
+                  <MaterialCommunityIcons name={isBuffering ? "progress-clock" : "play-circle-outline"} size={72} color={theme.colors.primary} />
+                </Animated.View>
+                <Animated.View style={[StyleSheet.absoluteFill, styles.iconContainer, pauseIconStyle]}>
+                  <MaterialCommunityIcons name="pause-circle-outline" size={72} color={theme.colors.primary} />
+                </Animated.View>
+              </TouchableOpacity>
+            )}
+          </View>
 
           <IconButton
             icon="fast-forward-10"
-            size={36}
-            onPress={skipForward}
-            disabled={!isReady}
+            size={38}
+            onPress={() => skipTime(10)}
+            disabled={!isReady || isBuffering}
+            iconColor={theme.colors.onSurface}
             style={styles.controlButton}
           />
-
-          <TouchableOpacity style={styles.spacerSmall}>
-            {/* Empty space for balance */}
-          </TouchableOpacity>
+          {/* Placeholder for balance or other controls like shuffle/repeat */}
+          <View style={styles.placeholderControlButton} />
         </View>
       </View>
     </SafeAreaView>
@@ -293,118 +288,130 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    // backgroundColor handled by theme
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#6200ee',
-    paddingHorizontal: 8,
+    // backgroundColor handled by theme
+    paddingHorizontal: 12, // Adjusted padding
     paddingVertical: 10,
-  },
-  closeButton: {
-    // Removed tintColor property
+    borderBottomWidth: 1,
+    borderColor: theme.colors.outlineVariant, // Added theme color
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  spacer: {
-    width: 40,
-  },
-  spacerSmall: {
-    width: 24,
+    fontWeight: '600', // Semibold
+    // color handled by theme
   },
   content: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
+    justifyContent: 'space-around', // Distribute space more evenly
+    paddingHorizontal: 20,
+    paddingVertical: 20, // Ensure adequate padding
   },
-  artwork: {
-    width: 200,
-    height: 200,
-    marginBottom: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+  artworkContainer: {
+    width: ARTWORK_SIZE,
+    height: ARTWORK_SIZE,
+    borderRadius: 12, // Softer corners
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6, // Android shadow
+    shadowColor: '#000', // iOS shadow
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowRadius: 5,
+    overflow: 'hidden', // Ensure image respects border radius
+    // backgroundColor handled by theme
   },
-  artworkPlaceholder: {
-    width: 200,
-    height: 200,
-    backgroundColor: '#e1e1e1',
-    justifyContent: 'center',
+  artworkImage: {
+    width: '100%',
+    height: '100%',
+  },
+  infoContainer: {
     alignItems: 'center',
-    borderRadius: 4,
-  },
-  artworkPlaceholderText: {
-    fontSize: 64,
-  },
-  info: {
-    alignItems: 'center',
-    marginBottom: 30,
+    marginVertical: 20, // Add more vertical margin
     width: '100%',
   },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 8,
     textAlign: 'center',
+    marginBottom: 6,
+    // color handled by theme
   },
   artist: {
     fontSize: 16,
-    color: '#666',
-    marginBottom: 8,
+    // color handled by theme
+    textAlign: 'center',
   },
-  status: {
-    fontSize: 14,
-    color: '#888',
-  },
+  // Removed status text, buffering is shown on play icon or global loader
   sliderContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    marginBottom: 30,
+    marginVertical: 20, // Add more vertical margin
   },
   slider: {
     flex: 1,
-    height: 40,
-  },
-  time: {
-    fontSize: 12,
-    color: '#888',
-    width: 50,
-    textAlign: 'center',
-  },
-  controls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  controlButton: {
-    margin: 0,
-  },
-  playButton: {
-    backgroundColor: 'rgba(98, 0, 238, 0.1)',
-    borderRadius: 32,
+    height: 40, // Standard RN Community Slider height
     marginHorizontal: 10,
   },
-  speedButton: {
-    padding: 8,
-    backgroundColor: 'rgba(98, 0, 238, 0.1)',
-    borderRadius: 16,
-    marginRight: 10,
+  timeText: {
+    fontSize: 13,
+    minWidth: 45, // Ensure space for MM:SS
+    textAlign: 'center',
+    // color handled by theme
   },
-  speedText: {
+  controlsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around', // Space out controls
+    width: '100%',
+    paddingHorizontal: 10, // Padding for the container
+    marginBottom: 20, // Margin at the bottom
+  },
+  controlButton: { // General style for skip buttons
+    margin: 0, // Remove default margin if IconButton has it
+  },
+  playPauseButtonContainer: {
+    width: 72, // Size of the icon
+    height: 72, // Size of the icon
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 20, // Space around play/pause
+  },
+  playPauseTouchable: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconContainer: { // For absolute positioning of play/pause icons
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  speedControlButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20, // Pill shape
+    borderWidth: 1,
+    // borderColor handled by theme
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 50, // Ensure it's not too small
+  },
+  speedControlText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#6200ee',
+    // color handled by theme
   },
+  placeholderControlButton: { // To balance the flex layout if needed
+    width: 50, // Match approx width of speed control
+  }
+  // Removed old styles that are no longer used
 });
 
 export default AudioPlayer;

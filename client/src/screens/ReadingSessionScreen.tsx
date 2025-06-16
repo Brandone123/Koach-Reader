@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { Text, TextInput, Button, Card, Title, Paragraph, ActivityIndicator } from 'react-native-paper';
+import { StyleSheet, View, ScrollView, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import { Text, TextInput, Button, Card, Title, Paragraph, useTheme } from 'react-native-paper'; // Removed ActivityIndicator
+import LottieView from 'lottie-react-native';
+import LoadingAnimation from '../components/LoadingAnimation'; // Import LoadingAnimation
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
@@ -27,17 +29,19 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
   
   const dispatch = useDispatch<AppDispatch>();
   const book = useSelector(selectCurrentBook);
-  const plan = useSelector(selectCurrentPlan);
+  const plan = useSelector(selectCurrentPlan); // This might not be up-to-date immediately after dispatch
   const [isLoading, setIsLoading] = useState(true);
   const [pagesRead, setPagesRead] = useState('');
   const [minutesSpent, setMinutesSpent] = useState('');
   const [notes, setNotes] = useState('');
-  const [koachEarned, setKoachEarned] = useState(0);
+  // const [koachEarned, setKoachEarned] = useState(0); // This seems to be calculated in the thunk now
   const [submitting, setSubmitting] = useState(false);
   const [date, setDate] = useState(new Date());
-  const [hours, setHours] = useState('');
-  const [minutes, setMinutes] = useState('');
+  // const [hours, setHours] = useState(''); // minutesSpent is a single field now
+  // const [minutes, setMinutes] = useState('');
   const [dateError, setDateError] = useState<string | undefined>();
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const theme = useTheme();
 
   useEffect(() => {
     const loadData = async () => {
@@ -84,40 +88,49 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
 
     setSubmitting(true);
     try {
-      const session = {
+      // koachEarned is calculated in the thunk based on pagesRead
+      const numPagesRead = parseInt(pagesRead);
+      const numMinutesSpent = minutesSpent ? parseInt(minutesSpent) : 0; // Default to 0 if empty
+
+      const resultAction = await dispatch(logReadingSession({
         bookId: bookIdNumber,
         readingPlanId: planIdNumber,
-        pagesRead: parseInt(pagesRead),
-        minutesSpent: minutesSpent ? parseInt(minutesSpent) : undefined,
+        pagesRead: numPagesRead,
+        minutesSpent: numMinutesSpent,
         notes: notes || undefined,
-        koachEarned: koachEarned || 0,
-        date: date.toISOString()
-      };
+        // date: date.toISOString() // date might be handled by backend or thunk if not passed
+      }));
 
-      const result = await dispatch(logReadingSession({
-        ...session,
-        bookId: bookIdNumber
-      })).unwrap();
-      
-      Alert.alert(
-        t('common.success'),
-        t('readingSession.pointsEarned', { count: koachEarned }),
-        [{ text: t('common.ok'), onPress: () => navigation.goBack() }]
-      );
-    } catch (error) {
-      Alert.alert(t('common.errorText'), t('common.errorGeneric'));
+      if (logReadingSession.fulfilled.match(resultAction)) {
+        const { session, updatedCurrentPage } = resultAction.payload;
+
+        if (book && planIdNumber && updatedCurrentPage && book.total_pages && updatedCurrentPage >= book.total_pages) {
+          setShowCompletionModal(true);
+        } else {
+          Alert.alert(
+            t('common.success'),
+            t('readingSession.pointsEarned', { count: session.koachEarned || numPagesRead }), // Use koachEarned from session
+            [{ text: t('common.ok'), onPress: () => navigation.goBack() }]
+          );
+        }
+      } else {
+        throw new Error(resultAction.payload as string || t('common.errorGeneric'));
+      }
+    } catch (error: any) {
+      Alert.alert(t('common.errorText'), error.message || t('common.errorGeneric'));
     } finally {
       setSubmitting(false);
     }
   };
 
   if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#8A2BE2" />
-        <Text style={styles.loadingText}>{t('common.loading')}</Text>
-      </View>
-    );
+    // return (
+    //   <View style={styles.loadingContainer}>
+    //     <ActivityIndicator size="large" color="#8A2BE2" />
+    //     <Text style={styles.loadingText}>{t('common.loading')}</Text>
+    //   </View>
+    // );
+    return <LoadingAnimation />;
   }
 
   if (!book) {
@@ -136,25 +149,23 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.logoContainer}>
-          {/* Placeholder for the logo container */}
-        </View>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        {/* Removed logoContainer, assuming it's not essential or handled by a screen header */}
         
-        <Card style={styles.bookCard}>
-          <Card.Cover source={{ uri: book.coverImageUrl }} style={styles.bookCover} />
+        <Card style={[styles.bookCard, {backgroundColor: theme.colors.surfaceVariant}]}>
+          <Card.Cover source={{ uri: book.cover_url || book.cover_image }} style={styles.bookCover} />
           <Card.Content>
-            <Title>{book.title}</Title>
-            <Paragraph>{t('common.author')} {book.author}</Paragraph>
-            {plan && (
-              <Text style={styles.planInfo}>
-                {t('readingPlan.planInfo', { current: plan.currentPage, total: plan.totalPages })}
+            <Title style={{color: theme.colors.onSurfaceVariant}}>{book.title}</Title>
+            <Paragraph style={{color: theme.colors.onSurfaceVariant}}>{t('common.author')} {book.author}</Paragraph>
+            {plan && book.total_pages && ( // Check book.total_pages as well
+              <Text style={[styles.planInfo, {color: theme.colors.secondary}]}>
+                {t('readingPlan.planInfo', { current: plan.current_page || 0, total: book.total_pages })}
               </Text>
             )}
           </Card.Content>
         </Card>
 
-        <Card style={styles.formCard}>
+        <Card style={[styles.formCard, {backgroundColor: theme.colors.surface}]}>
           <Card.Content>
             <Title style={styles.formTitle}>{t('readingSession.title')}</Title>
 
@@ -165,59 +176,84 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
               error={dateError}
             />
 
-            <View style={styles.formRow}>
-              <Text style={styles.label}>{t('readingSession.pagesRead')}</Text>
-              <TextInput
-                value={pagesRead.toString()}
-                onChangeText={value => setPagesRead(value)}
-                keyboardType="numeric"
-                style={styles.input}
-              />
-            </View>
+            <TextInput
+              label={t('readingSession.pagesRead')}
+              value={pagesRead}
+              onChangeText={setPagesRead}
+              keyboardType="numeric"
+              mode="outlined"
+              style={styles.input}
+              theme={{colors: {background: theme.colors.background} }}
+            />
 
-            <View style={styles.formRow}>
-              <Text style={styles.label}>{t('readingSession.timeSpent')}</Text>
-              <View style={styles.timeContainer}>
-                <TextInput
-                  value={hours.toString()}
-                  onChangeText={value => setHours(value)}
-                  keyboardType="numeric"
-                  style={[styles.input, styles.timeInput]}
-                />
-                <Text style={styles.timeLabel}>h</Text>
-                <TextInput
-                  value={minutes.toString()}
-                  onChangeText={value => setMinutes(value)}
-                  keyboardType="numeric"
-                  style={[styles.input, styles.timeInput]}
-                />
-                <Text style={styles.timeLabel}>m</Text>
-              </View>
-            </View>
+            <TextInput
+              label={t('readingSession.timeSpent')}
+              value={minutesSpent}
+              onChangeText={setMinutesSpent}
+              keyboardType="numeric"
+              mode="outlined"
+              style={styles.input}
+              right={<TextInput.Affix text={t('common.minutesShort', 'min')} />}
+              theme={{colors: {background: theme.colors.background} }}
+            />
 
-            <View style={styles.formRow}>
-              <Text style={styles.label}>{t('readingSession.notes')}</Text>
-              <TextInput
-                value={notes}
-                onChangeText={setNotes}
-                multiline
-                numberOfLines={4}
-                style={[styles.input, styles.textArea]}
-              />
-            </View>
+            <TextInput
+              label={t('readingSession.notes')}
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={3}
+              mode="outlined"
+              style={styles.input}
+              theme={{colors: {background: theme.colors.background} }}
+            />
 
             <Button
               mode="contained"
               onPress={handleSubmit}
               loading={submitting}
-              disabled={submitting || Number(pagesRead) <= 0 || !!dateError}
-              style={styles.submitButton}
+              disabled={submitting || !pagesRead || parseInt(pagesRead) <= 0 || !!dateError}
+              style={[styles.submitButton, {backgroundColor: theme.colors.primary}]}
+              labelStyle={{color: theme.colors.onPrimary}}
             >
               {t('readingSession.save')}
             </Button>
           </Card.Content>
         </Card>
       </ScrollView>
+
+      <Modal
+        visible={showCompletionModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setShowCompletionModal(false);
+          navigation.goBack();
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, {backgroundColor: theme.colors.surface}]}>
+            <LottieView
+              source={require('../assets/animations/bookComplete.json')}
+              autoPlay
+              loop={false}
+              style={styles.lottieAnimation}
+            />
+            <Title style={[styles.modalTitle, {color: theme.colors.primary}]}>{t('readingSession.bookCompleteTitle', "Book Finished!")}</Title>
+            <Paragraph style={[styles.modalMessage, {color: theme.colors.onSurface}]}>{t('readingSession.bookCompleteMessage', "Congratulations on completing this book! You've earned extra Koach Points!")}</Paragraph>
+            <Button
+              mode="contained"
+              onPress={() => {
+                setShowCompletionModal(false);
+                navigation.goBack();
+              }}
+              style={{backgroundColor: theme.colors.primary}}
+            >
+              {t('common.great', "Great!")}
+            </Button>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -225,78 +261,94 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    // backgroundColor: theme.colors.background, // Applied inline
   },
   scrollContent: {
     padding: 16,
+    paddingBottom: 30, // Ensure space for button
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    // backgroundColor: theme.colors.background, // Applied inline
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
+    // backgroundColor: theme.colors.background, // Applied inline
   },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
+  // logoContainer removed
   bookCard: {
     marginBottom: 20,
+    elevation: 2,
   },
   bookCover: {
-    height: 200,
-    resizeMode: 'contain',
+    height: 250, // Slightly larger cover
+    resizeMode: 'cover', // Changed to cover for better aesthetics if image aspect varies
   },
   planInfo: {
     marginTop: 8,
     fontStyle: 'italic',
+    fontSize: 14,
   },
   formCard: {
     marginBottom: 20,
+    elevation: 2,
   },
   formTitle: {
     marginBottom: 20,
-  },
-  formRow: {
-    marginBottom: 16,
-  },
-  label: {
-    marginBottom: 8,
-    fontSize: 16,
+    textAlign: 'center',
+    fontSize: 20,
   },
   input: {
-    backgroundColor: '#fff',
+    marginBottom: 16, // Consistent margin for inputs
   },
-  timeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  timeInput: {
-    flex: 1,
-    marginRight: 8,
-  },
-  timeLabel: {
-    marginHorizontal: 8,
-  },
-  textArea: {
-    height: 100,
-  },
+  // formRow, label, timeContainer, timeInput, timeLabel, textArea removed as TextInputs are now directly styled
   submitButton: {
-    marginTop: 16,
+    marginTop: 20, // More space above button
+    paddingVertical: 8, // Larger button
   },
-  loadingText: {
+  loadingText: { // Kept if needed for other loading states, not primary one
     marginTop: 16,
     fontSize: 16,
   },
   errorText: {
     marginBottom: 16,
     fontSize: 16,
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  modalContent: {
+    width: '85%',
+    padding: 25,
+    borderRadius: 15,
+    alignItems: 'center',
+    elevation: 10,
+  },
+  lottieAnimation: {
+    width: 180,
+    height: 180,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginTop: 15,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 22,
   }
 });
 

@@ -21,6 +21,7 @@ import {
   ProgressBar,
   Divider,
   Avatar,
+  Surface,
   useTheme
 } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
@@ -98,6 +99,7 @@ const categories = [
 
 const BookCard = ({ book, onPress }: { book: Book; onPress: () => void }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
   
   return (
     <TouchableOpacity 
@@ -112,7 +114,7 @@ const BookCard = ({ book, onPress }: { book: Book; onPress: () => void }) => {
         {book.title}
       </Text>
       <Text style={[styles.bookAuthor, { color: '#666666' }]} numberOfLines={1}>
-        {book.author}
+        {book.author?.name || t('common.unknownAuthor')}
       </Text>
     </TouchableOpacity>
   );
@@ -136,7 +138,7 @@ const CategorySection = ({ category, books, navigation }: {
         renderItem={({ item }) => (
           <BookCard 
             book={item} 
-            onPress={() => navigation.navigate('BookDetails', { bookId: item.id })}
+            onPress={() => navigation.navigate('BookDetail', { bookId: item.id })}
           />
         )}
         horizontal
@@ -188,7 +190,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     return books.filter(book => {
       const matchesSearch = !searchQuery || 
         book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        book.author.toLowerCase().includes(searchQuery.toLowerCase());
+        (book.author?.name?.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesSearch;
     });
   }, [books, searchQuery]);
@@ -201,12 +203,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       return {
         id: book.id,
         title: book.title,
-        author: book.author,
+        author: book.author?.name || t('common.unknownAuthor'),
         description: book.description || '',
         cover_url: book.cover_url || book.cover_image || 'https://via.placeholder.com/150',
         total_pages: book.total_pages,
-        is_free: book.is_free,
-        category: book.categories[0] || 'general',
+        is_free: !!book.is_free,
+        category: book.categories?.[0]?.name || 'general',
         updated_at: book.updated_at,
         expiration_date: expirationDate.toISOString(),
         days_remaining: Math.ceil((expirationDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
@@ -272,7 +274,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           />
         </View>
         <Title numberOfLines={2} style={styles.bookTitle}>{item.title}</Title>
-        <Paragraph numberOfLines={1} style={styles.bookAuthor}>{item.author}</Paragraph>
+        <Paragraph numberOfLines={1} style={styles.bookAuthor}>{item.author?.name || t('common.unknownAuthor')}</Paragraph>
       </Card.Content>
     </Card>
   );
@@ -359,47 +361,134 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       {/* Reading Plans Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{t('home.readingPlans')}</Text>
+          <View style={styles.sectionTitleContainer}>
+            {/* <MaterialCommunityIcons name="book-clock-outline" size={24} color="#8A2BE2" /> */}
+            <Text style={styles.sectionTitle}>{t('home.readingPlans')}</Text>
+          </View>
           <Button 
             mode="text" 
             onPress={() => navigation.navigate('ReadingPlan', { bookId: "" })}
             disabled={isPlansLoading}
+            icon="plus"
+            style={styles.sectionTitleButton}
             color="#8A2BE2"
+            compact
           >
             {t('home.newPlan')}
           </Button>
         </View>
         
         {readingPlans.length === 0 ? (
-          <Card style={styles.emptyCard}>
-            <Card.Content>
-              <Text style={styles.emptyText}>
-                {t('home.noPlansYet')}
-              </Text>
-              <Button 
-                mode="contained" 
-                onPress={() => navigation.navigate('ReadingPlan', { bookId: "" })}
-                style={styles.emptyButton}
-                color="#8A2BE2"
-              >
-                {t('home.createReadingPlan')}
-              </Button>
-            </Card.Content>
-          </Card>
+          <Surface style={styles.emptyPlansContainer} elevation={1}>
+            <MaterialCommunityIcons name="book-open-page-variant" size={48} color="#8A2BE2" style={styles.emptyIcon} />
+            <Text style={styles.emptyText}>
+              {t('home.noPlansYet')}
+            </Text>
+            <Button 
+              mode="contained" 
+              onPress={() => navigation.navigate('ReadingPlan', { bookId: "" })}
+              style={styles.emptyButton}
+              icon="book-plus"
+            >
+              {t('home.createReadingPlan')}
+            </Button>
+          </Surface>
         ) : (
-          <FlatList
-            data={readingPlans}
-            renderItem={renderPlanItem}
-            keyExtractor={item => `plan-${item.id.toString()}`}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.plansList}
-            ListEmptyComponent={
-              isPlansLoading ? (
-                <Text style={styles.loadingText}>{t('home.loadingPlans')}</Text>
-              ) : null
-            }
-          />
+          <View style={styles.plansListContainer}>
+            <FlatList
+              data={readingPlans}
+              renderItem={({ item }) => {
+                const book = books.find(b => b.id === item.book_id);
+                if (!book) return null;
+                
+                const progress = (item.current_page / book.total_pages) * 100;
+                const daysLeft = Math.ceil((new Date(item.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                const isOnTrack = item.current_page >= (book.total_pages * ((new Date().getTime() - new Date(item.start_date).getTime()) / 
+                  (new Date(item.end_date).getTime() - new Date(item.start_date).getTime())));
+                
+                return (
+                  <TouchableOpacity 
+                    onPress={() => navigation.navigate('ReadingSession', { 
+                      bookId: book.id.toString(),
+                      planId: item.id.toString() 
+                    })}
+                    style={styles.planCardContainer}
+                  >
+                    <LinearGradient
+                      colors={['#8A2BE2', '#4B0082']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.planCardGradient}
+                    >
+                      <View style={styles.planCardContent}>
+                        <Image 
+                          source={{ uri: book.cover_url || book.cover_image || 'https://via.placeholder.com/150' }}
+                          style={styles.planCoverImage}
+                        />
+                        
+                        <View style={styles.planDetails}>
+                          <Text style={styles.planBookTitle} numberOfLines={1}>{book.title}</Text>
+                          
+                          <View style={styles.planProgressContainer}>
+                            <View style={styles.planProgressBarContainer}>
+                              <View style={[styles.planProgressFill, { width: `${progress}%` }]} />
+                            </View>
+                            <Text style={styles.planProgressText}>{Math.round(progress)}%</Text>
+                          </View>
+                          
+                          <View style={styles.planStatsRow}>
+                            <View style={styles.planStat}>
+                              <MaterialCommunityIcons name="calendar-clock" size={16} color="#fff" />
+                              <Text style={styles.planStatText}>
+                                {daysLeft} {t('home.daysLeft')}
+                              </Text>
+                            </View>
+                            
+                            <View style={styles.planStat}>
+                              <MaterialCommunityIcons name="book-open-variant" size={16} color="#fff" />
+                              <Text style={styles.planStatText}>
+                                {item.current_page}/{book.total_pages}
+                              </Text>
+                            </View>
+                          </View>
+                          
+                          <View style={styles.planFooter}>
+                            <View style={[styles.planStatusBadge, { backgroundColor: isOnTrack ? '#4CAF50' : '#FFA000' }]}>
+                              <MaterialCommunityIcons 
+                                name={isOnTrack ? "check-circle" : "alert-circle"} 
+                                size={14} 
+                                color="#fff" 
+                              />
+                              <Text style={styles.planStatusText}>
+                                {isOnTrack ? t('home.onTrack') : t('home.behindSchedule')}
+                              </Text>
+                            </View>
+                            
+                            <Button
+                              mode="text"
+                              compact
+                              style={styles.continueReadingButton}
+                              labelStyle={styles.continueReadingButtonLabel}
+                              onPress={() => navigation.navigate('ReadingSession', { 
+                                bookId: book.id.toString(),
+                                planId: item.id.toString() 
+                              })}
+                            >
+                              {t('home.continue')}
+                            </Button>
+                          </View>
+                        </View>
+                      </View>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                );
+              }}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.plansListContent}
+              keyExtractor={(item) => item.id.toString()}
+            />
+          </View>
         )}
       </View>
       
@@ -573,10 +662,10 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   planCard: {
-    width: 200,
-    marginRight: 15,
-    borderRadius: 20,
-    elevation: 4,
+    width: '100%',
+    marginRight: 10,
+    borderRadius: 15,
+    elevation: 3,
   },
   bookCard: {
     width: (width - 32) / 2,
@@ -643,9 +732,10 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   planDetails: {
-    flexDirection: 'row',
+    flex: 1,
+    // flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    // alignItems: 'center',
     marginTop: 8,
   },
   planDetailText: {
@@ -846,6 +936,139 @@ const styles = StyleSheet.create({
   dailyGoal: {
     fontSize: 12,
     color: '#666',
+  },
+  sectionTitleButton: {
+    marginTop: -10,
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  newPlanButton: {
+    backgroundColor: '#8A2BE2',
+    borderRadius: 20,
+    paddingHorizontal: 8,
+  },
+  newPlanButtonLabel: {
+    fontSize: 12,
+    marginLeft: 4,
+  },
+  emptyPlansContainer: {
+    alignItems: 'center',
+    padding: 24,
+    marginHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#f8f8f8',
+  },
+  emptyIcon: {
+    marginBottom: 16,
+    opacity: 0.7,
+  },
+  planCardContainer: {
+    width: 325,
+    marginRight: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  plansListContainer: {
+    marginBottom: 0,
+  },
+  plansListContent: {
+    paddingHorizontal: 5,
+    paddingVertical: 8,
+  },
+  planCardGradient: {
+    borderRadius: 12,
+  },
+  planCardContent: {
+    flexDirection: 'row',
+    padding: 5,
+  },
+  planCoverImage: {
+    width: 80,
+    height: 100,
+    borderRadius: 8,
+    marginRight: 10,
+  },
+  planBookTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 12,
+  },
+  planProgressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  planProgressBarContainer: {
+    flex: 1,
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 3,
+    marginRight: 8,
+    overflow: 'hidden',
+  },
+  planProgressFill: {
+    height: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 3,
+  },
+  planProgressText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  planStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  planStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  planStatText: {
+    color: '#fff',
+    marginLeft: 4,
+    fontSize: 12,
+  },
+  planFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  planStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  planStatusText: {
+    color: '#fff',
+    fontSize: 10,
+    marginLeft: 4,
+  },
+  continueReadingButton: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+  },
+  continueReadingButtonLabel: {
+    color: '#8A2BE2',
+    fontSize: 12,
+    padding: 0,
+  },
+  loadingPlansContainer: {
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

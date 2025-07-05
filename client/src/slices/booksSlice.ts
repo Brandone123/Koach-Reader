@@ -1,25 +1,32 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { RootState } from '../store';
 import { supabase } from '../lib/supabase';
+import type { Author } from '../types/author';
 
 // Types
 export interface Book {
   id: number;
   title: string;
-  author: string;
+  author_id: number;
+  author?: Author;
   description: string | null;
-  isbn: string | null;
-  publication_date: string | null;
+  isbn?: string | null;
+  publication_date?: string | null;
   language: string | null;
-  cover_url: string | null;
-  total_pages: number;
-  rating: number | null;
-  cover_image: string | null;
-  viewers: number | null;
-  pdf_url: string | null;
+  cover_url?: string | null;
+  cover_image?: string | null;
+  pdf_url?: string | null;
   audio_url?: string | null;
-  categories: string[];
-  is_free: boolean;
+  total_pages: number;
+  rating?: number | null;
+  viewers?: number | null;
+  is_free?: boolean;
+  categories?: {
+    id: string;
+    name: string;
+    icon_name?: string;
+  }[];
+  reading_time?: string;
   created_at: string;
   updated_at: string;
 }
@@ -41,140 +48,6 @@ const initialState: BooksState = {
   error: null,
 };
 
-// Mock API functions (to be replaced with real API calls)
-const booksAPI = {
-  getBooks: async (params: GetBooksParams): Promise<Book[]> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simulated books data
-    const books: { [key: number]: Book } = {
-      1: {
-        id: 1,
-        title: 'The Bible',
-        subtitle: '',
-        author: 'Various Authors',
-        description: 'The Bible is a collection of religious texts or scriptures sacred to Christians, Jews, Samaritans, and others.',
-        pageCount: 1200,
-        views: 300,
-        totalRating: 2,
-        category: 'Religious',
-        language: 'English',
-        isPublic: true,
-        uploadedById: 1,
-        coverImageUrl: 'https://via.placeholder.com/150',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      2: {
-        id: 2,
-        title: 'The Purpose Driven Life',
-        subtitle: '',
-        author: 'Rick Warren',
-        description: 'The Purpose Driven Life is a devotional book written by Christian pastor Rick Warren and published by Zondervan.',
-        pageCount: 368,
-        views: 600,
-        totalRating: 3,
-        category: 'Self-Help',
-        language: 'English',
-        isPublic: true,
-        uploadedById: 1,
-        coverImageUrl: 'https://via.placeholder.com/150',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      3: {
-        id: 3,
-        title: 'Mere Christianity',
-        subtitle: '',
-        author: 'C.S. Lewis',
-        description: 'Mere Christianity is a theological book by C.S. Lewis, adapted from a series of BBC radio talks.',
-        pageCount: 256,
-        views: 900,
-        totalRating: 4,
-        category: 'Religious',
-        language: 'English',
-        isPublic: true,
-        uploadedById: 1,
-        coverImageUrl: 'https://via.placeholder.com/150',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    };
-    
-    // Filter by category if specified
-    const filteredBooks = params.category
-      ? Object.values(books).filter(book => book.category === params.category)
-      : Object.values(books);
-    
-    // Apply pagination if specified
-    if (params.limit !== undefined && params.offset !== undefined) {
-      return filteredBooks.slice(params.offset, params.offset + params.limit);
-    }
-    
-    return filteredBooks;
-  },
-  
-  createBook: async (bookData: CreateBookData): Promise<Book> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simulated API response
-    return {
-      id: 4, // Simulated ID (in a real app, the server would assign this)
-      ...bookData,
-      uploadedById: 1, // Assuming the current user's ID
-      isPublic: bookData.isPublic ?? true,
-      language: bookData.language ?? 'English',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-  },
-  
-  updateBook: async (bookData: UpdateBookData): Promise<Book> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simulated API response
-    // In a real app, we'd fetch the existing book and merge the updates
-    return {
-      id: bookData.id,
-      title: bookData.title || 'Updated Book',
-      subtitle: bookData.subtitle || '',
-      author: bookData.author || 'Unknown Author',
-      description: bookData.description || 'No description available',
-      pageCount: bookData.pageCount || 100,
-      views: bookData.views || 0,
-      totalRating: bookData.totalRating || 0,
-      category: bookData.category || 'General',
-      language: bookData.language || 'English',
-      isPublic: bookData.isPublic ?? true,
-      uploadedById: 1,
-      fileUrl: bookData.fileUrl,
-      audioUrl: bookData.audioUrl,
-      coverImageUrl: bookData.coverImageUrl,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-  },
-  
-  addBookComment: async (commentData: AddCommentData): Promise<Comment> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simulated API response
-    return {
-      id: Math.floor(Math.random() * 1000), // Simulated ID
-      bookId: commentData.bookId,
-      userId: 1, // Assuming the current user's ID
-      username: 'demo', // Assuming the current user's username
-      content: commentData.content,
-      rating: commentData.rating,
-      createdAt: new Date().toISOString(),
-    };
-  },
-};
-
 // Async thunks
 export const fetchBooks = createAsyncThunk(
   'books/fetchBooks',
@@ -184,6 +57,7 @@ export const fetchBooks = createAsyncThunk(
         .from('books')
         .select(`
           *,
+          authors:author_id (*),
           book_categories (
             categories (
               id,
@@ -195,10 +69,12 @@ export const fetchBooks = createAsyncThunk(
 
       if (error) throw error;
 
-      // Transform the data to include categories
+      // Transform the data to include categories and author
       const transformedBooks = books.map((book: any) => ({
         ...book,
-        categories: book.book_categories.map((bc: any) => bc.categories)
+        author: book.authors,
+        categories: book.book_categories.map((bc: any) => bc.categories),
+        reading_time: book.reading_time,
       }));
 
       return transformedBooks;

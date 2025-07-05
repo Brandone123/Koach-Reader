@@ -3,11 +3,11 @@ import { StyleSheet, View, ScrollView, Alert, KeyboardAvoidingView, Platform } f
 import { Text, TextInput, Button, Card, Title, Paragraph, ActivityIndicator } from 'react-native-paper';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../../App';
+import { RootStackParamList } from '../navigation/types';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchBookById, selectCurrentBook } from '../slices/booksSlice';
-import { fetchReadingPlanById, selectCurrentPlan, logReadingSession } from '../slices/readingPlansSlice';
-import { AppDispatch } from '../store';
+import { fetchBooks } from '../slices/booksSlice';
+import { fetchReadingPlans, logReadingSession } from '../slices/readingPlansSlice';
+import { AppDispatch, RootState } from '../store';
 import { useTranslation } from 'react-i18next';
 import DatePickerField from '../components/DatePickerField';
 
@@ -26,8 +26,16 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
   const planIdNumber = planId ? parseInt(planId, 10) : undefined;
   
   const dispatch = useDispatch<AppDispatch>();
-  const book = useSelector(selectCurrentBook);
-  const plan = useSelector(selectCurrentPlan);
+  
+  // Properly define selectors with state parameter
+  const book = useSelector((state: RootState) => 
+    state.books.books.find(b => b.id === bookIdNumber)
+  );
+  
+  const plan = useSelector((state: RootState) => 
+    state.readingPlans.plans.find(p => p.id === planIdNumber)
+  );
+  
   const [isLoading, setIsLoading] = useState(true);
   const [pagesRead, setPagesRead] = useState('');
   const [minutesSpent, setMinutesSpent] = useState('');
@@ -43,9 +51,9 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
     const loadData = async () => {
       setIsLoading(true);
       try {
-        await dispatch(fetchBookById(bookIdNumber)).unwrap();
+        await dispatch(fetchBooks()).unwrap();
         if (planIdNumber) {
-          await dispatch(fetchReadingPlanById(planIdNumber)).unwrap();
+          await dispatch(fetchReadingPlans()).unwrap();
         }
       } catch (error) {
         Alert.alert(t('common.errorText'), t('common.errorGeneric'));
@@ -55,23 +63,34 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
     };
 
     loadData();
-  }, [dispatch, bookIdNumber, planIdNumber]);
+  }, [dispatch, bookIdNumber, planIdNumber, t]);
+
+  // Calculate Koach points based on pages read
+  useEffect(() => {
+    if (pagesRead) {
+      const pages = parseInt(pagesRead);
+      if (!isNaN(pages)) {
+        // Simple formula: 10 points per page
+        setKoachEarned(pages * 10);
+      }
+    }
+  }, [pagesRead]);
 
   const handleDateChange = (newDate: Date) => {
     setDate(newDate);
-    // Validation de la date
+    // Validate date - must be in the past or today
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setHours(23, 59, 59, 999);
     
     if (newDate > today) {
-      setDateError(t('validation.dateMustBeFuture'));
+      setDateError(t('validation.dateMustBePast'));
     } else {
       setDateError(undefined);
     }
   };
 
   const handleSubmit = async () => {
-    // Validation des entrées
+    // Validate inputs
     if (!pagesRead || parseInt(pagesRead) <= 0) {
       Alert.alert(t('common.errorText'), t('readingSession.validPagesRequired'));
       return;
@@ -84,20 +103,19 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
 
     setSubmitting(true);
     try {
+      // Calculate minutes from hours and minutes inputs
+      const totalMinutes = (hours ? parseInt(hours) * 60 : 0) + (minutes ? parseInt(minutes) : 0);
+      
       const session = {
         bookId: bookIdNumber,
         readingPlanId: planIdNumber,
         pagesRead: parseInt(pagesRead),
-        minutesSpent: minutesSpent ? parseInt(minutesSpent) : undefined,
+        minutesSpent: totalMinutes || undefined,
         notes: notes || undefined,
-        koachEarned: koachEarned || 0,
         date: date.toISOString()
       };
 
-      const result = await dispatch(logReadingSession({
-        ...session,
-        bookId: bookIdNumber
-      })).unwrap();
+      await dispatch(logReadingSession(session)).unwrap();
       
       Alert.alert(
         t('common.success'),
@@ -137,18 +155,17 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.logoContainer}>
-          {/* Placeholder for the logo container */}
-        </View>
-        
         <Card style={styles.bookCard}>
-          <Card.Cover source={{ uri: book.coverImageUrl }} style={styles.bookCover} />
+          <Card.Cover 
+            source={{ uri: book.cover_url || book.cover_image || 'https://via.placeholder.com/150' }} 
+            style={styles.bookCover} 
+          />
           <Card.Content>
             <Title>{book.title}</Title>
-            <Paragraph>{t('common.author')} {book.author}</Paragraph>
+            <Paragraph>{t('common.author')} {book.author?.name || t('common.unknownAuthor')}</Paragraph>
             {plan && (
               <Text style={styles.planInfo}>
-                {t('readingPlan.planInfo', { current: plan.currentPage, total: plan.totalPages })}
+                {t('readingPlan.planInfo', { current: plan.current_page, total: book.total_pages })}
               </Text>
             )}
           </Card.Content>
@@ -168,8 +185,8 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
             <View style={styles.formRow}>
               <Text style={styles.label}>{t('readingSession.pagesRead')}</Text>
               <TextInput
-                value={pagesRead.toString()}
-                onChangeText={value => setPagesRead(value)}
+                value={pagesRead}
+                onChangeText={setPagesRead}
                 keyboardType="numeric"
                 style={styles.input}
               />
@@ -179,17 +196,19 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
               <Text style={styles.label}>{t('readingSession.timeSpent')}</Text>
               <View style={styles.timeContainer}>
                 <TextInput
-                  value={hours.toString()}
-                  onChangeText={value => setHours(value)}
+                  value={hours}
+                  onChangeText={setHours}
                   keyboardType="numeric"
                   style={[styles.input, styles.timeInput]}
+                  placeholder="0"
                 />
                 <Text style={styles.timeLabel}>h</Text>
                 <TextInput
-                  value={minutes.toString()}
-                  onChangeText={value => setMinutes(value)}
+                  value={minutes}
+                  onChangeText={setMinutes}
                   keyboardType="numeric"
                   style={[styles.input, styles.timeInput]}
+                  placeholder="0"
                 />
                 <Text style={styles.timeLabel}>m</Text>
               </View>
@@ -201,19 +220,24 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
                 value={notes}
                 onChangeText={setNotes}
                 multiline
-                numberOfLines={4}
-                style={[styles.input, styles.textArea]}
+                numberOfLines={3}
+                style={styles.notesInput}
               />
+            </View>
+
+            <View style={styles.pointsContainer}>
+              <Text style={styles.pointsLabel}>{t('common.points')}: </Text>
+              <Text style={styles.pointsValue}>{koachEarned}</Text>
             </View>
 
             <Button
               mode="contained"
               onPress={handleSubmit}
               loading={submitting}
-              disabled={submitting || Number(pagesRead) <= 0 || !!dateError}
+              disabled={submitting}
               style={styles.submitButton}
             >
-              {t('readingSession.save')}
+              {t('readingSession.submit')}
             </Button>
           </Card.Content>
         </Card>
@@ -229,49 +253,71 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+    paddingBottom: 40,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    color: 'red',
+    marginBottom: 20,
+    textAlign: 'center',
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   bookCard: {
     marginBottom: 20,
+    elevation: 4,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   bookCover: {
     height: 200,
-    resizeMode: 'contain',
   },
   planInfo: {
     marginTop: 8,
-    fontStyle: 'italic',
+    fontSize: 14,
+    color: '#666',
   },
   formCard: {
-    marginBottom: 20,
+    borderRadius: 12,
+    elevation: 4,
   },
   formTitle: {
-    marginBottom: 20,
+    fontSize: 20,
+    marginBottom: 16,
+    textAlign: 'center',
   },
   formRow: {
     marginBottom: 16,
   },
   label: {
-    marginBottom: 8,
     fontSize: 16,
+    marginBottom: 8,
+    color: '#333',
   },
   input: {
     backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    height: 48,
   },
   timeContainer: {
     flexDirection: 'row',
@@ -282,22 +328,38 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   timeLabel: {
-    marginHorizontal: 8,
+    fontSize: 16,
+    marginRight: 16,
+    color: '#333',
   },
-  textArea: {
-    height: 100,
+  notesInput: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  pointsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 16,
+  },
+  pointsLabel: {
+    fontSize: 18,
+    color: '#333',
+  },
+  pointsValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#8A2BE2',
   },
   submitButton: {
-    marginTop: 16,
+    backgroundColor: '#8A2BE2',
+    paddingVertical: 8,
+    borderRadius: 8,
   },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-  },
-  errorText: {
-    marginBottom: 16,
-    fontSize: 16,
-  }
 });
 
 export default ReadingSessionScreen;

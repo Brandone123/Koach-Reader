@@ -20,6 +20,7 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import ResetPasswordScreen from '../screens/ResetPasswordScreen';
+import AuthorProfileScreen from '../screens/AuthorProfileScreen';
 
 // Types
 export type RootStackParamList = {
@@ -38,6 +39,7 @@ export type RootStackParamList = {
   ChallengeDetail: { challengeId: string };
   Notifications: undefined;
   Settings: undefined;
+  AuthorProfile: { authorId: number };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -81,6 +83,7 @@ export const AppNavigator = () => {
             <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="AuthorProfile" component={AuthorProfileScreen} options={{ headerShown: true, title: 'Auteur' }} />
           </>
         )}
       </Stack.Navigator>

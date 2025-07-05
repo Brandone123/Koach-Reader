@@ -39,7 +39,11 @@
     "noBooksAvailable": "No books available in this category.",
     "of": "of",
     "create": "Create",
-    "ok": "OK"
+    "ok": "OK",
+    "unknownAuthor": "Unknown author",
+    "by": "by",
+    "pages": "pages",
+    "complete": "complete"
   },
   "auth": {
     "login": "Login",
@@ -111,7 +115,10 @@
     "share": "Share",
     "viewDetails": "View Details",
     "daysRemaining": "{{days}} days remaining",
-    "expiresIn": "Expires in {{days}} days"
+    "expiresIn": "Expires in {{days}} days",
+    "onTrack": "On Track",
+    "behindSchedule": "Behind Schedule",
+    "continue": "Continue"
   },
   "onboarding": {
     "howOftenRead": "How often do you read?",
@@ -187,7 +194,7 @@
     "details": "Book Details",
     "author": "Author",
     "genre": "Genre",
-    "pages": "Pages",
+    "pages": "pages",
     "publishedDate": "Published",
     "description": "Description",
     "addToList": "Add to My Books",
@@ -209,7 +216,29 @@
     "yourRating": "Your Rating",
     "yourComment": "Your comment",
     "beFirstToComment": "Be the first to leave a comment!",
-    "lastRead": "Last read"
+    "lastRead": "Last read",
+    "readingTime": "reading time",
+    "categories": "Categories",
+    "meetAuthor": "Meet the author",
+    "moreLikeThis": "More like this",
+    "about": "About",
+    "outline": "Outline",
+    "readNow": "Read now",
+    "listenNow": "Listen now",
+    "addToFavorites": "Add to favorites",
+    "authorProfile": "See author profile",
+    "noOutline": "No outline available.",
+    "noSimilarBooks": "No similar books found.",
+    "authorUnknown": "Unknown author",
+    "noDescription": "No description available for this book.",
+    "continueReading": "Continue Reading",
+    "outlineSample1": "Introduction and Overview",
+    "outlineSample2": "Main Concepts and Ideas",
+    "outlineSample3": "Practical Applications"
+  },
+  "author": {
+    "booksByAuthor": "Books by this author",
+    "noBooks": "No books by this author."
   },
   "challenges": {
     "title": "Reading Challenges",
@@ -377,33 +406,58 @@
     "account": "Account"
   },
   "readingPlan": {
-    "title": "Reading Plan",
-    "edit": "Edit Plan",
-    "create": "Create Plan",
+    "title": "Reading Plans",
     "createPlan": "Create Reading Plan",
-    "dailyGoal": "Daily Goal",
-    "weeklyGoal": "Weekly Goal",
-    "setReminder": "Set Reminder",
-    "selectBooks": "Select Books",
+    "editPlan": "Edit Reading Plan",
+    "selectBook": "Select a Book",
+    "planTitle": "Plan Title",
     "startDate": "Start Date",
     "endDate": "End Date",
-    "estimatedCompletion": "Estimated Completion",
-    "planInfo": "Reading Plan: {current} of {total} pages"
+    "frequency": "Reading Frequency",
+    "daily": "Daily",
+    "every2Days": "Every 2 Days",
+    "every3Days": "Every 3 Days",
+    "weekly": "Weekly",
+    "weekendsOnly": "Weekends Only",
+    "pagesPerSession": "Pages Per Session",
+    "pagesExplanation": "To complete this book in {{days}} days with {{frequency}} reading, you need to read this many pages each session.",
+    "notes": "Notes",
+    "estimatedCompletion": "Estimated completion: {{days}} days",
+    "changeBook": "Change Book",
+    "noAvailableBooks": "No available books to create a plan. Add a new book or complete existing reading plans.",
+    "planCreated": "Reading plan created successfully!",
+    "planUpdated": "Reading plan updated successfully!",
+    "errorTitle": "Please enter a plan title",
+    "errorSelectBook": "Please select a book",
+    "errorPages": "Please enter a valid number of pages per session",
+    "errorBookNotFound": "Selected book not found",
+    "remaining": "Remaining",
+    "reading": "Reading",
+    "duration": "Duration",
+    "perDay": "per day",
+    "perWeek": "per week",
+    "readingHistory": "Reading History",
+    "noHistory": "No reading sessions recorded yet",
+    "planInconsistency": "Reading Plan Adjustment Needed",
+    "planAdjustmentNeeded": "With your current reading pace ({{suggestedPages}} pages/session), you'll need about {{estimatedDays}} days to finish this book, but your plan ends in {{currentDays}} days. Would you like to adjust your plan?",
+    "adjustEndDate": "Extend End Date",
+    "adjustPagesPerSession": "Increase Pages ({{suggestedPages}} pages/session)",
+    "readingFrequency": "Reading Frequency",
+    "daysToComplete": "Days to Complete",
+    "automaticCalculation": "Pages per session are automatically calculated based on your selected dates and frequency."
   },
   "readingSession": {
     "title": "Log Reading Session",
+    "date": "Date",
     "pagesRead": "Pages Read",
     "timeSpent": "Time Spent",
-    "date": "Date",
-    "selectedDate": "Selected Date",
-    "dateSelected": "Date selected",
     "notes": "Notes",
-    "save": "Save Session",
-    "loading": "Loading book data...",
-    "logReading": "Log Reading",
+    "submit": "Submit",
     "validPagesRequired": "Please enter a valid number of pages",
-    "validTimeRequired": "Please enter a valid number of minutes",
-    "pointsEarned": "You've logged {count} pages and earned {count} Koach points!"
+    "pointsEarned": "You earned {{count}} Koach points!",
+    "logSession": "Log Reading Session",
+    "errorPages": "Please enter a valid number of pages",
+    "errorMinutes": "Please enter a valid number of minutes"
   },
   "badges": {
     "title": "Badges & Achievements",
@@ -432,7 +486,8 @@
   "validation": {
     "dateMustBeFuture": "Date must be in the future",
     "required": "This field is required",
-    "invalidFormat": "Invalid format"
+    "invalidFormat": "Invalid format",
+    "dateMustBePast": "Date cannot be in the future"
   },
   "error": {
     "sharingBook": "Error sharing book"

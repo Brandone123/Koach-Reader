@@ -11,4 +11,5 @@ export type RootStackParamList = {
   ThemeSettings: undefined;
   Notifications: undefined;
   About: undefined;
+  AuthorProfile: { authorId: number };
 }; 

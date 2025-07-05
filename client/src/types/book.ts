@@ -1,7 +1,10 @@
+import type { Author } from './author';
+
 export interface Book {
   id: number;
   title: string;
-  author: string;
+  author_id: number;
+  author?: Author;
   description: string;
   cover_url?: string;
   cover_image?: string;
@@ -19,6 +22,7 @@ export interface Book {
     name: string;
     icon_name?: string;
   }[];
+  reading_time?: string;
   created_at: string;
   updated_at: string;
 } 

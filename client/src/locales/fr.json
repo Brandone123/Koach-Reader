@@ -39,7 +39,11 @@
     "noBooksFound": "Aucun livre correspondant à votre recherche.",
     "noBooksAvailable": "Aucun livre disponible dans cette catégorie.",
     "of": "sur",
-    "create": "Créer"
+    "create": "Créer",
+    "unknownAuthor": "Auteur inconnu",
+    "by": "par",
+    "pages": "pages",
+    "complete": "terminé"
   },
   "auth": {
     "login": "Connexion",
@@ -111,7 +115,10 @@
     "share": "Partager",
     "viewDetails": "Voir les détails",
     "daysRemaining": "{{days}} jours restants",
-    "expiresIn": "Expire dans {{days}} jours"
+    "expiresIn": "Expire dans {{days}} jours",
+    "onTrack": "À jour",
+    "behindSchedule": "En retard",
+    "continue": "Continuer"
   },
   "onboarding": {
     "howOftenRead": "À quelle fréquence lisez-vous?",
@@ -187,7 +194,7 @@
     "details": "Détails du livre",
     "author": "Auteur",
     "genre": "Genre",
-    "pages": "Pages",
+    "pages": "pages",
     "publishedDate": "Publié le",
     "description": "Description",
     "addToList": "Ajouter à mes livres",
@@ -209,7 +216,25 @@
     "yourRating": "Votre note",
     "yourComment": "Votre commentaire",
     "beFirstToComment": "Soyez le premier à laisser un commentaire !",
-    "lastRead": "Dernière lecture il y a"
+    "lastRead": "Dernière lecture il y a",
+    "readingTime": "temps de lecture",
+    "categories": "Catégories",
+    "meetAuthor": "Rencontrez l'auteur",
+    "moreLikeThis": "Plus comme ça",
+    "about": "À propos",
+    "outline": "Plan",
+    "readNow": "Lire maintenant",
+    "listenNow": "Écouter maintenant",
+    "addToFavorites": "Ajouter aux favoris",
+    "authorProfile": "Voir le profil de l'auteur",
+    "noOutline": "Aucun plan disponible.",
+    "noSimilarBooks": "Aucun livre similaire trouvé.",
+    "authorUnknown": "Auteur inconnu",
+    "noDescription": "Aucune description disponible pour ce livre.",
+    "continueReading": "Continuer la lecture",
+    "outlineSample1": "Introduction et aperçu",
+    "outlineSample2": "Concepts et idées principales",
+    "outlineSample3": "Applications pratiques"
   },
   "challenges": {
     "title": "Défis de lecture",
@@ -326,33 +351,58 @@
     "account": "Compte"
   },
   "readingPlan": {
-    "title": "Plan de lecture",
-    "edit": "Modifier le plan",
-    "create": "Créer un plan",
-    "createPlan": "Créer un plan de lecture",
-    "dailyGoal": "Objectif quotidien",
-    "weeklyGoal": "Objectif hebdomadaire",
-    "setReminder": "Définir un rappel",
-    "selectBooks": "Sélectionner des livres",
-    "startDate": "Date de début",
-    "endDate": "Date de fin",
-    "estimatedCompletion": "Achèvement estimé",
-    "planInfo": "Plan de lecture: {current} sur {total} pages"
+    "title": "Plans de Lecture",
+    "createPlan": "Créer un Plan de Lecture",
+    "editPlan": "Modifier le Plan de Lecture",
+    "selectBook": "Sélectionner un Livre",
+    "planTitle": "Titre du Plan",
+    "startDate": "Date de Début",
+    "endDate": "Date de Fin",
+    "frequency": "Fréquence de Lecture",
+    "daily": "Quotidien",
+    "every2Days": "Tous les 2 jours",
+    "every3Days": "Tous les 3 jours",
+    "weekly": "Hebdomadaire",
+    "weekendsOnly": "Week-ends uniquement",
+    "pagesPerSession": "Pages par Session",
+    "pagesExplanation": "Pour terminer ce livre en {{days}} jours avec une lecture {{frequency}}, vous devez lire ce nombre de pages à chaque session.",
+    "notes": "Notes",
+    "estimatedCompletion": "Achèvement estimé : {{days}} jours",
+    "changeBook": "Changer de Livre",
+    "noAvailableBooks": "Aucun livre disponible pour créer un plan. Ajoutez un nouveau livre ou terminez les plans de lecture existants.",
+    "planCreated": "Plan de lecture créé avec succès !",
+    "planUpdated": "Plan de lecture mis à jour avec succès !",
+    "errorTitle": "Veuillez entrer un titre de plan",
+    "errorSelectBook": "Veuillez sélectionner un livre",
+    "errorPages": "Veuillez entrer un nombre valide de pages par session",
+    "errorBookNotFound": "Livre sélectionné introuvable",
+    "remaining": "Restant",
+    "reading": "Lecture",
+    "duration": "Durée",
+    "perDay": "par jour",
+    "perWeek": "par semaine",
+    "readingHistory": "Historique de Lecture",
+    "noHistory": "Aucune session de lecture enregistrée pour le moment",
+    "planInconsistency": "Ajustement du Plan de Lecture Nécessaire",
+    "planAdjustmentNeeded": "Avec votre rythme de lecture actuel ({{suggestedPages}} pages/session), vous aurez besoin d'environ {{estimatedDays}} jours pour finir ce livre, mais votre plan se termine dans {{currentDays}} jours. Souhaitez-vous ajuster votre plan ?",
+    "adjustEndDate": "Prolonger la Date de Fin",
+    "adjustPagesPerSession": "Augmenter les Pages ({{suggestedPages}} pages/session)",
+    "readingFrequency": "Fréquence de Lecture",
+    "daysToComplete": "Jours pour Terminer",
+    "automaticCalculation": "Le nombre de pages par session est automatiquement calculé en fonction des dates et de la fréquence sélectionnées."
   },
   "readingSession": {
     "title": "Enregistrer une session de lecture",
+    "date": "Date",
     "pagesRead": "Pages lues",
     "timeSpent": "Temps passé",
-    "date": "Date",
-    "selectedDate": "Date sélectionnée",
-    "dateSelected": "Date sélectionnée",
     "notes": "Notes",
-    "save": "Enregistrer la session",
-    "loading": "Chargement des données du livre...",
-    "logReading": "Noter la lecture",
+    "submit": "Soumettre",
     "validPagesRequired": "Veuillez entrer un nombre valide de pages",
-    "validTimeRequired": "Veuillez entrer un nombre valide de minutes",
-    "pointsEarned": "Vous avez enregistré {count} pages et gagné {count} points Koach !"
+    "pointsEarned": "Vous avez gagné {{count}} points Koach !",
+    "logSession": "Enregistrer une session de lecture",
+    "errorPages": "Veuillez entrer un nombre valide de pages",
+    "errorMinutes": "Veuillez entrer un nombre valide de minutes"
   },
   "badges": {
     "title": "Badges et réussites",
@@ -381,7 +431,8 @@
   "validation": {
     "dateMustBeFuture": "La date doit être dans le futur",
     "required": "Ce champ est obligatoire",
-    "invalidFormat": "Format invalide"
+    "invalidFormat": "Format invalide",
+    "dateMustBePast": "La date ne peut pas être dans le futur"
   },
   "leaderboard": {
     "title": "Classement",
@@ -542,5 +593,9 @@
       "title": "Contactez-nous",
       "description": "Si vous avez des questions sur ces conditions, veuillez nous contacter à terms@koachreader.com"
     }
+  },
+  "author": {
+    "booksByAuthor": "Livres de cet auteur",
+    "noBooks": "Aucun livre de cet auteur."
   }
 } 

@@ -12,6 +12,8 @@ export interface ReadingPlan {
   end_date: string;
   current_page: number;
   daily_goal: number;
+  title: string;
+  frequency: string;
   notes: string | null;
   last_read_date: string | null;
   status: 'active' | 'completed' | 'paused';

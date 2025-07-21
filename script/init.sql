@@ -19,6 +19,7 @@ DROP TABLE IF EXISTS public.challenge_participants CASCADE;
 DROP TABLE IF EXISTS public.challenges CASCADE;
 DROP TABLE IF EXISTS public.books CASCADE;
 DROP TABLE IF EXISTS public.users CASCADE;
+DROP TABLE IF EXISTS public.annotations CASCADE;
 
 -- Clean auth.users table (but keep the table structure)
 DELETE FROM auth.users;
@@ -160,6 +161,28 @@ CREATE TABLE public.challenge_participants (
   UNIQUE(challenge_id, user_id)
 );
 
+-- Annotations table
+CREATE TABLE IF NOT EXISTS public.annotations (
+  id uuid NOT NULL DEFAULT extensions.uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  book_id integer NOT NULL,
+  page integer NOT NULL,
+  text text,
+  type text NOT NULL,
+  color text,
+  position jsonb,
+  content text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT annotations_pkey PRIMARY KEY (id),
+  CONSTRAINT annotations_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users (id) ON DELETE CASCADE,
+  CONSTRAINT annotations_book_id_fkey FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE,
+  CONSTRAINT annotations_type_check CHECK (type IN ('highlight', 'note', 'bookmark'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_annotations_user ON public.annotations USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_annotations_book ON public.annotations USING btree (book_id);
+
 -- Enable RLS on all tables
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.books ENABLE ROW LEVEL SECURITY;
@@ -169,6 +192,7 @@ ALTER TABLE public.friends ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.challenges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.challenge_participants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.annotations ENABLE ROW LEVEL SECURITY;
 
 -- Create the user profiles view
 CREATE OR REPLACE VIEW public.user_profiles AS
@@ -263,6 +287,19 @@ CREATE POLICY "Users can update their challenge progress" ON public.challenge_pa
   FOR UPDATE USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can leave challenges" ON public.challenge_participants
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Annotations policies
+CREATE POLICY "Users can view own annotations" ON public.annotations
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own annotations" ON public.annotations
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own annotations" ON public.annotations
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own annotations" ON public.annotations
   FOR DELETE USING (auth.uid() = user_id);
 
 -- Create functions for triggers
@@ -401,6 +438,11 @@ CREATE TRIGGER update_challenge_participants_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_annotations_updated_at
+BEFORE UPDATE ON annotations
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
 -- Create auth triggers
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
@@ -410,4 +452,24 @@ CREATE TRIGGER on_auth_user_created
 CREATE TRIGGER on_auth_user_deleted
     AFTER DELETE ON auth.users
     FOR EACH ROW
-    EXECUTE FUNCTION handle_user_delete(); 
+    EXECUTE FUNCTION handle_user_delete();
+
+-- Function to add koach points
+CREATE OR REPLACE FUNCTION public.add_koach_points(user_id uuid, points_to_add integer)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.users
+  SET koach_points = COALESCE(koach_points, 0) + points_to_add
+  WHERE id = user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to increment book viewers
+CREATE OR REPLACE FUNCTION public.increment_book_viewers(book_id integer)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.books
+  SET viewers = COALESCE(viewers, 0) + 1
+  WHERE id = book_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER; 

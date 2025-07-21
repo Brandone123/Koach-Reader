@@ -370,6 +370,82 @@ async function createProgressLogsTable() {
   }
 }
 
+// Create annotations table
+console.log("Creating annotations table...");
+try {
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS annotations (
+      id uuid NOT NULL DEFAULT extensions.uuid_generate_v4(),
+      user_id uuid NOT NULL,
+      book_id integer NOT NULL,
+      page integer NOT NULL,
+      text text,
+      type text NOT NULL,
+      color text,
+      position jsonb,
+      content text,
+      created_at timestamp with time zone NOT NULL DEFAULT now(),
+      updated_at timestamp with time zone NOT NULL DEFAULT now(),
+      CONSTRAINT annotations_pkey PRIMARY KEY (id),
+      CONSTRAINT annotations_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users (id) ON DELETE CASCADE,
+      CONSTRAINT annotations_book_id_fkey FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE,
+      CONSTRAINT annotations_type_check CHECK (type IN ('highlight', 'note', 'bookmark'))
+    );
+    
+    CREATE INDEX IF NOT EXISTS idx_annotations_user ON public.annotations USING btree (user_id);
+    CREATE INDEX IF NOT EXISTS idx_annotations_book ON public.annotations USING btree (book_id);
+    
+    CREATE TRIGGER update_annotations_updated_at
+    BEFORE UPDATE ON annotations
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+    
+    ALTER TABLE public.annotations ENABLE ROW LEVEL SECURITY;
+    
+    CREATE POLICY "Users can view own annotations" ON public.annotations
+      FOR SELECT USING (auth.uid() = user_id);
+    
+    CREATE POLICY "Users can insert own annotations" ON public.annotations
+      FOR INSERT WITH CHECK (auth.uid() = user_id);
+    
+    CREATE POLICY "Users can update own annotations" ON public.annotations
+      FOR UPDATE USING (auth.uid() = user_id);
+    
+    CREATE POLICY "Users can delete own annotations" ON public.annotations
+      FOR DELETE USING (auth.uid() = user_id);
+  `);
+  console.log("Annotations table created successfully");
+} catch (error) {
+  console.error("Error creating annotations table:", error);
+}
+
+// Create functions
+console.log("Creating utility functions...");
+try {
+  await db.execute(sql`
+    CREATE OR REPLACE FUNCTION public.add_koach_points(user_id uuid, points_to_add integer)
+    RETURNS void AS $$
+    BEGIN
+      UPDATE public.users
+      SET koach_points = COALESCE(koach_points, 0) + points_to_add
+      WHERE id = user_id;
+    END;
+    $$ LANGUAGE plpgsql SECURITY DEFINER;
+    
+    CREATE OR REPLACE FUNCTION public.increment_book_viewers(book_id integer)
+    RETURNS void AS $$
+    BEGIN
+      UPDATE public.books
+      SET viewers = COALESCE(viewers, 0) + 1
+      WHERE id = book_id;
+    END;
+    $$ LANGUAGE plpgsql SECURITY DEFINER;
+  `);
+  console.log("Utility functions created successfully");
+} catch (error) {
+  console.error("Error creating utility functions:", error);
+}
+
 // Main function to create all tables
 async function createTables() {
   try {

@@ -12,8 +12,12 @@
     "paths": {
       "@/*": ["src/*"],
       "@shared/*": ["shared/*"]
-    }
+    },
+    "typeRoots": [
+      "./server/types",
+      "./node_modules/@types"
+    ]
   },
-  "include": ["server/**/*", "shared/**/*"],
+  "include": ["server/**/*", "shared/**/*", "server/types/**/*"],
   "exclude": ["node_modules"]
 }

@@ -126,7 +126,7 @@ const BottomNavigationBar: React.FC = () => {
     return null;
   }
 
-  const isPremium = user?.isPremium || false;
+  const isPremium = user?.is_premium || false;
 
   // Define empty component for each scene
   const renderEmptyScene = () => null;
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   },
   bar: {
     backgroundColor: "#FFFFFF",
-    height: 80,
+    height: 70,
     borderTopWidth: 0,
     elevation: 8,
     shadowColor: "#000",

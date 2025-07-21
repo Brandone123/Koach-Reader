@@ -214,7 +214,7 @@ export class DatabaseStorage implements IStorage {
       .eq('user_id', userId);
     
     if (error) throw error;
-    return data?.map(item => (item.books as unknown) as Book) || [];
+    return data?.map((item: any) => (item.books as unknown) as Book) || [];
   }
 
   async createBook(insertBook: InsertBook): Promise<Book> {
@@ -369,7 +369,7 @@ export class DatabaseStorage implements IStorage {
       .eq('user_id', userId);
     
     if (error) throw error;
-    return data?.map(item => (item.badges as unknown) as Badge) || [];
+    return data?.map((item: any) => (item.badges as unknown) as Badge) || [];
   }
 
   async awardBadgeToUser(userId: string, badgeId: number): Promise<boolean> {
@@ -422,7 +422,7 @@ export class DatabaseStorage implements IStorage {
       .eq('status', 'accepted');
     
     if (error) throw error;
-    return data?.map(item => (item.friend as unknown) as User) || [];
+    return data?.map((item: any) => (item.friend as unknown) as User) || [];
   }
 
   async getFriendRequests(userId: string): Promise<any[]> {

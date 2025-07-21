@@ -24,6 +24,7 @@ import MediaViewerScreen from './src/screens/MediaViewerScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
+import AddBookScreen from './src/screens/AddBookScreen';
 import BottomNavigationBar from './src/components/BottomNavigationBar';
 import { useSelector } from 'react-redux';
 import { selectUser } from './src/slices/authSlice';
@@ -55,13 +56,14 @@ export type RootStackParamList = {
   ResetPassword: { token: string };
   Challenges: undefined;
   ChallengeDetail: { challengeId: string };
-  MediaViewer: { mediaId: string; mediaType: 'pdf' | 'audio' };
+  MediaViewer: { bookId: string; type: 'pdf' | 'audio' };
   Badges: undefined;
   Stats: undefined;
   Notifications: undefined;
   Leaderboard: undefined;
   Onboarding: undefined;
   LanguageSettings: undefined;
+  AddBook: { bookId?: string };
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
@@ -259,6 +261,11 @@ const AppNavigator = ({ initialRoute, resetToken }: AppNavigatorProps) => {
             <Stack.Screen name="Badges" component={BadgesScreen} />
             <Stack.Screen name="Stats" component={StatsScreen} />
             <Stack.Screen name="MediaViewer" component={MediaViewerScreen} />
+            <Stack.Screen 
+              name="AddBook" 
+              component={AddBookScreen} 
+              options={{ title: 'Add Book' }}
+            />
           </>
         )}
       </Stack.Navigator>

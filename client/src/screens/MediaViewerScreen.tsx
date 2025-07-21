@@ -1,201 +1,346 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  ActivityIndicator, 
-  Alert,
-  SafeAreaView
-} from 'react-native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, ActivityIndicator, Text, Alert, Dimensions } from 'react-native';
+import { useSelector } from 'react-redux';
+import { selectBooks } from '../slices/booksSlice';
 import { RouteProp } from '@react-navigation/native';
-import { Button } from 'react-native-paper';
-import { RootStackParamList } from '../../App';
-import PDFViewer from '../components/PDFViewer';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../navigation/types';
 import AudioPlayer from '../components/AudioPlayer';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch } from '../store';
-import { selectUser } from '../slices/authSlice';
-import { fetchApi } from '../utils/api';
-import { mockFetchApi } from '../utils/mockApi';
+import { useTranslation } from 'react-i18next';
+import { supabase, fixSupabaseStorageUrl } from '../lib/supabase';
+import WebView from 'react-native-webview';
+import { Button, IconButton } from 'react-native-paper';
+import * as FileSystem from 'expo-file-system';
 
 type MediaViewerScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MediaViewer'>;
 type MediaViewerScreenRouteProp = RouteProp<RootStackParamList, 'MediaViewer'>;
 
-export interface MediaViewerScreenProps {
+interface MediaViewerScreenProps {
   navigation: MediaViewerScreenNavigationProp;
   route: MediaViewerScreenRouteProp;
 }
 
-enum MediaType {
-  PDF = 'pdf',
-  AUDIO = 'audio',
-  UNKNOWN = 'unknown'
-}
-
-interface MediaInfo {
-  uri: string;
-  type: MediaType;
-  title: string;
-  creator?: string;
-}
-
-const MediaViewerScreen = ({ navigation, route }: MediaViewerScreenProps) => {
-  const { bookId, mediaType } = route.params;
-  const [mediaInfo, setMediaInfo] = useState<MediaInfo | null>(null);
-  const [loading, setLoading] = useState(true);
+const MediaViewerScreen: React.FC<MediaViewerScreenProps> = ({ navigation, route }) => {
+  const { t } = useTranslation();
+  const { bookId, type } = route.params;
+  const books = useSelector(selectBooks);
+  const book = books.find(b => b.id === parseInt(bookId));
+  
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const dispatch = useDispatch<AppDispatch>();
-  const user = useSelector(selectUser);
-
-  // Fonction pour déterminer le type de fichier à partir de l'URI
-  const determineMediaType = (uri: string): MediaType => {
-    if (!uri) return MediaType.UNKNOWN;
+  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(0);
+  const [scale, setScale] = useState<number>(1);
+  const pdfRef = useRef<any>(null);
+  
+  // Function to check and fix local URLs
+  const checkAndFixLocalUrl = async () => {
+    if (!book) return null;
     
-    const lowerCaseUri = uri.toLowerCase();
-    if (lowerCaseUri.endsWith('.pdf') || lowerCaseUri.includes('application/pdf')) {
-      return MediaType.PDF;
-    } else if (
-      lowerCaseUri.endsWith('.mp3') || 
-      lowerCaseUri.endsWith('.m4a') || 
-      lowerCaseUri.endsWith('.wav') || 
-      lowerCaseUri.endsWith('.ogg')
-    ) {
-      return MediaType.AUDIO;
+    let url = type === 'pdf' ? book.pdf_url : book.audio_url;
+    
+    // If URL is empty or undefined
+    if (!url) {
+      console.log(`${type.toUpperCase()} URL is undefined or empty for book ID:${book.id}`);
+      return null;
     }
     
-    // Utiliser le type spécifié si le type ne peut pas être déterminé à partir de l'URI
-    return mediaType === 'audio' ? MediaType.AUDIO : MediaType.PDF;
-  };
-
-  useEffect(() => {
-    fetchMediaInfo();
-  }, [bookId, mediaType]);
-
-  const fetchMediaInfo = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Try real API first
-      const endpoint = mediaType === 'audio' 
-        ? `/api/books/${bookId}/audio` 
-        : `/api/books/${bookId}/file`;
+    // If URL is a local path, fix it in the database
+    if (url.startsWith('file://')) {
+      console.error(`${type.toUpperCase()} URL is a local path:`, url);
       
-      const data = await fetchApi(endpoint);
-      
-      setMediaInfo({
-        uri: data.fileUrl,
-        type: determineMediaType(data.fileUrl),
-        title: data.title || 'Book Content',
-        creator: data.author
-      });
-    } catch (apiError) {
       try {
-        // Fall back to mock data
-        const mockEndpoint = mediaType === 'audio' 
-          ? `/api/books/${bookId}/audio` 
-          : `/api/books/${bookId}/file`;
+        // Update database to remove local URL
+        const updates = type === 'pdf' ? { pdf_url: null } : { audio_url: null };
         
-        const mockData = await mockFetchApi(mockEndpoint);
-        
-        // For mock data, create sample URLs
-        let sampleUri = '';
-        if (mediaType === 'audio') {
-          // Sample audio URL for testing
-          sampleUri = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+        const { error } = await supabase
+          .from('books')
+          .update(updates)
+          .eq('id', book.id);
+          
+        if (error) {
+          console.error('Error fixing URL:', error);
         } else {
-          // Sample PDF URL for testing
-          sampleUri = 'https://www.africau.edu/images/default/sample.pdf';
+          console.log(`${type} URL fixed in database`);
         }
         
-        setMediaInfo({
-          uri: sampleUri,
-          type: mediaType === 'audio' ? MediaType.AUDIO : MediaType.PDF,
-          title: mockData?.title || 'Sample Book',
-          creator: mockData?.author || 'Sample Author'
-        });
-      } catch (mockError) {
-        console.error('Failed to load media info:', mockError);
-        setError('Failed to load media information. Please try again later.');
+        // Return null as URL is not usable
+        return null;
+      } catch (error) {
+        console.error('Error updating URL:', error);
+        return null;
       }
-    } finally {
-      setLoading(false);
+    }
+    
+    // Check that URL starts with http or https
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      console.error(`${type.toUpperCase()} URL invalid (neither http nor https):`, url);
+      return null;
+    }
+    
+    // If URL is not in the correct format, fix it
+    if (!url.includes('/storage/v1/object/public/')) {
+      // Extract filename
+      const parts = url.split('/');
+      const filename = parts[parts.length - 1];
+      
+      // Determine bucket based on type
+      const bucket = type === 'pdf' ? 'books' : 'covers';
+      
+      // Construct the correct URL format
+      const fixedUrl = `https://amjodckmmxmpholspskm.supabase.co/storage/v1/object/public/${bucket}/${filename}`;
+      console.log(`${type.toUpperCase()} URL format fixed:`, fixedUrl);
+      
+      // Update the URL in the database with the fixed URL
+      try {
+        const updates = type === 'pdf' ? { pdf_url: fixedUrl } : { audio_url: fixedUrl };
+        
+        const { error } = await supabase
+          .from('books')
+          .update(updates)
+          .eq('id', book.id);
+          
+        if (error) {
+          console.error('Error updating URL format:', error);
+        } else {
+          console.log(`${type} URL format updated in database`);
+        }
+      } catch (error) {
+        console.error('Error updating URL format:', error);
+      }
+      
+      // Return the fixed URL
+      return fixedUrl;
+    }
+    
+    // URL is valid and in correct format
+    console.log(`${type.toUpperCase()} URL valid:`, url);
+    
+    return url;
+  };
+
+  // Update reading progress to database
+  const updateReadingProgress = async (pageNumber: number) => {
+    if (!book || !bookId) return;
+    
+    try {
+      // Check if we have a reading record for this book
+      const { data: existingData, error: checkError } = await supabase
+        .from('user_books')
+        .select('id, current_page')
+        .eq('book_id', bookId)
+        .single();
+        
+      const now = new Date().toISOString();
+      
+      if (existingData) {
+        // Only update if new page is further along
+        if (pageNumber > (existingData.current_page || 0)) {
+          await supabase
+            .from('user_books')
+            .update({
+              current_page: pageNumber,
+              last_read_date: now,
+              updated_at: now
+            })
+            .eq('id', existingData.id);
+        }
+      } else {
+        // Create new record
+        await supabase
+          .from('user_books')
+          .insert({
+            user_id: 'current-user', // This should be replaced with actual user ID
+            book_id: bookId,
+            current_page: pageNumber,
+            last_read_date: now,
+            is_favorite: false
+          });
+      }
+      
+      console.log(`Updated reading progress for book ${bookId}: page ${pageNumber}`);
+    } catch (error) {
+      console.error('Error updating reading progress:', error);
     }
   };
+  
+  useEffect(() => {
+    const loadMedia = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Vérifier et corriger l'URL si nécessaire
+        const url = await checkAndFixLocalUrl();
+        setMediaUrl(url);
+        
+        if (!url) {
+          setError(type === 'pdf' 
+            ? t('mediaViewer.noPdfAvailable') 
+            : t('mediaViewer.noAudioAvailable'));
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement du média:', error);
+        setError(t('mediaViewer.errorLoading'));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadMedia();
+  }, [book, type]);
 
-  const handleError = (error: Error) => {
-    console.error('Media error:', error);
-    setError('An error occurred while loading the media. Please try again.');
+  const handleLoadComplete = (numberOfPages: number, filePath: string) => {
+    console.log(`PDF loaded successfully with ${numberOfPages} pages`);
+    setIsLoading(false);
+    setTotalPages(numberOfPages);
+    // Increment viewers count
+    if (bookId) {
+      try {
+        supabase.rpc('increment_book_viewers', {
+          book_id: bookId
+        });
+      } catch (error) {
+        console.error('Error incrementing viewers:', error);
+      }
+    }
   };
-
+  
+  // Correction du type de l'erreur pour être compatible avec react-native-pdf
+  const handleError = (error: object) => {
+    console.error('Media error:', error);
+    const errorMessage = error instanceof Error ? error.message : 
+                          typeof error === 'string' ? error : 
+                          t('mediaViewer.errorLoading');
+    setError(errorMessage);
+    setIsLoading(false);
+  };
+  
+  const handlePageChanged = (page: number, numberOfPages: number) => {
+    setCurrentPage(page);
+    if (bookId) {
+      updateReadingProgress(page);
+    }
+  };
+  
   const handleClose = () => {
     navigation.goBack();
   };
-
-  const handlePageChange = (page: number, totalPages: number) => {
-    // Here you could save reading progress
-    console.log(`Page ${page} of ${totalPages}`);
+  
+  const goToNextPage = () => {
+    if (pdfRef.current && currentPage < totalPages) {
+      pdfRef.current.setPage(currentPage + 1);
+    }
   };
-
-  if (loading) {
+  
+  const goToPreviousPage = () => {
+    if (pdfRef.current && currentPage > 1) {
+      pdfRef.current.setPage(currentPage - 1);
+    }
+  };
+  
+  if (isLoading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#6200ee" />
-        <Text style={styles.loadingText}>Loading media...</Text>
-      </SafeAreaView>
+        <Text style={styles.loadingText}>{t('bookDetail.loadingBook')}</Text>
+      </View>
     );
   }
-
-  if (error || !mediaInfo) {
+  
+  if (error) {
     return (
-      <SafeAreaView style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error || 'Could not load media'}</Text>
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <Text style={styles.errorSubtext}>{t('mediaViewer.tryAgain')}</Text>
         <Button 
           mode="contained" 
-          onPress={() => navigation.goBack()}
-          style={styles.errorButton}
+          onPress={handleClose} 
+          style={styles.closeButton}
         >
-          Go Back
+          {t('common.back')}
         </Button>
-      </SafeAreaView>
+      </View>
     );
   }
-
+  
+  if (!book) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{t('book.notFound')}</Text>
+        <Button 
+          mode="contained" 
+          onPress={handleClose} 
+          style={styles.closeButton}
+        >
+          {t('common.back')}
+        </Button>
+      </View>
+    );
+  }
+  
+if (type === 'pdf' && mediaUrl) {
+  const pdfUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(mediaUrl)}&embedded=true`;
+  
   return (
     <View style={styles.container}>
-      {mediaInfo.type === MediaType.PDF ? (
-        <PDFViewer 
-          uri={mediaInfo.uri}
-          title={mediaInfo.title}
-          onClose={handleClose}
-          onError={handleError}
-          bookId={bookId}
-          onPageChange={handlePageChange}
+      <View style={styles.header}>
+        <IconButton 
+          icon="arrow-left" 
+          size={24} 
+          onPress={handleClose}
         />
-      ) : mediaInfo.type === MediaType.AUDIO ? (
-        <AudioPlayer 
-          uri={mediaInfo.uri}
-          title={mediaInfo.title}
-          artist={mediaInfo.creator}
-          onClose={handleClose}
-          onError={handleError}
-          bookId={bookId}
-        />
-      ) : (
-        <SafeAreaView style={styles.unsupportedContainer}>
-          <Text style={styles.unsupportedText}>
-            Unsupported media type. Please try another format.
-          </Text>
-          <Button 
-            mode="contained" 
-            onPress={() => navigation.goBack()}
-            style={styles.unsupportedButton}
-          >
-            Go Back
-          </Button>
-        </SafeAreaView>
-      )}
+        <Text style={styles.title} numberOfLines={1}>
+          {book.title}
+        </Text>
+      </View>
+      
+      <WebView
+        source={{ uri: pdfUrl }}
+        style={styles.pdf}
+        startInLoadingState={true}
+        renderLoading={() => (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#6200ee" />
+          </View>
+        )}
+        onError={(syntheticEvent) => {
+          const { nativeEvent } = syntheticEvent;
+          console.error('WebView error:', nativeEvent);
+          setError(t('mediaViewer.errorLoading'));
+        }}
+      />
+    </View>
+  );
+}
+  
+  if (type === 'audio' && mediaUrl) {
+    return (
+      <AudioPlayer
+        uri={mediaUrl}
+        title={book.title}
+        artist={book.author?.name || t('common.unknownAuthor')}
+        artwork={book.cover_url || book.cover_image || undefined}
+        onClose={handleClose}
+        onError={handleError}
+      />
+    );
+  }
+  
+  return (
+    <View style={styles.errorContainer}>
+      <Text style={styles.errorText}>
+        {type === 'pdf' 
+          ? t('mediaViewer.noPdfAvailable')
+          : t('mediaViewer.noAudioAvailable')}
+      </Text>
+      <Button 
+        mode="contained" 
+        onPress={handleClose} 
+        style={styles.closeButton}
+      >
+        {t('common.back')}
+      </Button>
     </View>
   );
 };
@@ -203,7 +348,47 @@ const MediaViewerScreen = ({ navigation, route }: MediaViewerScreenProps) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    height: 56,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  title: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginHorizontal: 16,
+  },
+  pageInfo: {
+    fontSize: 14,
+    color: '#666',
+    width: 60,
+    textAlign: 'right',
+  },
+  pdf: {
+    flex: 1,
+    width: Dimensions.get('window').width,
     backgroundColor: '#f5f5f5',
+  },
+  controls: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 8,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  pageText: {
+    fontSize: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -220,33 +405,24 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: 20,
     backgroundColor: '#f5f5f5',
   },
   errorText: {
-    fontSize: 16,
-    color: '#B00020',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#e53935',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 8,
   },
-  errorButton: {
-    marginTop: 8,
-  },
-  unsupportedContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#f5f5f5',
-  },
-  unsupportedText: {
+  errorSubtext: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
     marginBottom: 24,
   },
-  unsupportedButton: {
-    marginTop: 8,
+  closeButton: {
+    marginTop: 16,
   },
 });
 

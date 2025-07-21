@@ -49,14 +49,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   
   useEffect(() => {
     // Redirect based on user state
-    console.log('User state changed:', user);
     if (user) {
-      console.log('User is logged in, checking onboarding status:', user.has_completed_onboarding);
       if (user.has_completed_onboarding === false) {
-        console.log('User has not completed onboarding, redirecting to Onboarding');
         navigation.replace('Onboarding');
       } else {
-        console.log('User has completed onboarding, redirecting to Home');
         navigation.replace('Home');
       }
     }
@@ -106,15 +102,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     if (validateForm()) {
       setIsSubmitting(true);
       try {
-        console.log('Attempting login with:', { email });
-        
         // Dispatch l'action login
         await dispatch(login({ email, password }));
-        console.log('Login successful');
-        
         // La redirection sera gérée automatiquement par AppNavigator
       } catch (err) {
-        console.error('Login failed:', err);
         Toast.show({
           type: 'error',
           text1: t('auth.loginError'),

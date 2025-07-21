@@ -36,6 +36,7 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '../utils/theme';
 import { RootStackParamList } from '../types/navigation';
 import { AppDispatch } from '../store';
+import { runUrlFixer } from '../utils/fixSupabaseUrls';
 
 const { width, height } = Dimensions.get('window');
 

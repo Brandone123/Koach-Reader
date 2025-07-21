@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useTranslation } from 'react-i18next';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { TextInput, useTheme } from 'react-native-paper';
 import CustomDatePicker from './CustomDatePicker';
+import { useTranslation } from 'react-i18next';
 
 interface DatePickerFieldProps {
   label: string;
-  value: Date;
-  onChange: (date: Date) => void;
+  value: Date | null;
+  onChange: (date: Date | null) => void;
+  style?: any;
   error?: string;
 }
 
@@ -14,38 +16,45 @@ const DatePickerField: React.FC<DatePickerFieldProps> = ({
   label,
   value,
   onChange,
+  style,
   error
 }) => {
   const { t } = useTranslation();
-  const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const theme = useTheme();
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const formatDate = (date: Date): string => {
-    return date.toLocaleDateString();
+  const handleDateChange = (selectedDate: Date) => {
+    onChange(selectedDate);
+  };
+
+  const formatDate = (date: Date | null): string => {
+    if (!date) return '';
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
-      
-      <TouchableOpacity 
-        style={[styles.dateField, error ? styles.errorField : {}]} 
-        onPress={() => setIsPickerVisible(true)}
-      >
-        <Text style={styles.dateText}>
-          {formatDate(value)}
-        </Text>
+    <View style={[styles.container, style]}>
+      <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+        <TextInput
+          label={label}
+          value={formatDate(value)}
+          mode="outlined"
+          editable={false}
+          right={<TextInput.Icon icon="calendar" onPress={() => setShowDatePicker(true)} />}
+          error={!!error}
+        />
       </TouchableOpacity>
       
-      {error ? (
-        <Text style={styles.errorText}>{error}</Text>
-      ) : null}
+      {error && <Text style={styles.errorText}>{error}</Text>}
       
-      <CustomDatePicker
-        value={value}
-        onChange={onChange}
-        isVisible={isPickerVisible}
-        onClose={() => setIsPickerVisible(false)}
-      />
+      {showDatePicker && (
+        <CustomDatePicker
+          value={value || new Date()}
+          onChange={handleDateChange}
+          isVisible={showDatePicker}
+          onClose={() => setShowDatePicker(false)}
+        />
+      )}
     </View>
   );
 };
@@ -53,33 +62,13 @@ const DatePickerField: React.FC<DatePickerFieldProps> = ({
 const styles = StyleSheet.create({
   container: {
     marginBottom: 16,
-    width: '100%',
-  },
-  label: {
-    marginBottom: 8,
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-  },
-  dateField: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    padding: 12,
-    backgroundColor: '#f9f9f9',
-  },
-  dateText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  errorField: {
-    borderColor: '#e53935',
   },
   errorText: {
-    color: '#e53935',
+    color: 'red',
     fontSize: 12,
     marginTop: 4,
-  },
+    marginLeft: 8,
+  }
 });
 
 export default DatePickerField; 

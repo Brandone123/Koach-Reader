@@ -12,4 +12,5 @@ export type RootStackParamList = {
   Notifications: undefined;
   About: undefined;
   AuthorProfile: { authorId: number };
+  AddBook: { bookId?: string };
 }; 

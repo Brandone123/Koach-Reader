@@ -72,7 +72,9 @@ interface ReadingPlanRouteParams {
 
 const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation }) => {
   const { t } = useTranslation();
-  const { planId, bookId } = route.params as ReadingPlanRouteParams || {};
+  const params = (route.params as ReadingPlanRouteParams) || {};
+  const planId = params.planId;
+  const bookId = params.bookId;
   const dispatch = useDispatch<AppDispatch>();
   
   const user = useSelector((state: RootState) => selectUser(state));
@@ -84,16 +86,27 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
   const isPlanLoading = useSelector((state: RootState) => selectReadingPlansLoading(state));
   
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedBookId, setSelectedBookId] = useState<string | null>(bookId || null);
-  const [showBookSelector, setShowBookSelector] = useState(!bookId);
+  const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
+  useEffect(() => {
+    if (bookId && books && books.length > 0) {
+      const foundBook = books.find(book => book.id.toString() === bookId.toString());
+      if (foundBook) {
+        setSelectedBookId(bookId.toString());
+      }
+    }
+    if (!bookId && !selectedBookId && books && books.length > 0) {
+      setSelectedBookId(null);
+    }
+  }, [bookId, books]);
+  const showBookSelector = !bookId && !selectedBookId;
   
-  // Ajout de la définition de selectedBook
   const selectedBook = useMemo(() => {
     if (!selectedBookId) return null;
-    return books.find(book => book.id.toString() === selectedBookId);
+    const foundBook = books.find(book => book.id.toString() === selectedBookId);
+    console.log('[ReadingPlanScreen] selectedBookId:', selectedBookId, 'foundBook:', foundBook);
+    return foundBook;
   }, [selectedBookId, books]);
   
-  // Form states for creating or editing a plan
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)); // Default to 30 days from now
@@ -259,7 +272,6 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
 
   const handleBookSelect = (bookId: string) => {
     setSelectedBookId(bookId);
-    setShowBookSelector(false);
   };
   
   const handleCreateOrUpdatePlan = () => {
@@ -487,7 +499,6 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
         {showBookSelector ? (
           <View style={styles.selectorContainer}>
             <Text style={styles.selectorTitle}>{t('readingPlan.selectBook')}</Text>
-            
             {availableBooks.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>
@@ -555,9 +566,10 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
                       
                       <Button 
                         mode="outlined" 
-                        onPress={() => setShowBookSelector(true)}
+                        onPress={() => setSelectedBookId(null)}
                         style={styles.changeBookButton}
                         icon="book-search"
+                        disabled={!!bookId}
                       >
                         {t('readingPlan.changeBook')}
                       </Button>
@@ -571,7 +583,6 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
                     style={styles.input}
                     left={<TextInput.Icon icon="format-title" />}
                   />
-                  
                   <View style={styles.dateContainer}>
                     <View style={styles.dateField}>
                       <DatePickerField
@@ -580,7 +591,6 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
                         onChange={setStartDate}
                       />
                     </View>
-                    
                     <View style={styles.dateField}>
                       <DatePickerField
                         label={t('readingPlan.endDate')}
@@ -589,7 +599,6 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
                       />
                     </View>
                   </View>
-                  
                   <Text style={styles.sectionLabel}>{t('readingPlan.frequency')}:</Text>
                   <View style={styles.frequencyButtons}>
                     {frequencyOptions.map((option) => (
@@ -603,7 +612,6 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
                       </Button>
                     ))}
                   </View>
-                  
                   {selectedBook && pagesPerSession && (
                     <View style={styles.pagesInfoContainer}>
                       <Text style={styles.sectionLabel}>{t('readingPlan.pagesPerSession')}:</Text>
@@ -616,7 +624,6 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
                       </Text>
                     </View>
                   )}
-                  
                   <TextInput
                     label={t('readingPlan.notes')}
                     value={notes}
@@ -626,7 +633,6 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
                     style={styles.input}
                     left={<TextInput.Icon icon="note-text" />}
                   />
-                  
                   <Button 
                     mode="contained" 
                     onPress={handleCreateOrUpdatePlan}

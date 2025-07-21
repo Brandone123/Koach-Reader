@@ -465,6 +465,9 @@
     "readingFrequency": "Reading Frequency",
     "daysToComplete": "Days to Complete",
     "automaticCalculation": "Pages per session are automatically calculated based on your selected dates and frequency."
+    ,
+    "needPlanFirst": "You need a reading plan for this book to continue.",
+    "pleaseCreatePlan": "Please create a reading plan first."
   },
   "readingSession": {
     "title": "Log Reading Session",

@@ -127,9 +127,9 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
   
   // Tous les hooks useState doivent être définis au début du composant
   const [refreshing, setRefreshing] = useState(false);
-  const [createPlanVisible, setCreatePlanVisible] = useState(false);
-  const [dailyGoal, setDailyGoal] = useState('');
-  const [planNotes, setPlanNotes] = useState('');
+  // const [createPlanVisible, setCreatePlanVisible] = useState(false);
+  // const [dailyGoal, setDailyGoal] = useState('');
+  // const [planNotes, setPlanNotes] = useState('');
   const [selectedTab, setSelectedTab] = useState<'about' | 'outline' | 'notes'>('about');
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -616,14 +616,24 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
   };
 
   const handleReadBook = () => {
-    if (!readingPlan) {
-      setSnackbarMessage(t('readingPlan.needPlanFirst'));
-      setSnackbarVisible(true);
-      setCreatePlanVisible(true);
+    if (readingPlan) {
+      openPDF();
       return;
     }
-    
-    navigation.navigate('ReadingSession', { bookId: book.id.toString() });
+    Alert.alert(
+      t('readingPlan.needPlanFirst'),
+      t('readingPlan.pleaseCreatePlan'),
+      [
+        {
+          text: t('common.cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('readingPlan.createPlan'),
+          onPress: () => navigation.navigate('ReadingPlan', { bookId: book.id }),
+        },
+      ]
+    );
   };
 
   const handleListenBook = () => {
@@ -907,7 +917,7 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
           {/* Read Button */}
           <TouchableOpacity 
             style={[styles.readButton, hasAudio ? styles.readButtonWithAudio : styles.readButtonNoAudio]}
-            onPress={openPDF}
+            onPress={handleReadBook}
             activeOpacity={0.7}
           >
             <MaterialCommunityIcons name="book-open-page-variant" size={24} color="#fff" />
@@ -1162,76 +1172,7 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
         </Dialog>
       </Portal>
 
-      {/* Create reading plan dialog */}
-      <Portal>
-        <Dialog 
-          visible={createPlanVisible} 
-          onDismiss={() => setCreatePlanVisible(false)}
-          style={styles.planDialog}
-        >
-          <View style={styles.planDialogHeader}>
-            <MaterialCommunityIcons name="book-clock" size={32} color="#fff" />
-            <Text style={styles.planDialogTitle}>{t('readingPlan.createPlan')}</Text>
-          </View>
-          <Dialog.Content style={styles.planDialogContent}>
-            <Text style={styles.planDialogDescription}>
-              {t('readingPlan.dailyGoalExplanation', { pages: book?.total_pages || 0 })}
-            </Text>
-            
-            <View style={styles.goalInputContainer}>
-              <Text style={styles.inputLabel}>{t('readingPlan.dailyGoal')}</Text>
-              <View style={styles.goalInputWrapper}>
-                <TextInput
-                  value={dailyGoal}
-                  onChangeText={setDailyGoal}
-                  keyboardType="numeric"
-                  style={styles.goalInput}
-                  placeholder="10"
-                  placeholderTextColor="#999"
-                />
-                <Text style={styles.pagesLabel}>{t('book.pages')}</Text>
-              </View>
-              <Text style={styles.estimatedCompletion}>
-                {dailyGoal && !isNaN(parseInt(dailyGoal)) && parseInt(dailyGoal) > 0 ? (
-                  t('readingPlan.estimatedCompletion', { 
-                    days: Math.ceil((book?.total_pages || 0) / parseInt(dailyGoal)) 
-                  })
-                ) : ''}
-              </Text>
-            </View>
-            
-            <View style={styles.notesContainer}>
-              <Text style={styles.inputLabel}>{t('readingPlan.notes')}</Text>
-              <TextInput
-                value={planNotes}
-                onChangeText={setPlanNotes}
-                multiline
-                numberOfLines={3}
-                style={styles.notesInput}
-                placeholder={t('readingPlan.notesPlaceholder')}
-                placeholderTextColor="#999"
-              />
-            </View>
-          </Dialog.Content>
-          
-          <View style={styles.planDialogActions}>
-            <Button 
-              onPress={() => setCreatePlanVisible(false)}
-              style={styles.cancelButton}
-              labelStyle={styles.cancelButtonLabel}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button 
-              onPress={handleCreatePlan}
-              mode="contained"
-              style={styles.createButton}
-            >
-              {t('common.create')}
-            </Button>
-          </View>
-        </Dialog>
-      </Portal>
+
       
       {/* Points earned animation */}
       {showRewardAnimation && (

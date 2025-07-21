@@ -480,6 +480,9 @@
     "readingFrequency": "Fréquence de Lecture",
     "daysToComplete": "Jours pour Terminer",
     "automaticCalculation": "Le nombre de pages par session est automatiquement calculé en fonction des dates et de la fréquence sélectionnées."
+    ,
+    "needPlanFirst": "Vous devez d'abord créer un plan de lecture pour ce livre.",
+    "pleaseCreatePlan": "Veuillez créer un plan de lecture avant de continuer."
   },
   "readingSession": {
     "title": "Enregistrer une session de lecture",

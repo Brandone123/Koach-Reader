@@ -388,12 +388,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     (new Date(item.end_date).getTime() - new Date(item.start_date).getTime())));
                   
                   return (
-                    <TouchableOpacity 
-                      onPress={() => navigation.navigate('ReadingSession', { 
-                        bookId: book.id.toString(),
-                        planId: item.id.toString() 
-                      })}
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('ReadingSession', { bookId: book.id.toString(), planId: item.id.toString() })}
                       style={styles.planCardContainer}
+                      activeOpacity={0.85}
                     >
                       <LinearGradient
                         colors={['#8A2BE2', '#4B0082']}
@@ -402,21 +400,18 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                         style={styles.planCardGradient}
                       >
                         <View style={styles.planCardContent}>
-                          <Image 
+                          <Image
                             source={{ uri: book.cover_url || book.cover_image || 'https://via.placeholder.com/150' }}
                             style={styles.planCoverImage}
                           />
-                          
                           <View style={styles.planDetails}>
                             <Text style={styles.planBookTitle} numberOfLines={1}>{book.title}</Text>
-                            
                             <View style={styles.planProgressContainer}>
                               <View style={styles.planProgressBarContainer}>
                                 <View style={[styles.planProgressFill, { width: `${progress}%` }]} />
                               </View>
                               <Text style={styles.planProgressText}>{Math.round(progress)}%</Text>
                             </View>
-                            
                             <View style={styles.planStatsRow}>
                               <View style={styles.planStat}>
                                 <MaterialCommunityIcons name="calendar-clock" size={16} color="#fff" />
@@ -424,7 +419,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                                   {daysLeft} {t('home.daysLeft')}
                                 </Text>
                               </View>
-                              
                               <View style={styles.planStat}>
                                 <MaterialCommunityIcons name="book-open-variant" size={16} color="#fff" />
                                 <Text style={styles.planStatText}>
@@ -432,9 +426,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                                 </Text>
                               </View>
                             </View>
-                            
                             <View style={styles.planFooter}>
-                              <View style={[styles.planStatusBadge, { backgroundColor: isOnTrack ? '#4CAF50' : '#FFA000' }]}>
+                              <View style={[styles.planStatusBadge, { backgroundColor: isOnTrack ? '#4CAF50' : '#FFA000' }]}> 
                                 <MaterialCommunityIcons 
                                   name={isOnTrack ? "check-circle" : "alert-circle"} 
                                   size={14} 
@@ -444,16 +437,35 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                                   {isOnTrack ? t('home.onTrack') : t('home.behindSchedule')}
                                 </Text>
                               </View>
-                              
                               <Button
-                                mode="text"
+                                mode="contained"
                                 compact
-                                style={styles.continueReadingButton}
-                                labelStyle={styles.continueReadingButtonLabel}
-                                onPress={() => navigation.navigate('ReadingSession', { 
-                                  bookId: book.id.toString(),
-                                  planId: item.id.toString() 
-                                })}
+                                style={[
+                                  styles.continueReadingButton,
+                                  {
+                                    paddingHorizontal: 10,
+                                    backgroundColor: '#8A2BE2',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    elevation: 2,
+                                  },
+                                ]}
+                                labelStyle={[
+                                  styles.continueReadingButtonLabel,
+                                  {
+                                    fontSize: 12,
+                                    color: '#fff',
+                                    fontWeight: 'bold',
+                                    letterSpacing: 0.5,
+                                  },
+                                ]}
+                                onPress={e => {
+                                  e.stopPropagation();
+                                  navigation.navigate('MediaViewer', {
+                                    bookId: book.id.toString(),
+                                    type: 'pdf'
+                                  });
+                                }}
                               >
                                 {t('home.continue')}
                               </Button>
@@ -1059,7 +1071,7 @@ const styles = StyleSheet.create({
   },
   continueReadingButtonLabel: {
     color: '#8A2BE2',
-    fontSize: 12,
+    fontSize: 10,
     padding: 0,
   },
   loadingPlansContainer: {

@@ -25,6 +25,7 @@
     "previous": "Previous",
     "finish": "Finish",
     "continue": "Continue",
+    "read": "Read",
     "viewAll": "View All",
     "errorGeneric": "Something went wrong",
     "points": "Points",
@@ -426,6 +427,8 @@
     "account": "Account"
   },
   "readingPlan": {
+    "openPdf": "Open PDF",
+    "updatePlan": "Update Plan",
     "title": "Reading Plans",
     "createPlan": "Create Reading Plan",
     "editPlan": "Edit Reading Plan",

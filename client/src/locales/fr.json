@@ -25,6 +25,7 @@
     "previous": "Précédent",
     "finish": "Terminer",
     "continue": "Continuer",
+    "read": "Lire",
     "viewAll": "Voir tout",
     "errorGeneric": "Une erreur est survenue",
     "points": "Points",
@@ -441,6 +442,8 @@
     "account": "Compte"
   },
   "readingPlan": {
+    "openPdf": "Ouvrir le PDF",
+    "updatePlan": "Mettre à jour le plan",
     "title": "Plans de Lecture",
     "createPlan": "Créer un Plan de Lecture",
     "editPlan": "Modifier le Plan de Lecture",

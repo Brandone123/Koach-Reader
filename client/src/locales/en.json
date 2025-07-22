@@ -28,7 +28,7 @@
     "read": "Read",
     "viewAll": "View All",
     "errorGeneric": "Something went wrong",
-    "points": "Points",
+    "points": "Koachs",
     "success": "Success",
     "great": "Great!",
     "submit": "Submit",
@@ -48,7 +48,9 @@
     "notes": "Notes",
     "optional": "Optional",
     "permissionRequired": "Permission Required",
-    "error": "Error"
+    "error": "Error",
+    "author": "Author",
+    "comingSoon": "Coming soon!"
   },
   "auth": {
     "login": "Login",
@@ -470,7 +472,8 @@
     "automaticCalculation": "Pages per session are automatically calculated based on your selected dates and frequency."
     ,
     "needPlanFirst": "You need a reading plan for this book to continue.",
-    "pleaseCreatePlan": "Please create a reading plan first."
+    "pleaseCreatePlan": "Please create a reading plan first.",
+    "progress": "Progress"
   },
   "readingSession": {
     "title": "Log Reading Session",
@@ -483,7 +486,15 @@
     "pointsEarned": "You earned {{count}} Koach points!",
     "logSession": "Log Reading Session",
     "errorPages": "Please enter a valid number of pages",
-    "errorMinutes": "Please enter a valid number of minutes"
+    "errorMinutes": "Please enter a valid number of minutes",
+    "sessions": "Sessions",
+    "points": "Koachs",
+    "readBook": "Read",
+    "listenAudio": "Listen",
+    "editPlan": "Edit",
+    "history": "Reading History",
+    "noSessions": "No reading sessions yet.",
+    "pages": "pages"
   },
   "badges": {
     "title": "Badges & Achievements",

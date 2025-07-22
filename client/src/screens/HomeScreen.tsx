@@ -389,7 +389,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   
                   return (
                     <TouchableOpacity
-                      onPress={() => navigation.navigate('ReadingSession', { bookId: book.id.toString(), planId: item.id.toString() })}
+                       onPress={() => navigation.navigate('ReadingSession', { bookId: book.id.toString(), planId: item.id.toString() })}
                       style={styles.planCardContainer}
                       activeOpacity={0.85}
                     >

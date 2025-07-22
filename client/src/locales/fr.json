@@ -28,7 +28,7 @@
     "read": "Lire",
     "viewAll": "Voir tout",
     "errorGeneric": "Une erreur est survenue",
-    "points": "Points",
+    "points": "Koachs",
     "success": "Succès",
     "great": "Excellent !",
     "submit": "Soumettre",
@@ -48,7 +48,9 @@
     "notes": "Notes",
     "optional": "Optionnel",
     "permissionRequired": "Permission requise",
-    "error": "Erreur"
+    "error": "Erreur",
+    "author": "Auteur",
+    "comingSoon": "Bientôt disponible !"
   },
   "auth": {
     "login": "Connexion",
@@ -485,7 +487,8 @@
     "automaticCalculation": "Le nombre de pages par session est automatiquement calculé en fonction des dates et de la fréquence sélectionnées."
     ,
     "needPlanFirst": "Vous devez d'abord créer un plan de lecture pour ce livre.",
-    "pleaseCreatePlan": "Veuillez créer un plan de lecture avant de continuer."
+    "pleaseCreatePlan": "Veuillez créer un plan de lecture avant de continuer.",
+    "progress": "Progression"
   },
   "readingSession": {
     "title": "Enregistrer une session de lecture",
@@ -498,7 +501,15 @@
     "pointsEarned": "Vous avez gagné {{count}} points Koach !",
     "logSession": "Enregistrer une session de lecture",
     "errorPages": "Veuillez entrer un nombre valide de pages",
-    "errorMinutes": "Veuillez entrer un nombre valide de minutes"
+    "errorMinutes": "Veuillez entrer un nombre valide de minutes",
+    "sessions": "Sessions",
+    "points": "Koachs",
+    "readBook": "Lire",
+    "listenAudio": "Écouter",
+    "editPlan": "Éditer",
+    "history": "Historique de lecture",
+    "noSessions": "Aucune session de lecture pour l'instant.",
+    "pages": "pages"
   },
   "badges": {
     "title": "Badges et réussites",

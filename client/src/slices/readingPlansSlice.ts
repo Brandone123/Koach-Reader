@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 // Types
 export interface ReadingPlan {
   id: number;
-  user_id: string;
+  user_id: number;
   book_id: number;
   start_date: string;
   end_date: string;
@@ -23,11 +23,12 @@ export interface ReadingPlan {
 
 export interface ReadingSession {
   id: number;
-  userId: number;
-  bookId: number;
-  readingPlanId: number | null;
+  user_id: number;
+  book_id: number;
+  reading_plan_id: number;
   pagesRead: number;
   minutesSpent: number;
+  sessionDate: string;
   koachEarned: number;
   notes?: string;
   createdAt: string;
@@ -42,7 +43,7 @@ interface ReadingPlansState {
 }
 
 interface CreatePlanData {
-  bookId: number;
+  book_id: number;
   title: string;
   startDate: string;
   endDate: string;
@@ -64,8 +65,8 @@ interface UpdatePlanData {
 }
 
 interface LogSessionData {
-  bookId: number;
-  readingPlanId?: number;
+  book_id: number;
+  reading_plan_id?: number;
   pagesRead: number;
   minutesSpent?: number;
   notes?: string;
@@ -90,8 +91,8 @@ const readingPlansAPI = {
     const plans: { [key: number]: ReadingPlan } = {
       1: {
         id: 1,
-        userId: "1",
-        bookId: 1,
+        user_id: 1,
+        book_id: 1,
         start_date: new Date().toISOString(),
         end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
         current_page: 120,
@@ -102,8 +103,8 @@ const readingPlansAPI = {
       },
       2: {
         id: 2,
-        userId: "1",
-        bookId: 2,
+        user_id: 1,
+        book_id: 2,
         start_date: new Date().toISOString(),
         end_date: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString(),
         current_page: 45,
@@ -125,8 +126,8 @@ const readingPlansAPI = {
     const plans: { [key: number]: ReadingPlan } = {
       1: {
         id: 1,
-        userId: "1",
-        bookId: 1,
+        user_id: 1,
+        book_id: 1,
         start_date: new Date().toISOString(),
         end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
         current_page: 120,
@@ -137,8 +138,8 @@ const readingPlansAPI = {
       },
       2: {
         id: 2,
-        userId: "1",
-        bookId: 2,
+        user_id: 1,
+        book_id: 2,
         start_date: new Date().toISOString(),
         end_date: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString(),
         current_page: 45,
@@ -165,8 +166,8 @@ const readingPlansAPI = {
     // Simulated API response
     return {
       id: Math.floor(Math.random() * 1000), // Simulated ID
-      userId: "1", // Assuming the current user's ID
-      bookId: planData.bookId,
+      user_id: 1, // Assuming the current user's ID
+      book_id: planData.book_id,
       start_date: planData.startDate,
       end_date: planData.endDate,
       current_page: 0,
@@ -184,8 +185,8 @@ const readingPlansAPI = {
     // For simplicity, we'll return a mock updated plan
     return {
       id: planData.id,
-      userId: "1",
-      bookId: 1,
+      user_id: 1,
+      book_id: 1,
       start_date: planData.startDate || new Date().toISOString(),
       end_date: planData.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       current_page: planData.currentPage || 0,
@@ -206,11 +207,12 @@ const readingPlansAPI = {
     // Simulated API response
     return {
       id: Math.floor(Math.random() * 1000), // Simulated ID
-      userId: 1, // Assuming the current user's ID
-      bookId: sessionData.bookId,
-      readingPlanId: sessionData.readingPlanId || null,
+      user_id: 1, // Assuming the current user's ID
+      book_id: sessionData.book_id,
+      reading_plan_id: sessionData.reading_plan_id || null,
       pagesRead: sessionData.pagesRead,
       minutesSpent: sessionData.minutesSpent || 0,
+      sessionDate: new Date().toISOString(),
       koachEarned,
       notes: sessionData.notes,
       createdAt: new Date().toISOString(),
@@ -225,31 +227,34 @@ const readingPlansAPI = {
     return [
       {
         id: 1,
-        userId: 1,
-        bookId: 1,
-        readingPlanId: 1,
+        user_id: 1,
+        book_id: 1,
+        reading_plan_id: 1,
         pagesRead: 14,
         minutesSpent: 30,
+        sessionDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
         koachEarned: 14,
         createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
       },
       {
         id: 2,
-        userId: 1,
-        bookId: 1,
-        readingPlanId: 1,
+        user_id: 1,
+        book_id: 1,
+        reading_plan_id: 1,
         pagesRead: 15,
         minutesSpent: 35,
+        sessionDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
         koachEarned: 15,
         createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
       },
       {
         id: 3,
-        userId: 1,
-        bookId: 2,
-        readingPlanId: 2,
+        user_id: 1,
+        book_id: 2,
+        reading_plan_id: 2,
         pagesRead: 10,
         minutesSpent: 25,
+        sessionDate: new Date().toISOString(),
         koachEarned: 10,
         createdAt: new Date().toISOString(),
       },
@@ -285,15 +290,15 @@ export const fetchReadingPlans = createAsyncThunk(
 export const createReadingPlan = createAsyncThunk(
   'readingPlans/createReadingPlan',
   async ({ 
-    userId, 
-    bookId, 
+    user_id, 
+    book_id, 
     startDate, 
     endDate, 
     dailyGoal,
     notes 
   }: {
-    userId: string;
-    bookId: number;
+    user_id: string;
+    book_id: number;
     startDate: string;
     endDate: string;
     dailyGoal: number;
@@ -303,8 +308,8 @@ export const createReadingPlan = createAsyncThunk(
       const { data: plan, error } = await supabase
         .from('reading_plans')
         .insert([{
-          user_id: userId,
-          book_id: bookId,
+          user_id: user_id,
+          book_id: book_id,
           start_date: startDate,
           end_date: endDate,
           daily_goal: dailyGoal,
@@ -378,15 +383,15 @@ export const logReadingSession = createAsyncThunk(
       const session = await readingPlansAPI.logReadingSession(sessionData);
       
       // If this session is part of a reading plan, we'll also need to update the plan's currentPage
-      if (sessionData.readingPlanId) {
+      if (sessionData.reading_plan_id) {
         const state = getState() as RootState;
-        const plan = state.readingPlans.plans.find(p => p.id === sessionData.readingPlanId);
+        const plan = state.readingPlans.plans.find(p => p.id === sessionData.reading_plan_id);
         
         if (plan) {
           const updatedCurrentPage = plan.current_page + sessionData.pagesRead;
           // In a real application, we would call an API to update the plan
           // For now, we'll just include this information to be handled in the reducer
-          return { session, planId: sessionData.readingPlanId, updatedCurrentPage };
+          return { session, planId: sessionData.reading_plan_id, updatedCurrentPage };
         }
       }
       
@@ -499,8 +504,8 @@ export const selectCurrentPlan = (state: RootState) => state.readingPlans.curren
 export const selectReadingSessions = (state: RootState) => state.readingPlans.readingSessions;
 export const selectReadingPlansLoading = (state: RootState) => state.readingPlans.loading;
 export const selectReadingPlansError = (state: RootState) => state.readingPlans.error;
-export const selectBookReadingPlan = (state: RootState, bookId: number) => 
-  state.readingPlans.plans.find(plan => plan.book_id === bookId);
+export const selectBookReadingPlan = (state: RootState, book_id: number) => 
+  state.readingPlans.plans.find(plan => plan.book_id === book_id);
 
 // Export reducer
 export default readingPlansSlice.reducer;

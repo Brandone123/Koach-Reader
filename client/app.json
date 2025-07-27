@@ -1,12 +1,11 @@
 {
   "expo": {
-    "name": "Koach",
+    "name": "Koach Reader",
     "slug": "koach-reader",
-    "newArchEnabled": true,
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -17,15 +16,17 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.koach.reading",
-      "associatedDomains": ["applinks:koachreader.app"]
+      "bundleIdentifier": "com.koach.reader",
+      "associatedDomains": [
+        "applinks:koachreader.app"
+      ]
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#6200ee"
       },
-      "package": "com.koach.reading",
+      "package": "com.koach.reader",
       "intentFilters": [
         {
           "action": "VIEW",
@@ -36,13 +37,36 @@
               "host": "reset-password"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
     "scheme": "koachreader",
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-dev-client",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "newArchEnabled": false
+          },
+          "ios": {
+            "newArchEnabled": false
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7609ec84-5b76-49f6-914c-319df8276ca2"
+      }
+    },
+    "owner": "brandone_1213"
   }
 }

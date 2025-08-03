@@ -54,10 +54,13 @@
         "expo-build-properties",
         {
           "android": {
-            "newArchEnabled": false
+            "newArchEnabled": false,
+            "enableProguardInReleaseBuilds": false,
+            "extraProguardRules": "-keep class com.swmansion.reanimated.** { *; }"
           },
           "ios": {
-            "newArchEnabled": false
+            "newArchEnabled": false,
+            "flipper": false
           }
         }
       ]

@@ -13,4 +13,6 @@ export type RootStackParamList = {
   About: undefined;
   AuthorProfile: { authorId: number };
   AddBook: { bookId?: string };
-}; 
+  Achievements: undefined;
+  Badges: undefined;
+};

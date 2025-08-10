@@ -150,6 +150,12 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
   const animationRef = useRef<LottieView>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
   
   // Header animations
   const headerHeight = scrollY.interpolate({
@@ -790,7 +796,7 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
 
   return (
     <View style={styles.container}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar translucent backgroundColor="#1E2A38" barStyle="light-content" />
       
       {/* Fixed Header Title - Shows when scrolled */}
       <Animated.View style={[styles.fixedHeader, { opacity: headerTitleOpacity }]}>
@@ -1050,7 +1056,7 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
                       </Text>
                       <TouchableOpacity 
                         style={styles.viewAuthorButton}
-                        onPress={() => navigation.navigate('AuthorProfile', { authorId: author.id })}
+                        onPress={() => navigation.navigate('Profile', { authorId: author.id })}
                       >
                         <Text style={styles.viewAuthorText}>{t('book.viewAuthor')}</Text>
                       </TouchableOpacity>
@@ -1195,6 +1201,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    top: 30
   },
   scrollContent: {
     paddingBottom: 20,

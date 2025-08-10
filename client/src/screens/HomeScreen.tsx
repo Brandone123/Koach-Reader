@@ -70,6 +70,226 @@ interface ExtendedUser {
   is_admin?: boolean;
 }
 
+// Ajout des interfaces pour les groupes et communautés
+interface ReadingGroup {
+  id: number;
+  name: string;
+  description: string;
+  memberCount: number;
+  backgroundImage: string;
+  currentBook: string;
+}
+
+interface Community {
+  id: number;
+  name: string;
+  description: string;
+  memberCount: number;
+  backgroundImage: string;
+  category: string;
+}
+
+// Mise à jour des données avec de meilleures images
+const dummyCommunities: Community[] = [
+  {
+    id: 1,
+    name: "MILIS Community",
+    description: "Milestones in Life & Scripture",
+    memberCount: 1250,
+    backgroundImage: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop&q=80",
+    category: "Spiritual Growth"
+  },
+  {
+    id: 2,
+    name: "ICC Community", 
+    description: "Impact Centre Chrétien",
+    memberCount: 890,
+    backgroundImage: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=400&h=250&fit=crop&q=80",
+    category: "Christian Impact"
+  },
+  {
+    id: 3,
+    name: "Compassion Community",
+    description: "Église La Compassion",
+    memberCount: 2100,
+    backgroundImage: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&h=250&fit=crop&q=80",
+    category: "Church Community"
+  },
+  {
+    id: 4,
+    name: "O-Livre Community",
+    description: "Librairie Chrétienne en Ligne",
+    memberCount: 1680,
+    backgroundImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop&q=80",
+    category: "Christian Literature"
+  }
+];
+
+const dummyReadingGroups: ReadingGroup[] = [
+  {
+    id: 1,
+    name: "Bible Study Circle",
+    description: "Étude approfondie des Écritures",
+    memberCount: 45,
+    backgroundImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop&q=80"
+  },
+  {
+    id: 2,
+    name: "Christian Fiction Lovers",
+    description: "Romans chrétiens contemporains",
+    memberCount: 32,
+    backgroundImage: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop&q=80"
+  },
+  {
+    id: 3,
+    name: "Theology Deep Dive",
+    description: "Théologie systématique avancée",
+    memberCount: 28,
+    backgroundImage: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=250&fit=crop&q=80"
+  },
+  {
+    id: 4,
+    name: "Youth Ministry Books",
+    description: "Ressources pour le ministère jeunesse",
+    memberCount: 67,
+    backgroundImage: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=250&fit=crop&q=80"
+  }
+];
+
+// Composant corrigé pour les cartes de groupes de lecture
+const ReadingGroupCard = ({ group, navigation }: { group: ReadingGroup; navigation: any }) => {
+  const getGroupImage = (name: string) => {
+    switch (name) {
+      case "Bible Study Circle":
+        return "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop&q=80";
+      case "Christian Fiction Lovers":
+        return "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop&q=80";
+      case "Theology Deep Dive":
+        return "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=250&fit=crop&q=80";
+      case "Youth Ministry Books":
+        return "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=250&fit=crop&q=80";
+      default:
+        return "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop&q=80";
+    }
+  };
+
+  return (
+    <TouchableOpacity 
+      style={styles.readingGroupCard}
+      onPress={() => navigation.navigate('GroupDetail', { groupId: group.id })}
+    >
+      <Image 
+        source={{ uri: getGroupImage(group.name) }} 
+        style={styles.groupBackgroundImage}
+      />
+      <LinearGradient
+        colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.8)']}
+        style={styles.groupOverlay}
+      >
+        <View style={styles.groupContent}>
+          <Text style={styles.groupName}>{group.name}</Text>
+          <Text style={styles.groupDescription}>{group.description}</Text>
+          <View style={styles.groupMemberBadge}>
+            <Text style={styles.groupMemberText}>{group.memberCount} membres</Text>
+          </View>
+        </View>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+};
+
+// Composant corrigé pour les cartes de communautés
+const CommunityCard = ({ community, navigation }: { community: Community; navigation: any }) => {
+  const getCommunityIcon = (name: string) => {
+    switch (name) {
+      case "MILIS Community":
+        return "book-cross";
+      case "ICC Community":
+        return "hand-heart";
+      case "Compassion Community":
+        return "heart-multiple";
+      case "O-Livre Community":
+        return "book-open-variant";
+      default:
+        return "book";
+    }
+  };
+
+  const getCommunityColor = (name: string) => {
+    switch (name) {
+      case "MILIS Community":
+        return "#4A90E2"; // Bleu spirituel
+      case "ICC Community":
+        return "#F39C12"; // Orange impact
+      case "Compassion Community":
+        return "#E74C3C"; // Rouge compassion
+      case "O-Livre Community":
+        return "#27AE60"; // Vert littérature
+      default:
+        return "#8A2BE2";
+    }
+  };
+
+  const getCommunityImage = (name: string) => {
+    switch (name) {
+      case "MILIS Community":
+        return "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop&q=80"; // Livres et Bible
+      case "ICC Community":
+        return "https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=400&h=250&fit=crop&q=80"; // Église moderne
+      case "Compassion Community":
+        return "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&h=250&fit=crop&q=80"; // Mains qui prient
+      case "O-Livre Community":
+        return "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop&q=80"; // Librairie
+      default:
+        return "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop&q=80";
+    }
+  };
+
+  return (
+    <TouchableOpacity 
+      style={styles.communityCard}
+      onPress={() => navigation.navigate('CommunityDetail', { communityId: community.id })}
+    >
+      <Image 
+        source={{ uri: getCommunityImage(community.name) }} 
+        style={styles.communityBackgroundImage}
+      />
+      <LinearGradient
+        colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.8)']}
+        style={styles.communityOverlay}
+      >
+        <View style={styles.communityHeader}>
+          <View style={[styles.communityIconContainer, { backgroundColor: getCommunityColor(community.name) }]}>
+            <MaterialCommunityIcons 
+              name={getCommunityIcon(community.name)} 
+              size={20} 
+              color="white" 
+            />
+          </View>
+          <View style={styles.communityBadge}>
+            <Text style={styles.communityCategory}>{community.category}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.communityContent}>
+          <Text style={styles.communityName}>{community.name}</Text>
+          <Text style={styles.communityDescription}>{community.description}</Text>
+          
+          <View style={styles.communityFooter}>
+            <View style={styles.memberInfo}>
+              <MaterialCommunityIcons name="account-group" size={14} color="rgba(255,255,255,0.9)" />
+              <Text style={styles.communityMembers}>{community.memberCount.toLocaleString()}</Text>
+            </View>
+            <View style={[styles.joinIndicator, { backgroundColor: getCommunityColor(community.name) }]}>
+              <MaterialCommunityIcons name="plus" size={12} color="white" />
+            </View>
+          </View>
+        </View>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+};
+
 const { width } = Dimensions.get('window');
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
@@ -542,6 +762,62 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               scrollEnabled={false}
             />
           )}
+        </View>
+
+        {/* Section des groupes de lecture */}
+        <Divider style={styles.divider} />
+        
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t('home.readingGroups')}</Text>
+            <Button 
+              mode="text" 
+              onPress={() => {/* Navigation vers tous les groupes */}}
+              icon="arrow-right"
+              style={styles.sectionTitleButton}
+              color="#8A2BE2"
+              compact
+            >
+              {t('common.viewAll')}
+            </Button>
+          </View>
+          
+          <FlatList
+            data={dummyReadingGroups}
+            renderItem={({ item }) => <ReadingGroupCard group={item} navigation={navigation} />}
+            keyExtractor={(item) => item.id.toString()}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.groupsList}
+          />
+        </View>
+
+        {/* Section des communautés */}
+        <Divider style={styles.divider} />
+        
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t('home.communities')}</Text>
+            <Button 
+              mode="text" 
+              onPress={() => {/* Navigation vers toutes les communautés */}}
+              icon="arrow-right"
+              style={styles.sectionTitleButton}
+              color="#8A2BE2"
+              compact
+            >
+              {t('common.viewAll')}
+            </Button>
+          </View>
+          
+          <FlatList
+            data={dummyCommunities}
+            renderItem={({ item }) => <CommunityCard community={item} navigation={navigation} />}
+            keyExtractor={(item) => item.id.toString()}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.communitiesList}
+          />
         </View>
       </ScrollView>
       
@@ -1086,6 +1362,166 @@ const styles = StyleSheet.create({
     bottom: 60,
     backgroundColor: '#8A2BE2',
   },
+  readingGroupCard: {
+    width: 280,
+    height: 160,
+    marginRight: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  groupBackgroundImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+  },
+  groupOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    padding: 16,
+  },
+  groupContent: {
+    alignItems: 'flex-start',
+  },
+  groupName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 4,
+  },
+  groupDescription: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+    marginBottom: 8,
+  },
+  groupMemberBadge: {
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  groupMemberText: {
+    fontSize: 12,
+    color: 'white',
+    fontWeight: '500',
+  },
+  communityCard: {
+    width: 220,
+    height: 160,
+    marginRight: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  communityBackgroundImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+  },
+  communityOverlay: {
+    flex: 1,
+    padding: 14,
+    justifyContent: 'space-between',
+  },
+  communityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  communityIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  communityBadge: {
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  communityCategory: {
+    fontSize: 10,
+    color: 'white',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  communityContent: {
+    alignItems: 'flex-start',
+  },
+  communityName: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 4,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  communityDescription: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.95)',
+    marginBottom: 12,
+    lineHeight: 16,
+  },
+  communityFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+  },
+  memberInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  communityMembers: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  joinIndicator: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  groupsList: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  communitiesList: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
 });
 
 export default HomeScreen;
+
+

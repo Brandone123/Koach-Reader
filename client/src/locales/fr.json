@@ -50,7 +50,9 @@
     "permissionRequired": "Permission requise",
     "error": "Erreur",
     "author": "Auteur",
-    "comingSoon": "Bientôt disponible !"
+    "comingSoon": "Bientôt disponible !",
+    "skip": "Passer",
+    "getStarted": "Commencer"
   },
   "auth": {
     "login": "Connexion",
@@ -125,31 +127,29 @@
     "expiresIn": "Expire dans {{days}} jours",
     "onTrack": "À jour",
     "behindSchedule": "En retard",
-    "continue": "Continuer"
+    "continue": "Continuer",
+    "readingGroups": "Groupes de Lecture",
+    "communities": "Communautés",
+    "noReadingGroups": "Vous n'avez pas encore de groupes de lecture. Rejoignez-en un !",
+    "noCommunities": "Vous n'avez pas encore de communautés. Rejoignez-en une !"
   },
   "onboarding": {
-    "howOftenRead": "À quelle fréquence lisez-vous?",
-    "ageGroup": "À quel groupe d'âge appartenez-vous?",
-    "bookTypes": "Quels types de livres aimez-vous?",
-    "bookDiscovery": "Comment découvrez-vous de nouveaux livres?",
-    "readingHabits": "Parlez-nous de vos habitudes de lecture pour que nous puissions adapter votre expérience.",
-    "ageAppropriate": "Cela nous aide à recommander du contenu adapté à votre âge.",
-    "selectCategories": "Sélectionnez autant de catégories que vous le souhaitez.",
-    "enhanceDiscovery": "Sélectionnez tout ce qui s'applique pour améliorer votre expérience de découverte de livres.",
-    "fewWeekly": "Quelques fois par semaine",
-    "occasionally": "Occasionnellement",
-    "under18": "Moins de 18 ans",
-    "18to24": "18-24 ans",
-    "25to34": "25-34 ans",
-    "35to44": "35-44 ans",
-    "45plus": "45 ans et plus",
-    "friends": "Amis",
-    "socialMedia": "Médias sociaux",
-    "bookstores": "Librairies",
-    "onlineReviews": "Critiques en ligne",
-    "bookClubs": "Clubs de lecture",
-    "recommendations": "Recommandations",
-    "personalizing": "Personnalisation de votre expérience..."
+    "slide1": {
+      "title": "Définissez vos objectifs de lecture",
+      "subtitle": "Créez des plans de lecture personnalisés et suivez vos progrès quotidiens pour atteindre vos objectifs"
+    },
+    "slide2": {
+      "title": "Suivez vos progrès",
+      "subtitle": "Surveillez vos habitudes de lecture, les pages lues et le temps passé avec des analyses détaillées"
+    },
+    "slide3": {
+      "title": "Rejoignez la communauté",
+      "subtitle": "Connectez-vous avec d'autres lecteurs, partagez des recommandations et participez aux discussions"
+    },
+    "slide4": {
+      "title": "Débloquez des récompenses",
+      "subtitle": "Gagnez des badges et des récompenses en relevant des défis de lecture et en atteignant des jalons"
+    }
   },
   "categories": {
     "bibleStudies": "Bible et études bibliques",
@@ -195,7 +195,64 @@
     "bio": "Biographie",
     "logoutConfirmation": "Êtes-vous sûr de vouloir vous déconnecter ?",
     "confirmLogout": "Oui, me déconnecter",
-    "levelReader": "Niveau {{level}} Lecteur"
+    "levelReader": "Niveau {{level}} Lecteur",
+    "booksRead": "Livres lus",
+    "koachPoints": "Koach Points",
+    "readingStreak": "Série de lecture",
+    "days": "Jours",
+    "addFriends": "Ajouter des amis",
+    "badges": "Badges",
+    "viewAll": "Voir tout"
+  },
+  "addFriends": {
+    "title": "Ajouter des amis",
+    "searchFriends": "Rechercher des amis",
+    "searchByName": "Rechercher par nom",
+    "searchByNameSubtitle": "Trouvez vos amis par leur nom d'utilisateur",
+    "inviteFromContacts": "Inviter depuis les contacts",
+    "inviteFromContactsSubtitle": "Invitez vos contacts à rejoindre Koach",
+    "shareProfileLink": "Partager le lien du profil",
+    "shareProfileLinkSubtitle": "Partagez votre profil avec vos amis",
+    "suggestions": "Suggestions d'amis",
+    "viewAllSuggestions": "Voir Tout",
+    "reduce": "Réduire",
+    "myContacts": "Mes Contacts",
+    "contactNoName": "Contact sans nom",
+    "permissionDenied": "Permission refusée",
+    "permissionDeniedMessage": "Nous avons besoin d'accéder à vos contacts pour vous aider à trouver des amis.",
+    "contactsAccessError": "Erreur d'accès aux contacts",
+    "noContactsFoundMessage": "Aucun contact trouvé sur votre appareil",
+    "shareMessage": "Rejoignez-moi sur Koach Reader ! Mon profil : {userProfile}",
+    "shareTitle": "Rejoindre Koach Reader",
+    "shareError": "Impossible de partager le lien du profil",
+    "inviteMessage": "Salut {name} ! Rejoins-moi sur Koach Reader, la meilleure app de lecture !",
+    "searchPlaceholder": "Tapez un nom...",
+    "noResults": "Aucun utilisateur trouvé",
+    "noResultsSubtext": "Essayez avec un autre nom",
+    "searchHint": "Tapez au moins 2 caractères pour rechercher",
+    "searching": "Recherche en cours...",
+    "follow": "Suivre",
+    "following": "Suivi",
+    "invite": "Inviter",
+    "invited": "Invité",
+    "activeUser": "Utilisateur actif",
+    "newMember": "Nouveau membre",
+    "passionateReader": "Lecteur passionné",
+    "premiumMember": "Membre premium",
+    "assiduousReader": "Lecteur assidu",
+    "newReader": "Nouveau lecteur",
+    "activeMember": "Membre actif",
+    "close": "Fermer",
+    "contactsPermission": "Permission d'accès aux contacts",
+    "contactsPermissionMessage": "Pour vous aider à trouver vos amis, nous avons besoin d'accéder à vos contacts.",
+    "allowAccess": "Autoriser l'accès",
+    "denyAccess": "Refuser",
+    "loadingContacts": "Chargement des contacts...",
+    "noContactsFound": "Aucun contact trouvé",
+    "contactsError": "Erreur lors du chargement des contacts",
+    "noPhoneNumber": "Aucun numéro de téléphone",
+    "noPhoneNumberMessage": "Ce contact n'a pas de numéro de téléphone",
+    "followsYou": "Vous suit"
   },
   "book": {
     "details": "Détails du livre",
@@ -515,7 +572,16 @@
     "title": "Badges et réussites",
     "unlocked": "Badges débloqués",
     "locked": "Badges verrouillés",
-    "progress": "Progression"
+    "progress": "Progression",
+    "earned": "Obtenus",
+    "howToEarn": "Comment l'obtenir",
+    "completed": "Terminé"
+  },
+  "achievements": {
+    "title": "Succès",
+    "personalRecords": "Records personnels",
+    "distinctions": "Distinctions",
+    "myReward": "MA RÉCOMPENSE"
   },
   "notifications": {
     "title": "Notifications",
@@ -711,5 +777,22 @@
   "author": {
     "booksByAuthor": "Livres de cet auteur",
     "noBooks": "Aucun livre de cet auteur."
+  },
+  "intro": {
+    "slide1": {
+      "title": "Soyez serein aucun frais caché",
+      "subtitle": "Nous garantissons toujours des taux de change compétitifs"
+    },
+    "slide2": {
+      "title": "Atteignez vos objectifs de lecture",
+      "subtitle": "Créez des plans personnalisés et suivez vos progrès quotidiens"
+    },
+    "slide3": {
+      "title": "Rejoignez une communauté de lecteurs",
+      "subtitle": "Participez à des défis et partagez vos découvertes"
+    }
   }
 } 
+
+
+

@@ -135,107 +135,122 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      <LinearGradient
-        colors={['#8A2BE2', '#4A0082']}
-        style={styles.gradient}
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <ScrollView
-            contentContainerStyle={styles.scrollContainer}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={styles.logoContainer}>
+          <View style={styles.logoContainer}>
+            <View style={styles.logoWrapper}>
               <Image
                 source={require('../../assets/icon.png')}
                 style={styles.logo}
               />
-              <Text style={styles.appName}>{t('common.appTitle')}</Text>
-              <Text style={styles.tagline}>{t('home.welcomeBack')}</Text>
+            </View>
+            <Text style={styles.appName}>{t('common.appTitle')}</Text>
+            <Text style={styles.tagline}>{t('home.welcomeBack')}</Text>
+          </View>
+
+          <View style={styles.formCard}>
+            <TextInput
+              label={t('auth.email')}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              error={!!emailError}
+              style={styles.input}
+              mode="outlined"
+              disabled={isSubmitting}
+              theme={{
+                colors: {
+                  primary: '#9317ED',
+                  outline: '#E0E0E0',
+                  onSurfaceVariant: '#6D6D6D',
+                }
+              }}
+              left={<TextInput.Icon icon="email-outline" color="#9317ED" />}
+            />
+            {emailError ? (
+              <HelperText type="error" visible={!!emailError} style={styles.errorText}>
+                {emailError}
+              </HelperText>
+            ) : null}
+
+            <TextInput
+              label={t('auth.password')}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={secureTextEntry}
+              error={!!passwordError}
+              style={styles.input}
+              mode="outlined"
+              disabled={isSubmitting}
+              theme={{
+                colors: {
+                  primary: '#9317ED',
+                  outline: '#E0E0E0',
+                  onSurfaceVariant: '#6D6D6D',
+                }
+              }}
+              left={<TextInput.Icon icon="lock-outline" color="#9317ED" />}
+              right={
+                <TextInput.Icon
+                  icon={secureTextEntry ? "eye-outline" : "eye-off-outline"}
+                  onPress={() => setSecureTextEntry(!secureTextEntry)}
+                  color="#9317ED"
+                />
+              }
+            />
+            {passwordError ? (
+              <HelperText type="error" visible={!!passwordError} style={styles.errorText}>
+                {passwordError}
+              </HelperText>
+            ) : null}
+
+            <TouchableOpacity 
+              style={styles.forgotPassword} 
+              onPress={handleForgotPassword}
+              disabled={isSubmitting}
+            >
+              <Text style={styles.forgotPasswordText}>{t('auth.forgotPassword')}</Text>
+            </TouchableOpacity>
+            
+            <Button 
+              mode="contained" 
+              onPress={handleLogin}
+              loading={isSubmitting}
+              disabled={isSubmitting}
+              style={styles.loginButton}
+              labelStyle={styles.loginButtonText}
+              contentStyle={styles.loginButtonContent}
+              buttonColor="#9317ED"
+            >
+              {t('auth.login')}
+            </Button>
+            
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <View style={styles.dividerLine} />
             </View>
             
-            <View style={styles.formContainer}>
-              <TextInput
-                label={t('auth.email')}
-                value={email}
-                onChangeText={setEmail}
-                style={styles.input}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                error={!!emailError}
-                disabled={isSubmitting}
-                theme={{ colors: { primary: '#8A2BE2' } }}
-                mode="outlined"
-                left={<TextInput.Icon icon="email" color="#8A2BE2" />}
-              />
-              {emailError ? (
-                <HelperText type="error" visible={!!emailError}>
-                  {emailError}
-                </HelperText>
-              ) : null}
-              
-              <TextInput
-                label={t('auth.password')}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={secureTextEntry}
-                style={styles.input}
-                error={!!passwordError}
-                disabled={isSubmitting}
-                theme={{ colors: { primary: '#8A2BE2' } }}
-                mode="outlined"
-                left={<TextInput.Icon icon="lock" color="#8A2BE2" />}
-                right={
-                  <TextInput.Icon 
-                    icon={secureTextEntry ? "eye" : "eye-off"} 
-                    onPress={() => setSecureTextEntry(!secureTextEntry)}
-                    color="#8A2BE2"
-                  />
-                }
-              />
-              {passwordError ? (
-                <HelperText type="error" visible={!!passwordError}>
-                  {passwordError}
-                </HelperText>
-              ) : null}
-              
+            <View style={styles.registerContainer}>
+              <Text style={styles.registerText}>{t('auth.dontHaveAccount')} </Text>
               <TouchableOpacity 
-                style={styles.forgotPassword}
-                onPress={handleForgotPassword}
+                onPress={() => navigation.navigate('Register')}
                 disabled={isSubmitting}
               >
-                <Text style={styles.forgotPasswordText}>{t('auth.forgotPassword')}</Text>
+                <Text style={styles.registerLink}>{t('auth.signup')}</Text>
               </TouchableOpacity>
-              
-              <Button 
-                mode="contained" 
-                onPress={handleLogin}
-                loading={isSubmitting}
-                disabled={isSubmitting}
-                style={styles.loginButton}
-                labelStyle={styles.loginButtonText}
-                contentStyle={styles.loginButtonContent}
-                color="#8A2BE2"
-              >
-                {t('auth.login')}
-              </Button>
-              
-              <View style={styles.registerContainer}>
-                <Text style={styles.registerText}>{t('auth.dontHaveAccount')} </Text>
-                <TouchableOpacity 
-                  onPress={() => navigation.navigate('Register')}
-                  disabled={isSubmitting}
-                >
-                  <Text style={styles.registerLink}>{t('auth.signup')}</Text>
-                </TouchableOpacity>
-              </View>
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </LinearGradient>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 };
@@ -243,7 +258,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#8A2BE2',
+    backgroundColor: '#FFFFFF',
   },
   gradient: {
     flex: 1,
@@ -256,69 +271,70 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 80,
     paddingBottom: 40,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 50,
   },
   logo: {
-    width: 100,
-    height: 100,
+    width: 120,
+    height: 120,
     resizeMode: 'contain',
   },
   appName: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
-    color: 'white',
-    marginTop: 16,
+    color: '#9317ED',
+    marginTop: 20,
+    letterSpacing: 0.5,
   },
   tagline: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 18,
+    color: '#6D6D6D',
     marginTop: 8,
     textAlign: 'center',
+    fontWeight: '400',
   },
   formContainer: {
     width: '100%',
     maxWidth: 400,
     alignSelf: 'center',
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 20,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
   },
   input: {
-    marginBottom: 16,
-    backgroundColor: 'white',
+    marginBottom: 8,
+    backgroundColor: '#FFFFFF',
   },
   forgotPassword: {
     alignSelf: 'flex-end',
-    marginBottom: 24,
+    marginBottom: 32,
+    marginTop: 8,
   },
   forgotPasswordText: {
-    color: '#666',
+    color: '#9317ED',
     fontSize: 14,
+    fontWeight: '500',
   },
   loginButton: {
     marginBottom: 24,
-    borderRadius: 30,
-    elevation: 4,
-    height: 50,
+    borderRadius: 12,
+    height: 56,
     justifyContent: 'center',
+    backgroundColor: '#9317ED',
+    elevation: 2,
+    shadowColor: '#9317ED',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   loginButtonContent: {
-    height: 50,
+    height: 56,
   },
   loginButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    letterSpacing: 1,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   registerContainer: {
     flexDirection: 'row',
@@ -326,11 +342,13 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   registerText: {
-    color: '#666',
+    color: '#6D6D6D',
+    fontSize: 16,
   },
   registerLink: {
-    color: '#8A2BE2',
-    fontWeight: 'bold',
+    color: '#9317ED',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

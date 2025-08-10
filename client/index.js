@@ -1,6 +1,5 @@
 import 'react-native-get-random-values';
 import 'react-native-gesture-handler';
-import 'react-native-reanimated';
 import { LogBox } from 'react-native';
 LogBox.ignoreLogs(['Unsupported top level event type "topInsetsChange" dispatched']);
 

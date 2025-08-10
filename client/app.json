@@ -55,8 +55,7 @@
         {
           "android": {
             "newArchEnabled": false,
-            "enableProguardInReleaseBuilds": false,
-            "extraProguardRules": "-keep class com.swmansion.reanimated.** { *; }"
+            "enableProguardInReleaseBuilds": false
           },
           "ios": {
             "newArchEnabled": false,

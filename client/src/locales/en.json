@@ -50,7 +50,9 @@
     "permissionRequired": "Permission Required",
     "error": "Error",
     "author": "Author",
-    "comingSoon": "Coming soon!"
+    "comingSoon": "Coming soon!",
+    "skip": "Skip",
+    "getStarted": "Get Started"
   },
   "auth": {
     "login": "Login",
@@ -125,31 +127,27 @@
     "expiresIn": "Expires in {{days}} days",
     "onTrack": "On Track",
     "behindSchedule": "Behind Schedule",
-    "continue": "Continue"
+    "continue": "Continue",
+     "readingGroups": "Reading Groups",
+    "communities": "Communities"
   },
   "onboarding": {
-    "howOftenRead": "How often do you read?",
-    "ageGroup": "Which age group do you belong to?",
-    "bookTypes": "What types of books do you enjoy?",
-    "bookDiscovery": "How do you discover new books?",
-    "readingHabits": "Tell us about your reading habits so we can tailor your experience.",
-    "ageAppropriate": "This helps us recommend age-appropriate content.",
-    "selectCategories": "Select as many categories as you like.",
-    "enhanceDiscovery": "Select all that apply to help us enhance your book discovery experience.",
-    "fewWeekly": "Few times a week",
-    "occasionally": "Occasionally",
-    "under18": "Under 18",
-    "18to24": "18-24",
-    "25to34": "25-34",
-    "35to44": "35-44",
-    "45plus": "45+",
-    "friends": "Friends",
-    "socialMedia": "Social Media",
-    "bookstores": "Bookstores",
-    "onlineReviews": "Online Reviews",
-    "bookClubs": "Book Clubs",
-    "recommendations": "Recommendations",
-    "personalizing": "Personalizing your experience..."
+    "slide1": {
+      "title": "Set Your Reading Goals",
+      "subtitle": "Create personalized reading plans and track your daily progress to achieve your goals"
+    },
+    "slide2": {
+      "title": "Track Your Progress",
+      "subtitle": "Monitor your reading habits, pages read, and time spent with detailed analytics"
+    },
+    "slide3": {
+      "title": "Join Reading Community",
+      "subtitle": "Connect with fellow readers, share recommendations, and participate in book discussions"
+    },
+    "slide4": {
+      "title": "Unlock Achievements",
+      "subtitle": "Earn badges and rewards as you complete reading challenges and reach milestones"
+    }
   },
   "categories": {
     "bibleStudies": "Bible and Biblical Studies",
@@ -195,7 +193,64 @@
     "bio": "Biography",
     "logoutConfirmation": "Are you sure you want to log out?",
     "confirmLogout": "Yes, log out",
-    "levelReader": "Level {{level}} Reader"
+    "levelReader": "Level {{level}} Reader",
+    "booksRead": "Books Read",
+    "koachPoints": "Koach Points",
+    "readingStreak": "Reading Streak",
+    "days": "Days",
+    "addFriends": "Add Friends",
+    "badges": "Badges",
+    "viewAll": "View All"
+  },
+  "addFriends": {
+    "title": "Add Friends",
+    "searchFriends": "Search Friends",
+    "searchByName": "Search by name",
+    "searchByNameSubtitle": "Find your friends by their username",
+    "inviteFromContacts": "Invite from contacts",
+    "inviteFromContactsSubtitle": "Invite your contacts to join Koach",
+    "shareProfileLink": "Share profile link",
+    "shareProfileLinkSubtitle": "Share your profile with friends",
+    "suggestions": "Friend suggestions",
+    "viewAllSuggestions": "View all suggestions",
+    "reduce": "Show less",
+    "myContacts": "My Contacts",
+    "contactNoName": "Contact without name",
+    "permissionDenied": "Permission denied",
+    "permissionDeniedMessage": "We need access to your contacts to help you find friends.",
+    "contactsAccessError": "Error accessing contacts",
+    "noContactsFoundMessage": "No contacts found on your device",
+    "shareMessage": "Join me on Koach Reader! My profile: {userProfile}",
+    "shareTitle": "Join Koach Reader",
+    "shareError": "Could not share profile link",
+    "inviteMessage": "Hi {name}! Join me on Koach Reader, the best reading app!",
+    "searchPlaceholder": "Type a name...",
+    "noResults": "No users found",
+    "noResultsSubtext": "Try with another name",
+    "searchHint": "Type at least 2 characters to search",
+    "searching": "Searching...",
+    "follow": "Follow",
+    "following": "Following",
+    "invite": "Invite",
+    "invited": "Invited",
+    "activeUser": "Active user",
+    "newMember": "New member",
+    "passionateReader": "Passionate reader",
+    "premiumMember": "Premium member",
+    "assiduousReader": "Assiduous reader",
+    "newReader": "New reader",
+    "activeMember": "Active member",
+    "close": "Close",
+    "contactsPermission": "Contacts Permission",
+    "contactsPermissionMessage": "To help you find your friends, we need access to your contacts.",
+    "allowAccess": "Allow Access",
+    "denyAccess": "Deny",
+    "loadingContacts": "Loading contacts...",
+    "noContactsFound": "No contacts found",
+    "contactsError": "Error loading contacts",
+    "noPhoneNumber": "No phone number",
+    "noPhoneNumberMessage": "This contact has no phone number",
+    "followsYou": "Follows you"
   },
   "book": {
     "details": "Book Details",
@@ -500,7 +555,16 @@
     "title": "Badges & Achievements",
     "unlocked": "Unlocked Badges",
     "locked": "Locked Badges",
-    "progress": "Progress"
+    "progress": "Progress",
+    "earned": "Earned",
+    "howToEarn": "How To Earn",
+    "completed": "Completed"
+  },
+  "achievements": {
+    "title": "Success",
+    "personalRecords": "Personal Records",
+    "distinctions": "Distinctions",
+    "myReward": "MY REWARD"
   },
   "notifications": {
     "title": "Notifications",
@@ -711,5 +775,22 @@
     "invalidPDF": "Invalid PDF URL",
     "errorOpeningPDF": "Error opening PDF",
     "loadingBook": "Loading book..."
+  },
+  "intro": {
+    "slide1": {
+      "title": "Be confident no hidden fees",
+      "subtitle": "We always guarantee competitive exchange rates"
+    },
+    "slide2": {
+      "title": "Achieve your reading goals",
+      "subtitle": "Create personalized plans and track your daily progress"
+    },
+    "slide3": {
+      "title": "Join a community of readers",
+      "subtitle": "Participate in challenges and share your discoveries"
+    }
   }
 } 
+
+
+

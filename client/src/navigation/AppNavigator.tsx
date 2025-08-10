@@ -22,6 +22,9 @@ import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 import AuthorProfileScreen from '../screens/AuthorProfileScreen';
 import AddBookScreen from '../screens/AddBookScreen';
+import ReadingGroupDetailScreen from '../screens/ReadingGroupDetailScreen';
+import CommunityDetailScreen from '../screens/CommunityDetailScreen';
+import AchievementsScreen from '../screens/AchievementsScreen';
 
 // Types
 export type RootStackParamList = {
@@ -42,6 +45,9 @@ export type RootStackParamList = {
   Settings: undefined;
   AuthorProfile: { authorId: number };
   AddBook: { bookId?: string };
+  GroupDetail: { groupId: number };
+  CommunityDetail: { communityId: number };
+  Achievements: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -85,11 +91,30 @@ export const AppNavigator = () => {
             <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
-            <Stack.Screen name="AuthorProfile" component={AuthorProfileScreen} options={{ headerShown: true, title: 'Auteur' }} />
+            <Stack.Screen 
+              name="AuthorProfile" 
+              component={AuthorProfileScreen} 
+              options={{ headerShown: true, title: 'Auteur' }} 
+            />
             <Stack.Screen 
               name="AddBook" 
               component={AddBookScreen} 
-              options={{ title: 'Add Book' }}
+              options={{ headerShown: true, title: 'Add Book' }}
+            />
+            <Stack.Screen 
+              name="GroupDetail" 
+              component={ReadingGroupDetailScreen} 
+              options={{ headerShown: true, title: 'Groupe de Lecture' }}
+            />
+            <Stack.Screen 
+              name="CommunityDetail" 
+              component={CommunityDetailScreen} 
+              options={{ headerShown: true, title: 'Communauté' }}
+            />
+            <Stack.Screen 
+              name="Achievements" 
+              component={AchievementsScreen} 
+              options={{ headerShown: false }}
             />
           </>
         )}
@@ -99,3 +124,4 @@ export const AppNavigator = () => {
 };
 
 export default AppNavigator;
+

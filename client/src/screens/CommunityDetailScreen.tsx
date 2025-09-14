@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,156 +6,294 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  FlatList,
-  Share,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {
-  Button,
   Card,
   Title,
-  Avatar,
+  Paragraph,
+  Button,
   Chip,
+  Avatar,
   Surface,
-  ProgressBar,
-  useTheme,
+  Divider,
+  FAB,
 } from 'react-native-paper';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useDispatch, useSelector } from 'react-redux';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import { RootStackParamList } from '../navigation/types';
+import { AppDispatch } from '../store';
+import {
+  fetchCommunityById,
+  joinCommunity,
+  leaveCommunity,
+  selectCurrentCommunity,
+  selectCommunityLoading,
+  selectCommunityMembers,
+  selectCommunityPosts,
+} from '../slices/communitiesSlice';
+import { selectUser } from '../slices/authSlice';
+
+type CommunityDetailScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CommunityDetail'>;
+type CommunityDetailScreenRouteProp = RouteProp<RootStackParamList, 'CommunityDetail'>;
 
 interface CommunityDetailScreenProps {
-  navigation: StackNavigationProp<RootStackParamList, 'CommunityDetail'>;
-  route: RouteProp<RootStackParamList, 'CommunityDetail'>;
+  navigation: CommunityDetailScreenNavigationProp;
+  route: CommunityDetailScreenRouteProp;
 }
 
 const CommunityDetailScreen: React.FC<CommunityDetailScreenProps> = ({ navigation, route }) => {
-  const { communityId } = route.params;
   const { t } = useTranslation();
-  const theme = useTheme();
-  const [community, setCommunity] = useState<any>(null);
-  const [isJoined, setIsJoined] = useState(false);
-
-  // Données détaillées pour chaque communauté
-  const getCommunityData = (id: number) => {
-    const communities: any = {
-      1: {
-        id: 1,
-        name: "MILIS Community",
-        description: "MILIS (Milestones in Life & Scripture) est une communauté dédiée à l'exploration des étapes importantes de la vie à travers les Écritures.",
-        memberCount: 1250,
-        backgroundImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=400&fit=crop&q=80",
-        category: "Spiritual Growth",
-      },
-      2: {
-        id: 2,
-        name: "ICC Community",
-        description: "Impact Centre Chrétien est une communauté dynamique axée sur l'impact positif dans la société.",
-        memberCount: 890,
-        backgroundImage: "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?w=800&h=400&fit=crop&q=80",
-        category: "Christian Impact",
-      },
-      3: {
-        id: 3,
-        name: "Compassion Community",
-        description: "Église La Compassion rassemble une communauté bienveillante centrée sur l'amour du Christ.",
-        memberCount: 2100,
-        backgroundImage: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=400&fit=crop&q=80",
-        category: "Church Community",
-      },
-      4: {
-        id: 4,
-        name: "O-Livre Community",
-        description: "O-Livre est la première librairie chrétienne en ligne francophone.",
-        memberCount: 1680,
-        backgroundImage: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&h=400&fit=crop&q=80",
-        category: "Christian Literature",
-      }
-    };
-    
-    return communities[id] || communities[1];
-  };
+  const dispatch = useDispatch<AppDispatch>();
+  const { communityId } = route.params;
+  
+  const community = useSelector(selectCurrentCommunity);
+  const members = useSelector(selectCommunityMembers);
+  const posts = useSelector(selectCommunityPosts);
+  const isLoading = useSelector(selectCommunityLoading);
+  const user = useSelector(selectUser);
+  
+  const [isJoining, setIsJoining] = useState(false);
+  const [isMember, setIsMember] = useState(false);
 
   useEffect(() => {
-    const communityData = getCommunityData(communityId);
-    setCommunity(communityData);
-  }, [communityId]);
+    dispatch(fetchCommunityById(communityId));
+  }, [dispatch, communityId]);
 
-  const handleJoinCommunity = () => {
-    setIsJoined(!isJoined);
+  useEffect(() => {
+    if (members && user) {
+      setIsMember(members.some(member => member.user_id === user.id));
+    }
+  }, [members, user]);
+
+  const getCommunityIcon = (category: string) => {
+    switch (category?.toLowerCase()) {
+      case 'spiritual growth':
+        return "book-cross";
+      case 'christian impact':
+        return "hand-heart";
+      case 'church community':
+        return "heart-multiple";
+      case 'christian literature':
+        return "book-open-variant";
+      default:
+        return "book";
+    }
   };
 
-  if (!community) {
+  const getCommunityColor = (category: string) => {
+    switch (category?.toLowerCase()) {
+      case 'spiritual growth':
+        return "#4A90E2";
+      case 'christian impact':
+        return "#F39C12";
+      case 'church community':
+        return "#E74C3C";
+      case 'christian literature':
+        return "#27AE60";
+      default:
+        return "#8A2BE2";
+    }
+  };
+
+  const handleJoinCommunity = async () => {
+    if (!user) {
+      Alert.alert(t('common.error'), t('auth.loginRequired'));
+      return;
+    }
+
+    setIsJoining(true);
+    try {
+      if (isMember) {
+        await dispatch(leaveCommunity(communityId));
+        Alert.alert(t('common.success'), t('communities.leftCommunity'));
+      } else {
+        await dispatch(joinCommunity(communityId));
+        Alert.alert(t('common.success'), t('communities.joinedCommunity'));
+      }
+    } catch (error) {
+      Alert.alert(t('common.error'), t('common.somethingWentWrong'));
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  if (isLoading || !community) {
     return (
-      <View style={styles.container}>
-        <Text>Chargement...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#8A2BE2" />
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
 
+  const communityColor = getCommunityColor(community.category);
+
   return (
-    <ScrollView style={styles.container}>
-      {/* Header avec image */}
-      <View style={styles.header}>
-        <Image source={{ uri: community.backgroundImage }} style={styles.headerImage} />
-        <LinearGradient
-          colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.8)']}
-          style={styles.headerOverlay}
-        >
-          <View style={styles.headerContent}>
-            <Text style={styles.communityName}>{community.name}</Text>
-            <Text style={styles.communityDescription}>{community.description}</Text>
-            <View style={styles.memberInfo}>
-              <MaterialCommunityIcons name="account-group" size={20} color="white" />
-              <Text style={styles.memberCount}>{community.memberCount} membres</Text>
-            </View>
-          </View>
-        </LinearGradient>
-      </View>
-
-      {/* Contenu */}
-      <View style={styles.content}>
-        {/* Action Button */}
-        <Surface style={styles.actionSection} elevation={2}>
-          <Button
-            mode={isJoined ? "outlined" : "contained"}
-            onPress={handleJoinCommunity}
-            style={[styles.joinButton, isJoined && styles.joinedButton]}
-            icon={isJoined ? "check" : "plus"}
+    <View style={styles.container}>
+      <ScrollView style={styles.scrollView}>
+        {/* Header avec image de couverture */}
+        <View style={styles.headerContainer}>
+          <Image
+            source={{
+              uri: community.cover_image_url || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop&q=80'
+            }}
+            style={styles.coverImage}
+          />
+          <LinearGradient
+            colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.8)']}
+            style={styles.headerOverlay}
           >
-            {isJoined ? "Membre" : "Rejoindre la communauté"}
-          </Button>
-        </Surface>
-
-        {/* Livre en cours */}
-        <View style={styles.section}>
-          <Title style={styles.sectionTitle}>Livre du moment</Title>
-          <Card style={styles.bookCard}>
-            <View style={styles.bookContent}>
-              <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200&h=300&fit=crop' }}
-                style={styles.bookCover}
-              />
-              <View style={styles.bookInfo}>
-                <Text style={styles.bookTitle}>Purpose Driven Life</Text>
-                <Text style={styles.bookAuthor}>Rick Warren</Text>
-                <ProgressBar progress={0.65} color="#8A2BE2" style={styles.progressBar} />
-                <Text style={styles.progressText}>65% complété</Text>
-                <Button
-                  mode="contained"
-                  style={styles.readButton}
-                  onPress={() => navigation.navigate('BookDetail', { bookId: '1' })}
-                >
-                  Lire maintenant
-                </Button>
+            <View style={styles.headerContent}>
+              <View style={styles.communityHeader}>
+                <View style={[styles.communityIcon, { backgroundColor: communityColor }]}>
+                  <MaterialCommunityIcons 
+                    name={getCommunityIcon(community.category)} 
+                    size={24} 
+                    color="white" 
+                  />
+                </View>
+                {community.category && (
+                  <Chip style={[styles.categoryChip, { backgroundColor: communityColor }]}>
+                    <Text style={styles.categoryText}>{community.category}</Text>
+                  </Chip>
+                )}
+              </View>
+              <Text style={styles.communityName}>{community.name}</Text>
+              <Text style={styles.communityDescription}>{community.description}</Text>
+              <View style={styles.statsContainer}>
+                <View style={styles.statItem}>
+                  <MaterialCommunityIcons name="account-group" size={20} color="white" />
+                  <Text style={styles.statText}>
+                    {community.member_count?.[0]?.count || 0} {t('communities.members')}
+                  </Text>
+                </View>
+                <View style={styles.statItem}>
+                  <MaterialCommunityIcons name="post" size={20} color="white" />
+                  <Text style={styles.statText}>
+                    {posts?.length || 0} {t('communities.posts')}
+                  </Text>
+                </View>
               </View>
             </View>
-          </Card>
+          </LinearGradient>
         </View>
-      </View>
-    </ScrollView>
+
+        {/* Informations de la communauté */}
+        <Surface style={styles.infoCard} elevation={2}>
+          <Title>{t('communities.aboutCommunity')}</Title>
+          <Paragraph>{community.description}</Paragraph>
+          
+          {community.rules && (
+            <>
+              <Divider style={styles.divider} />
+              <Title>{t('communities.rules')}</Title>
+              <Paragraph>{community.rules}</Paragraph>
+            </>
+          )}
+          
+          <Divider style={styles.divider} />
+          <View style={styles.tagsContainer}>
+            {community.tags?.map((tag, index) => (
+              <Chip key={index} style={[styles.tag, { backgroundColor: `${communityColor}20` }]}>
+                <Text style={[styles.tagText, { color: communityColor }]}>{tag}</Text>
+              </Chip>
+            ))}
+          </View>
+        </Surface>
+
+        {/* Membres actifs */}
+        <Surface style={styles.membersCard} elevation={2}>
+          <View style={styles.cardHeader}>
+            <Title>{t('communities.activeMembers')} ({members?.length || 0})</Title>
+            <Button
+              mode="text"
+              onPress={() => navigation.navigate('CommunityMembers', { communityId })}
+              compact
+            >
+              {t('common.viewAll')}
+            </Button>
+          </View>
+          
+          <View style={styles.membersList}>
+            {members?.slice(0, 8).map((member, index) => (
+              <TouchableOpacity key={member.id} style={styles.memberItem}>
+                <Avatar.Image
+                  size={40}
+                  source={{ uri: member.avatar_url || 'https://via.placeholder.com/40' }}
+                />
+                <Text style={styles.memberName} numberOfLines={1}>
+                  {member.name}
+                </Text>
+                {member.role === 'admin' && (
+                  <MaterialCommunityIcons name="crown" size={12} color="#FFD700" />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Surface>
+
+        {/* Posts récents */}
+        <Surface style={styles.postsCard} elevation={2}>
+          <View style={styles.cardHeader}>
+            <Title>{t('communities.recentPosts')}</Title>
+            <Button
+              mode="text"
+              onPress={() => navigation.navigate('CommunityPosts', { communityId })}
+              compact
+            >
+              {t('common.viewAll')}
+            </Button>
+          </View>
+          
+          {posts?.slice(0, 3).map((post) => (
+            <TouchableOpacity
+              key={post.id}
+              style={styles.postItem}
+              onPress={() => navigation.navigate('Post', { postId: post.id })}
+            >
+              <View style={styles.postHeader}>
+                <Avatar.Image
+                  size={32}
+                  source={{ uri: post.author?.avatar_url || 'https://via.placeholder.com/32' }}
+                />
+                <View style={styles.postAuthorInfo}>
+                  <Text style={styles.postAuthor}>{post.author?.name}</Text>
+                  <Text style={styles.postTime}>
+                    {new Date(post.created_at).toLocaleDateString()}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.postContent} numberOfLines={3}>
+                {post.content}
+              </Text>
+              <View style={styles.postFooter}>
+                <View style={styles.postStats}>
+                  <MaterialCommunityIcons name="heart" size={16} color="#E74C3C" />
+                  <Text style={styles.postStatText}>{post.likes_count || 0}</Text>
+                  <MaterialCommunityIcons name="comment" size={16} color="#666" style={{ marginLeft: 12 }} />
+                  <Text style={styles.postStatText}>{post.comments_count || 0}</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </Surface>
+      </ScrollView>
+
+      {/* Bouton d'action flottant */}
+      <FAB
+        style={[styles.fab, { backgroundColor: isMember ? '#E74C3C' : communityColor }]}
+        icon={isMember ? "exit-to-app" : "account-plus"}
+        onPress={handleJoinCommunity}
+        loading={isJoining}
+        label={isMember ? t('communities.leave') : t('communities.join')}
+      />
+    </View>
   );
 };
 
@@ -164,11 +302,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  header: {
-    height: 250,
+  scrollView: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  headerContainer: {
+    height: 280,
     position: 'relative',
   },
-  headerImage: {
+  coverImage: {
     width: '100%',
     height: '100%',
   },
@@ -184,6 +335,27 @@ const styles = StyleSheet.create({
   headerContent: {
     alignItems: 'flex-start',
   },
+  communityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
+  },
+  communityIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  categoryChip: {
+    paddingHorizontal: 8,
+  },
+  categoryText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   communityName: {
     fontSize: 28,
     fontWeight: 'bold',
@@ -193,82 +365,131 @@ const styles = StyleSheet.create({
   communityDescription: {
     fontSize: 16,
     color: 'rgba(255,255,255,0.9)',
-    marginBottom: 12,
+    marginBottom: 16,
     lineHeight: 22,
   },
-  memberInfo: {
+  statsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  statText: {
+    color: 'white',
+    marginLeft: 6,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  infoCard: {
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: 'white',
+  },
+  divider: {
+    marginVertical: 16,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tag: {
+    backgroundColor: '#E3F2FD',
+  },
+  tagText: {
+    fontSize: 12,
+  },
+  membersCard: {
+    margin: 16,
+    marginTop: 0,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: 'white',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  membersList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  memberItem: {
+    alignItems: 'center',
+    width: 60,
+  },
+  memberName: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 4,
+    color: '#333',
+  },
+  postsCard: {
+    margin: 16,
+    marginTop: 0,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: 'white',
+  },
+  postItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  postHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  postAuthorInfo: {
+    marginLeft: 8,
+    flex: 1,
+  },
+  postAuthor: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  postTime: {
+    fontSize: 12,
+    color: '#666',
+  },
+  postContent: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  postFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  postStats: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  memberCount: {
-    fontSize: 14,
-    color: 'white',
-    marginLeft: 8,
-    fontWeight: '600',
-  },
-  content: {
-    padding: 16,
-  },
-  actionSection: {
-    padding: 16,
-    marginBottom: 20,
-    borderRadius: 12,
-  },
-  joinButton: {
-    paddingVertical: 8,
-  },
-  joinedButton: {
-    borderColor: '#8A2BE2',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#333',
-  },
-  bookCard: {
-    borderRadius: 12,
-  },
-  bookContent: {
-    flexDirection: 'row',
-    padding: 16,
-  },
-  bookCover: {
-    width: 80,
-    height: 120,
-    borderRadius: 8,
-    marginRight: 16,
-  },
-  bookInfo: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  bookTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-  },
-  bookAuthor: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
-  },
-  progressBar: {
-    height: 6,
-    borderRadius: 3,
-    marginBottom: 8,
-  },
-  progressText: {
+  postStatText: {
     fontSize: 12,
     color: '#666',
-    marginBottom: 12,
+    marginLeft: 4,
   },
-  readButton: {
-    alignSelf: 'flex-start',
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
   },
 });
 

@@ -134,6 +134,8 @@
     "noCommunities": "Vous n'avez pas encore de communautés. Rejoignez-en une !"
   },
   "onboarding": {
+    "selectLanguage": "Sélectionner la langue",
+    "languageDescription": "Choisissez votre langue actuelle ",
     "slide1": {
       "title": "Définissez vos objectifs de lecture",
       "subtitle": "Créez des plans de lecture personnalisés et suivez vos progrès quotidiens pour atteindre vos objectifs"

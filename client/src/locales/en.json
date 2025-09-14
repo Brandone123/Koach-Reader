@@ -132,6 +132,8 @@
     "communities": "Communities"
   },
   "onboarding": {
+    "selectLanguage": "Select Language",
+    "languageDescription": "Choose your current language",
     "slide1": {
       "title": "Set Your Reading Goals",
       "subtitle": "Create personalized reading plans and track your daily progress to achieve your goals"

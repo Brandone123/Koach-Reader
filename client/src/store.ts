@@ -6,6 +6,8 @@ import koachReducer from './slices/koachSlice';
 import challengesReducer from './slices/challengesSlice';
 import freeQuarterlyBooksReducer from './slices/freeQuarterlyBooksSlice';
 import categoriesReducer from './slices/categoriesSlice';
+import readingGroupsReducer from './slices/readingGroupsSlice';
+import communitiesReducer from './slices/communitiesSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +18,8 @@ export const store = configureStore({
     koach: koachReducer,
     challenges: challengesReducer,
     freeQuarterlyBooks: freeQuarterlyBooksReducer,
+    readingGroups: readingGroupsReducer,
+    communities: communitiesReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

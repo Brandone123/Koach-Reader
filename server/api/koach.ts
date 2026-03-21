@@ -21,7 +21,7 @@ export function setupKoachRoutes(app: Express, verifyJWT: any) {
       return res.status(404).json({ message: "User not found" });
     }
     
-    res.status(200).json({ koachPoints: user.koachPoints });
+    res.status(200).json({ koachPoints: user.koach_points });
   }));
 
   // Get user's badges
@@ -98,7 +98,7 @@ export function setupKoachRoutes(app: Express, verifyJWT: any) {
     ];
     
     for (const badge of koachPointBadges) {
-      if (user.koachPoints >= badge.threshold && !awardedBadgeIds.includes(badge.id)) {
+      if (user.koach_points >= badge.threshold && !awardedBadgeIds.includes(badge.id)) {
         badgesToAward.push(badge.id);
       }
     }

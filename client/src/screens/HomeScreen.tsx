@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  ScrollView, 
+import {
+  StyleSheet,
+  View,
+  Text,
+  ScrollView,
   TouchableOpacity,
   RefreshControl,
   FlatList,
@@ -11,12 +11,12 @@ import {
   Dimensions,
   ActivityIndicator
 } from 'react-native';
-import { 
-  Card, 
-  Title, 
-  Paragraph, 
-  Chip, 
-  Button, 
+import {
+  Card,
+  Title,
+  Paragraph,
+  Chip,
+  Button,
   Searchbar,
   ProgressBar,
   Divider,
@@ -26,8 +26,8 @@ import {
   FAB
 } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
-import { 
-  fetchBooks, 
+import {
+  fetchBooks,
   selectBooks,
   selectFilteredBooks,
   selectBooksLoading,
@@ -42,15 +42,15 @@ import {
   Category
 } from '../slices/categoriesSlice';
 import { selectUser } from '../slices/authSlice';
-import { 
-  fetchReadingPlans, 
-  selectReadingPlans, 
-  selectReadingPlansLoading 
+import {
+  fetchReadingPlans,
+  selectReadingPlans,
+  selectReadingPlansLoading
 } from '../slices/readingPlansSlice';
-import { 
-  fetchFreeQuarterlyBooks, 
-  selectFreeQuarterlyBooks, 
-  selectFreeQuarterlyBooksLoading 
+import {
+  fetchFreeQuarterlyBooks,
+  selectFreeQuarterlyBooks,
+  selectFreeQuarterlyBooksLoading
 } from '../slices/freeQuarterlyBooksSlice';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
@@ -59,6 +59,20 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from "expo-linear-gradient";
 import FreeQuarterlyBooksSection from '../components/FreeQuarterlyBooksSection';
+import {
+  fetchReadingGroups,
+  selectReadingGroups,
+  selectReadingGroupsLoading,
+  ReadingGroup
+} from '../slices/readingGroupsSlice';
+import {
+  fetchCommunities,
+  selectCommunities,
+  selectCommunitiesLoading,
+  Community
+} from '../slices/communitiesSlice';
+import CreateReadingGroupDialog from '../components/CreateReadingGroupDialog';
+import CreateCommunityDialog from '../components/CreateCommunityDialog';
 
 // Define interface for User to have name property
 interface ExtendedUser {
@@ -69,6 +83,143 @@ interface ExtendedUser {
   is_premium?: boolean;
   is_admin?: boolean;
 }
+
+// Mise à jour des données avec de meilleures images
+
+
+// Composant corrigé pour les cartes de groupes de lecture
+const ReadingGroupCard = ({ group, navigation }: { group: ReadingGroup; navigation: any }) => {
+  const getGroupImage = (name: string) => {
+    switch (name) {
+      case "Bible Study Circle":
+        return "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop&q=80";
+      case "Christian Fiction Lovers":
+        return "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop&q=80";
+      case "Theology Deep Dive":
+        return "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=250&fit=crop&q=80";
+      case "Youth Ministry Books":
+        return "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=250&fit=crop&q=80";
+      default:
+        return "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop&q=80";
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.readingGroupCard}
+      onPress={() => navigation.navigate('GroupDetail', { groupId: group.id })}
+    >
+      <Image
+        source={{ uri: getGroupImage(group.name) }}
+        style={styles.groupBackgroundImage}
+      />
+      <LinearGradient
+        colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.8)']}
+        style={styles.groupOverlay}
+      >
+        <View style={styles.groupContent}>
+          <Text style={styles.groupName}>{group.name}</Text>
+          <Text style={styles.groupDescription}>{group.description}</Text>
+          <View style={styles.groupMemberBadge}>
+            <Text style={styles.groupMemberText}>{group.member_count} membres</Text>
+          </View>
+        </View>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+};
+
+// Composant corrigé pour les cartes de communautés
+const CommunityCard = ({ community, navigation }: { community: Community; navigation: any }) => {
+  const getCommunityIcon = (name: string) => {
+    switch (name) {
+      case "MILIS Community":
+        return "book-cross";
+      case "ICC Community":
+        return "hand-heart";
+      case "Compassion Community":
+        return "heart-multiple";
+      case "O-Livre Community":
+        return "book-open-variant";
+      default:
+        return "book";
+    }
+  };
+
+  const getCommunityColor = (name: string) => {
+    switch (name) {
+      case "MILIS Community":
+        return "#4A90E2"; // Bleu spirituel
+      case "ICC Community":
+        return "#F39C12"; // Orange impact
+      case "Compassion Community":
+        return "#E74C3C"; // Rouge compassion
+      case "O-Livre Community":
+        return "#27AE60"; // Vert littérature
+      default:
+        return "#8A2BE2";
+    }
+  };
+
+  const getCommunityImage = (name: string) => {
+    switch (name) {
+      case "MILIS Community":
+        return "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop&q=80"; // Livres et Bible
+      case "ICC Community":
+        return "https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=400&h=250&fit=crop&q=80"; // Église moderne
+      case "Compassion Community":
+        return "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&h=250&fit=crop&q=80"; // Mains qui prient
+      case "O-Livre Community":
+        return "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop&q=80"; // Librairie
+      default:
+        return "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop&q=80";
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.communityCard}
+      onPress={() => navigation.navigate('CommunityDetail', { communityId: community.id })}
+    >
+      <Image
+        source={{ uri: getCommunityImage(community.name) }}
+        style={styles.communityBackgroundImage}
+      />
+      <LinearGradient
+        colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.8)']}
+        style={styles.communityOverlay}
+      >
+        <View style={styles.communityHeader}>
+          <View style={[styles.communityIconContainer, { backgroundColor: getCommunityColor(community.name) }]}>
+            <MaterialCommunityIcons
+              name={getCommunityIcon(community.name)}
+              size={20}
+              color="white"
+            />
+          </View>
+          <View style={styles.communityBadge}>
+            <Text style={styles.communityCategory}>{community.category}</Text>
+          </View>
+        </View>
+
+        <View style={styles.communityContent}>
+          <Text style={styles.communityName}>{community.name}</Text>
+          <Text style={styles.communityDescription}>{community.description}</Text>
+
+          <View style={styles.communityFooter}>
+            <View style={styles.memberInfo}>
+              <MaterialCommunityIcons name="account-group" size={14} color="rgba(255,255,255,0.9)" />
+              <Text style={styles.communityMembers}>{community.member_count.toLocaleString()}</Text>
+            </View>
+            <View style={[styles.joinIndicator, { backgroundColor: getCommunityColor(community.name) }]}>
+              <MaterialCommunityIcons name="plus" size={12} color="white" />
+            </View>
+          </View>
+        </View>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+};
 
 const { width } = Dimensions.get('window');
 
@@ -81,15 +232,15 @@ interface HomeScreenProps {
 const BookCard = ({ book, onPress }: { book: Book; onPress: () => void }) => {
   const theme = useTheme();
   const { t } = useTranslation();
-  
+
   return (
-    <TouchableOpacity 
-      style={[styles.bookCard, { backgroundColor: theme.colors.surface }]} 
+    <TouchableOpacity
+      style={[styles.bookCard, { backgroundColor: theme.colors.surface }]}
       onPress={onPress}
     >
-      <Image 
-        source={{ uri: book.cover_url || book.cover_image || 'https://via.placeholder.com/150' }} 
-        style={styles.bookCover} 
+      <Image
+        source={{ uri: book.cover_url || book.cover_image || 'https://via.placeholder.com/150' }}
+        style={styles.bookCover}
       />
       <Text style={[styles.bookTitle, { color: '#333333' }]} numberOfLines={2}>
         {book.title}
@@ -101,13 +252,13 @@ const BookCard = ({ book, onPress }: { book: Book; onPress: () => void }) => {
   );
 };
 
-const CategorySection = ({ category, books, navigation }: { 
-  category: string; 
-  books: Book[]; 
+const CategorySection = ({ category, books, navigation }: {
+  category: string;
+  books: Book[];
   navigation: any;
 }) => {
   const theme = useTheme();
-  
+
   return (
     <View style={styles.categorySection}>
       <Text style={[styles.categoryTitle, { color: theme.colors.primary }]}>
@@ -117,8 +268,8 @@ const CategorySection = ({ category, books, navigation }: {
         data={books}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <BookCard 
-            book={item} 
+          <BookCard
+            book={item}
             onPress={() => navigation.navigate('BookDetail', { bookId: item.id })}
           />
         )}
@@ -134,26 +285,35 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const theme = useTheme();
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector(selectUser) as ExtendedUser;
-  
+
   // Books and categories state
   const books = useSelector(selectFilteredBooks);
   const categories = useSelector(selectCategories);
   const selectedCategory = useSelector(selectSelectedCategory);
   const isBooksLoading = useSelector(selectBooksLoading);
   const isCategoriesLoading = useSelector(selectCategoriesLoading);
-  
+
   // Reading plans state
   const readingPlans = useSelector(selectReadingPlans);
   const isPlansLoading = useSelector(selectReadingPlansLoading);
-  
+
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const [showCreateGroupDialog, setShowCreateGroupDialog] = useState(false);
+  const [showCreateCommunityDialog, setShowCreateCommunityDialog] = useState(false);
+
+  const readingGroups = useSelector(selectReadingGroups);
+  const communities = useSelector(selectCommunities);
+  const isReadingGroupsLoading = useSelector(selectReadingGroupsLoading);
+  const isCommunitiesLoading = useSelector(selectCommunitiesLoading);
+
   useEffect(() => {
-    // Fetch initial data
     dispatch(fetchBooks());
     dispatch(fetchCategories(i18n.language));
     dispatch(fetchReadingPlans());
+    dispatch(fetchReadingGroups());
+    dispatch(fetchCommunities());
   }, [dispatch, i18n.language]);
 
   const onRefresh = useCallback(async () => {
@@ -161,15 +321,18 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     await Promise.all([
       dispatch(fetchBooks()),
       dispatch(fetchCategories(i18n.language)),
-      dispatch(fetchReadingPlans())
+      dispatch(fetchReadingPlans()),
+      dispatch(fetchReadingGroups()),
+      dispatch(fetchCommunities())
     ]);
     setRefreshing(false);
   }, [dispatch, i18n.language]);
 
+
   // Filter books based on search query
   const filteredBooks = useMemo(() => {
     return books.filter(book => {
-      const matchesSearch = !searchQuery || 
+      const matchesSearch = !searchQuery ||
         book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (book.author?.name?.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesSearch;
@@ -209,8 +372,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       ]}
       onPress={() => dispatch(setSelectedCategory(selectedCategory === item.id ? null : item.id))}
     >
-      <Avatar.Icon 
-        size={32} 
+      <Avatar.Icon
+        size={32}
         icon={item.icon_name || 'book'}
         style={[
           styles.categoryIcon,
@@ -218,7 +381,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         ]}
         color={selectedCategory === item.id ? '#FFFFFF' : '#8A2BE2'}
       />
-      <Text 
+      <Text
         style={[
           styles.categoryText,
           selectedCategory === item.id && styles.selectedCategoryText
@@ -230,32 +393,32 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   );
 
   const renderBookItem = ({ item }: { item: Book }) => (
-    <Card 
+    <Card
       style={styles.bookCard}
       onPress={() => navigation.navigate('BookDetail', { bookId: item.id.toString() })}
     >
-      <Card.Cover 
-        source={{ 
-          uri: item.cover_url || 
-               item.cover_image || 
-               'https://amjodckmmxmpholspskm.supabase.co/storage/v1/object/public/covers//book.jpg'
-        }} 
+      <Card.Cover
+        source={{
+          uri: item.cover_url ||
+            item.cover_image ||
+            'https://amjodckmmxmpholspskm.supabase.co/storage/v1/object/public/covers//book.jpg'
+        }}
         style={styles.bookCover}
       />
       <Card.Content>
         <View style={styles.chipContainer}>
           <Text style={styles.chip}>{item.viewers || 0}</Text>
-          <Avatar.Icon 
-            size={30} 
-            icon={'eye'} 
-            style={[{ backgroundColor: '#c0c0c0'}]} 
+          <Avatar.Icon
+            size={30}
+            icon={'eye'}
+            style={[{ backgroundColor: '#c0c0c0' }]}
           />
-          <Divider style={styles.divider} /> 
+          <Divider style={styles.divider} />
           <Text style={styles.chip}>{item.rating || 0}</Text>
-          <Avatar.Icon 
-            size={30} 
-            icon={'star'} 
-            style={[styles.rankIcon, { backgroundColor: '#f5b700'}]} 
+          <Avatar.Icon
+            size={30}
+            icon={'star'}
+            style={[styles.rankIcon, { backgroundColor: '#f5b700' }]}
           />
         </View>
         <Title numberOfLines={2} style={styles.bookTitle}>{item.title}</Title>
@@ -275,16 +438,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
     return (
       <Card style={styles.planCard}>
-        <Card.Cover 
-          source={{ uri: book.cover_url || book.cover_image || 'https://via.placeholder.com/150' }} 
+        <Card.Cover
+          source={{ uri: book.cover_url || book.cover_image || 'https://via.placeholder.com/150' }}
           style={styles.planCover}
         />
         <Card.Content>
           <Title numberOfLines={2} style={styles.planTitle}>{book.title}</Title>
           <View style={styles.progressContainer}>
-            <ProgressBar 
-              progress={progress / 100} 
-              color="#8A2BE2" 
+            <ProgressBar
+              progress={progress / 100}
+              color="#8A2BE2"
               style={styles.progressBar}
             />
             <Text style={styles.progressText}>{Math.round(progress)}%</Text>
@@ -300,6 +463,98 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     );
   };
 
+  const ReadingGroupCard = ({ group, navigation }: { group: ReadingGroup; navigation: any }) => {
+    return (
+      <TouchableOpacity
+        style={styles.readingGroupCard}
+        onPress={() => navigation.navigate('GroupDetail', { groupId: group.id })}
+      >
+        <Image
+          source={{ uri: group.cover_image_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop&q=80' }}
+          style={styles.groupBackgroundImage}
+        />
+        <LinearGradient
+          colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.8)']}
+          style={styles.groupOverlay}
+        >
+          <View style={styles.groupContent}>
+            <Text style={styles.groupName}>{group.name}</Text>
+            <Text style={styles.groupDescription}>{group.description}</Text>
+            <View style={styles.groupMemberBadge}>
+              <Text style={styles.groupMemberText}>{group.member_count || 0} membres</Text>
+            </View>
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  };
+
+  const CommunityCard = ({ community, navigation }: { community: Community; navigation: any }) => {
+    const getCommunityIcon = (category?: string) => {
+      switch (category) {
+        case "Spiritual Growth": return "book-cross";
+        case "Christian Impact": return "hand-heart";
+        case "Church Community": return "heart-multiple";
+        case "Christian Literature": return "book-open-variant";
+        default: return "account-group";
+      }
+    };
+
+    const getCommunityColor = (category?: string) => {
+      switch (category) {
+        case "Spiritual Growth": return "#4A90E2";
+        case "Christian Impact": return "#F39C12";
+        case "Church Community": return "#E74C3C";
+        case "Christian Literature": return "#27AE60";
+        default: return "#8A2BE2";
+      }
+    };
+
+    return (
+      <TouchableOpacity
+        style={styles.communityCard}
+        onPress={() => navigation.navigate('CommunityDetail', { communityId: community.id })}
+      >
+        <Image
+          source={{ uri: community.cover_image_url || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop&q=80' }}
+          style={styles.communityBackgroundImage}
+        />
+        <LinearGradient
+          colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.8)']}
+          style={styles.communityOverlay}
+        >
+          <View style={styles.communityHeader}>
+            <View style={[styles.communityIconContainer, { backgroundColor: getCommunityColor(community.category) }]}>
+              <MaterialCommunityIcons
+                name={getCommunityIcon(community.category)}
+                size={20}
+                color="white"
+              />
+            </View>
+            <View style={styles.communityBadge}>
+              <Text style={styles.communityCategory}>{community.category || 'General'}</Text>
+            </View>
+          </View>
+
+          <View style={styles.communityContent}>
+            <Text style={styles.communityName}>{community.name}</Text>
+            <Text style={styles.communityDescription}>{community.description}</Text>
+
+            <View style={styles.communityFooter}>
+              <View style={styles.memberInfo}>
+                <MaterialCommunityIcons name="account-group" size={14} color="rgba(255,255,255,0.9)" />
+                <Text style={styles.communityMembers}>{(community.member_count || 0).toLocaleString()}</Text>
+              </View>
+              <View style={[styles.joinIndicator, { backgroundColor: getCommunityColor(community.category) }]}>
+                <MaterialCommunityIcons name="plus" size={12} color="white" />
+              </View>
+            </View>
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  };
+
   // Loading state
   if ((isBooksLoading && books.length === 0) || (isCategoriesLoading && categories.length === 0)) {
     return (
@@ -312,7 +567,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   return (
     <View style={styles.mainContainer}>
-      <ScrollView 
+      <ScrollView
         style={styles.container}
         refreshControl={
           <RefreshControl
@@ -331,7 +586,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
         {/* Free Books Section */}
         {freeBooks.length > 0 && (
-          <FreeQuarterlyBooksSection 
+          <FreeQuarterlyBooksSection
             books={freeBooks}
             onBookPress={handleFreeBookPress}
           />
@@ -346,8 +601,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               {/* <MaterialCommunityIcons name="book-clock-outline" size={24} color="#8A2BE2" /> */}
               <Text style={styles.sectionTitle}>{t('home.readingPlans')}</Text>
             </View>
-            <Button 
-              mode="text" 
+            <Button
+              mode="text"
               onPress={() => navigation.navigate('ReadingPlan', { bookId: "" })}
               disabled={isPlansLoading}
               icon="plus"
@@ -358,15 +613,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               {t('home.newPlan')}
             </Button>
           </View>
-          
+
           {readingPlans.length === 0 ? (
             <Surface style={styles.emptyPlansContainer} elevation={1}>
               <MaterialCommunityIcons name="book-open-page-variant" size={48} color="#8A2BE2" style={styles.emptyIcon} />
               <Text style={styles.emptyText}>
                 {t('home.noPlansYet')}
               </Text>
-              <Button 
-                mode="contained" 
+              <Button
+                mode="contained"
                 onPress={() => navigation.navigate('ReadingPlan', { bookId: "" })}
                 style={styles.emptyButton}
                 icon="book-plus"
@@ -381,15 +636,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 renderItem={({ item }) => {
                   const book = books.find(b => b.id === item.book_id);
                   if (!book) return null;
-                  
+
                   const progress = (item.current_page / book.total_pages) * 100;
                   const daysLeft = Math.ceil((new Date(item.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                  const isOnTrack = item.current_page >= (book.total_pages * ((new Date().getTime() - new Date(item.start_date).getTime()) / 
+                  const isOnTrack = item.current_page >= (book.total_pages * ((new Date().getTime() - new Date(item.start_date).getTime()) /
                     (new Date(item.end_date).getTime() - new Date(item.start_date).getTime())));
-                  
+
                   return (
                     <TouchableOpacity
-                       onPress={() => navigation.navigate('ReadingSession', { bookId: book.id.toString(), planId: item.id.toString() })}
+                      onPress={() => navigation.navigate('ReadingSession', { bookId: book.id.toString(), planId: item.id.toString() })}
                       style={styles.planCardContainer}
                       activeOpacity={0.85}
                     >
@@ -427,11 +682,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                               </View>
                             </View>
                             <View style={styles.planFooter}>
-                              <View style={[styles.planStatusBadge, { backgroundColor: isOnTrack ? '#4CAF50' : '#FFA000' }]}> 
-                                <MaterialCommunityIcons 
-                                  name={isOnTrack ? "check-circle" : "alert-circle"} 
-                                  size={14} 
-                                  color="#fff" 
+                              <View style={[styles.planStatusBadge, { backgroundColor: isOnTrack ? '#4CAF50' : '#FFA000' }]}>
+                                <MaterialCommunityIcons
+                                  name={isOnTrack ? "check-circle" : "alert-circle"}
+                                  size={14}
+                                  color="#fff"
                                 />
                                 <Text style={styles.planStatusText}>
                                   {isOnTrack ? t('home.onTrack') : t('home.behindSchedule')}
@@ -484,7 +739,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             </View>
           )}
         </View>
-        
+
         <Divider style={styles.divider} />
 
         <View style={styles.section}>
@@ -500,18 +755,18 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             contentContainerStyle={styles.categoriesList}
           />
         </View>
-        
+
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
-              {searchQuery 
+              {searchQuery
                 ? t('common.searchResults')
                 : (selectedCategory
-                    ? categories.find(c => c.id === selectedCategory)?.name
-                    : t('common.allBooks'))}
+                  ? categories.find(c => c.id === selectedCategory)?.name
+                  : t('common.allBooks'))}
             </Text>
           </View>
-          
+
           <Searchbar
             placeholder={t('common.searchBooks')}
             onChangeText={setSearchQuery}
@@ -519,12 +774,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             style={styles.searchbar}
             iconColor="#8A2BE2"
           />
-          
+
           {filteredBooks.length === 0 ? (
             <Card style={styles.emptyCard}>
               <Card.Content>
                 <Text style={styles.emptyText}>
-                  {searchQuery 
+                  {searchQuery
                     ? t('common.noBooksFound')
                     : t('common.noBooksAvailable')}
                 </Text>
@@ -543,8 +798,108 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             />
           )}
         </View>
+
+        {/* Section des groupes de lecture */}
+        <Divider style={styles.divider} />
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t('home.readingGroups')}</Text>
+            <Button
+              mode="text"
+              onPress={() => setShowCreateGroupDialog(true)}
+              icon="plus"
+              style={styles.sectionTitleButton}
+              color="#8A2BE2"
+              compact
+            >
+              {t('common.create')}
+            </Button>
+          </View>
+
+          {readingGroups.length === 0 ? (
+            <Surface style={styles.emptyPlansContainer} elevation={1}>
+              <MaterialCommunityIcons name="account-group" size={48} color="#8A2BE2" style={styles.emptyIcon} />
+              <Text style={styles.emptyText}>
+                {t('home.noGroupsYet')}
+              </Text>
+              <Button
+                mode="contained"
+                onPress={() => setShowCreateGroupDialog(true)}
+                style={styles.emptyButton}
+                icon="plus"
+              >
+                {t('home.createReadingGroup')}
+              </Button>
+            </Surface>
+          ) : (
+            <FlatList
+              data={readingGroups}
+              renderItem={({ item }) => <ReadingGroupCard group={item} navigation={navigation} />}
+              keyExtractor={(item) => item.id.toString()}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.groupsList}
+            />
+          )}
+        </View>
+
+        {/* Section des communautés */}
+        <Divider style={styles.divider} />
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t('home.communities')}</Text>
+            <Button
+              mode="text"
+              onPress={() => setShowCreateCommunityDialog(true)}
+              icon="plus"
+              style={styles.sectionTitleButton}
+              color="#8A2BE2"
+              compact
+            >
+              {t('common.create')}
+            </Button>
+          </View>
+
+          {communities.length === 0 ? (
+            <Surface style={styles.emptyPlansContainer} elevation={1}>
+              <MaterialCommunityIcons name="account-multiple" size={48} color="#8A2BE2" style={styles.emptyIcon} />
+              <Text style={styles.emptyText}>
+                {t('home.noCommunitiesYet')}
+              </Text>
+              <Button
+                mode="contained"
+                onPress={() => setShowCreateCommunityDialog(true)}
+                style={styles.emptyButton}
+                icon="plus"
+              >
+                {t('home.createCommunity')}
+              </Button>
+            </Surface>
+          ) : (
+            <FlatList
+              data={communities}
+              renderItem={({ item }) => <CommunityCard community={item} navigation={navigation} />}
+              keyExtractor={(item) => item.id.toString()}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.communitiesList}
+            />
+          )}
+        </View>
+
+        <CreateReadingGroupDialog
+          visible={showCreateGroupDialog}
+          onDismiss={() => setShowCreateGroupDialog(false)}
+        />
+
+        <CreateCommunityDialog
+          visible={showCreateCommunityDialog}
+          onDismiss={() => setShowCreateCommunityDialog(false)}
+        />
       </ScrollView>
-      
+
       {/* Admin-only FAB for adding new books */}
       {user?.is_admin && (
         <FAB
@@ -1086,6 +1441,166 @@ const styles = StyleSheet.create({
     bottom: 60,
     backgroundColor: '#8A2BE2',
   },
+  readingGroupCard: {
+    width: 280,
+    height: 160,
+    marginRight: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  groupBackgroundImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+  },
+  groupOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    padding: 16,
+  },
+  groupContent: {
+    alignItems: 'flex-start',
+  },
+  groupName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 4,
+  },
+  groupDescription: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+    marginBottom: 8,
+  },
+  groupMemberBadge: {
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  groupMemberText: {
+    fontSize: 12,
+    color: 'white',
+    fontWeight: '500',
+  },
+  communityCard: {
+    width: 220,
+    height: 160,
+    marginRight: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  communityBackgroundImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+  },
+  communityOverlay: {
+    flex: 1,
+    padding: 14,
+    justifyContent: 'space-between',
+  },
+  communityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  communityIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  communityBadge: {
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  communityCategory: {
+    fontSize: 10,
+    color: 'white',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  communityContent: {
+    alignItems: 'flex-start',
+  },
+  communityName: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 4,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  communityDescription: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.95)',
+    marginBottom: 12,
+    lineHeight: 16,
+  },
+  communityFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+  },
+  memberInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  communityMembers: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  joinIndicator: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  groupsList: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  communitiesList: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
 });
 
 export default HomeScreen;
+
+

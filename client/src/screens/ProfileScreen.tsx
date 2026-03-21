@@ -1,438 +1,381 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
+import {
   StyleSheet,
-  ScrollView, 
+  View,
+  Text,
+  ScrollView,
   TouchableOpacity,
-  Image,
   Dimensions,
-  ImageBackground,
-  Alert,
+  StatusBar,
+  Modal,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { 
-  Avatar,
-  Title, 
-  Caption,
-  Divider,
-  Button, 
-  Card,
-  ProgressBar,
-  IconButton,
-  Menu,
-  Chip,
-  Portal,
-  Dialog,
-  TextInput,
-  Appbar,
-} from 'react-native-paper';
+import { Avatar, Menu } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useDispatch, useSelector } from 'react-redux';
-import { logout, selectUser } from '../slices/authSlice';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../App';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectUser, logout } from '../slices/authSlice';
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { colors } from '../utils/theme';
-import { RootStackParamList } from '../types/navigation';
-import { AppDispatch } from '../store';
-import { runUrlFixer } from '../utils/fixSupabaseUrls';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
-// Define more specific types for badges
-type BadgeIconName = 'alarm' | 'book-open-variant' | 'weather-night' | 'timer' | 'trophy' | 'calendar-check';
+type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 
-interface Badge {
-  id: number;
-  name: string;
-  icon: BadgeIconName;
-  description: string;
-  unlocked: boolean;
+interface Props {
+  navigation: ProfileScreenNavigationProp;
 }
 
-interface Book {
-  id: number;
-  title: string;
-  author: string;
-  coverImage: string;
-  lastRead: string;
-  progress: number;
-}
-
-type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList>;
-
-const badges: Badge[] = [
-  { id: 1, name: 'Early Bird', icon: 'alarm', description: 'Read 5 days in a row before 8 AM', unlocked: true },
-  { id: 2, name: 'Bookworm', icon: 'book-open-variant', description: 'Read 10 books', unlocked: true },
-  { id: 3, name: 'Night Owl', icon: 'weather-night', description: 'Read 5 days in a row after 10 PM', unlocked: false },
-  { id: 4, name: 'Speed Reader', icon: 'timer', description: 'Finish a book in less than 3 days', unlocked: true },
-  { id: 5, name: 'Goal Crusher', icon: 'trophy', description: 'Complete 3 reading challenges', unlocked: false },
-  { id: 6, name: 'Consistent Reader', icon: 'calendar-check', description: 'Read every day for a month', unlocked: false },
-];
-
-const recentBooks: Book[] = [
-  { id: 1, title: 'The Alchemist', author: 'Paulo Coelho', coverImage: 'https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1654371463i/18144590.jpg', lastRead: '2 days ago', progress: 0.75 },
-  { id: 2, title: 'Atomic Habits', author: 'James Clear', coverImage: 'https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1655988385i/40121378.jpg', lastRead: '5 days ago', progress: 0.45 },
-  { id: 3, title: 'The Psychology of Money', author: 'Morgan Housel', coverImage: 'https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1581527774i/41881472.jpg', lastRead: '1 week ago', progress: 0.9 },
-];
-
-const readingStats = {
-  totalMinutes: 2480,
-  booksCompleted: 12,
-  currentStreak: 8,
-  longestStreak: 21,
-  weeklyGoal: 5, // days per week
-  weeklyProgress: 4, // days read this week
-};
-
-const ProfileScreen = () => {
+const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const { t } = useTranslation();
-  const navigation = useNavigation<ProfileScreenNavigationProp>();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch();
   const user = useSelector(selectUser);
   const [menuVisible, setMenuVisible] = useState(false);
-  const [editDialogVisible, setEditDialogVisible] = useState(false);
-  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
-  const [editableProfile, setEditableProfile] = useState({
-    displayName: user?.username || '',
-    bio: 'Avid reader and book enthusiast. Love to explore new worlds through reading.',
-  });
-  
-  const handleLogout = async () => {
-    try {
-      await dispatch(logout()).unwrap();
-    } catch (error) {
-      console.error('Failed to logout:', error);
-    }
+  const [selectedAchievement, setSelectedAchievement] = useState<any>(null);
+
+  // Mock data - à remplacer par de vraies données
+  const stats = {
+    booksRead: 24,
+    koachPoints: 1250,
+    readingStreak: 15,
+    badges: 8,
   };
-  
-  const handleDeleteProfile = () => {
-    setDeleteConfirmVisible(true);
-  };
-  
-  const confirmDeleteProfile = () => {
-    // In a real app, this would call an API to delete the user's profile
-    // For now, we'll just log them out
-    setDeleteConfirmVisible(false);
-    handleLogout();
-    // The AuthNavigator will automatically show after logout
-  };
-  
-  const handleEditProfile = () => {
-    setMenuVisible(false);
-    setEditDialogVisible(true);
-  };
-  
-  const handleSaveProfile = () => {
-    // Save profile changes to backend - would be implemented in a real app
-    setEditDialogVisible(false);
-  };
-  
-  const handleOpenSettings = () => {
+
+  const readingBadges = [
+    { id: 1, name: 'Baobab de Sagesse', icon: '🌳', earned: true },
+    { id: 2, name: 'Griot Moderne', icon: '🎭', earned: true },
+    { id: 3, name: 'Explorateur du Sahel', icon: '🏜️', earned: false },
+    { id: 4, name: 'Gardien des Traditions', icon: '👑', earned: true },
+    { id: 5, name: 'Conteur des Savanes', icon: '🦁', earned: false },
+    { id: 6, name: 'Sage du Kilimandjaro', icon: '⛰️', earned: false },
+  ];
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
+
+  const handleSettings = () => {
     setMenuVisible(false);
     navigation.navigate('Settings');
   };
-  
-  const handleMenuLogout = () => {
+
+  const handleLogout = () => {
     setMenuVisible(false);
-    handleLogout();
+    dispatch(logout());
   };
 
-  const renderBadges = () => {
-    return (
-      <View style={styles.badgeSection}>
-        <View style={styles.sectionHeader}>
-          <Title style={styles.sectionTitle}>{t('profile.achievements')}</Title>
-          <TouchableOpacity onPress={() => navigation.navigate('Badges')}>
-            <Caption style={styles.seeAll}>{t('common.viewAll')}</Caption>
-          </TouchableOpacity>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.badgeScroll}
-        >
-          {badges.map((badge) => (
-            <View key={badge.id} style={styles.badgeContainer}>
-              <View style={[styles.badgeIconContainer, !badge.unlocked && styles.lockedBadge]}>
-                <MaterialCommunityIcons
-                  name={badge.icon}
-                  size={32}
-                  color={badge.unlocked ? '#8A2BE2' : '#CCCCCC'}
-                />
-              </View>
-              <Text style={[styles.badgeName, !badge.unlocked && styles.lockedText]}>
-                {badge.name}
-              </Text>
-              {!badge.unlocked && (
-                <View style={styles.lockIconContainer}>
-                  <MaterialCommunityIcons name="lock" size={14} color="#FFFFFF" />
-                </View>
-              )}
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-    );
+  const handleAddFriends = () => {
+    navigation.navigate('AddFriends');
   };
-
-  const renderRecentBooks = () => {
-    return (
-      <View style={styles.recentBooksSection}>
-        <View style={styles.sectionHeader}>
-          <Title style={styles.sectionTitle}>{t('profile.completedBooks')}</Title>
-          <TouchableOpacity onPress={() => navigation.navigate('Home')}>
-            <Caption style={styles.seeAll}>{t('common.viewAll')}</Caption>
-          </TouchableOpacity>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.recentBooksScroll}
-        >
-          {recentBooks.map((book) => (
-            <TouchableOpacity
-              key={book.id}
-              style={styles.bookCard}
-              onPress={() => navigation.navigate('BookDetail', { bookId: String(book.id) })}
-            >
-              <Image source={{ uri: book.coverImage }} style={styles.bookCover} />
-              <View style={styles.bookDetails}>
-                <Text style={styles.bookTitle} numberOfLines={1}>
-                  {book.title}
-                </Text>
-                <Text style={styles.bookAuthor} numberOfLines={1}>
-                  {book.author}
-                </Text>
-                <Caption style={styles.lastRead}>{t('book.lastRead')} {book.lastRead}</Caption>
-                <View style={styles.progressContainer}>
-                  <ProgressBar
-                    progress={book.progress}
-                    color="#8A2BE2"
-                    style={styles.progressBar}
-                  />
-                  <Text style={styles.progressText}>{Math.round(book.progress * 100)}%</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-    );
-  };
-
-  const renderReadingStats = () => {
-    return (
-      <View style={styles.statsSection}>
-        <View style={styles.sectionHeader}>
-          <Title style={styles.sectionTitle}>{t('stats.title')}</Title>
-          <TouchableOpacity onPress={() => navigation.navigate('Stats')}>
-            <Caption style={styles.seeAll}>{t('common.viewAll')}</Caption>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.statsGrid}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{readingStats.totalMinutes}</Text>
-            <Text style={styles.statLabel}>{t('stats.readingTime')}</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{readingStats.booksCompleted}</Text>
-            <Text style={styles.statLabel}>{t('stats.booksCompleted')}</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{readingStats.currentStreak}</Text>
-            <Text style={styles.statLabel}>{t('stats.currentStreak')}</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{readingStats.longestStreak}</Text>
-            <Text style={styles.statLabel}>{t('stats.longestStreak')}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.weeklyGoalContainer}>
-          <View style={styles.weeklyGoalHeader}>
-            <Text style={styles.weeklyGoalTitle}>{t('readingPlan.weeklyGoal')}</Text>
-            <Text style={styles.weeklyGoalProgress}>
-              {readingStats.weeklyProgress} {t('common.of')} {readingStats.weeklyGoal} {t('stats.days')}
-            </Text>
-          </View>
-          <ProgressBar
-            progress={readingStats.weeklyProgress / readingStats.weeklyGoal}
-            color="#8A2BE2"
-            style={styles.weeklyGoalBar}
-          />
-        </View>
-      </View>
-    );
-  };
-
-  const renderEditProfileDialog = () => {
-    return (
-      <Portal>
-        <Dialog
-          visible={editDialogVisible}
-          onDismiss={() => setEditDialogVisible(false)}
-          style={styles.dialog}
-        >
-          <Dialog.Title>{t('profile.editProfile')}</Dialog.Title>
-          <Dialog.Content>
-          <TextInput
-              label={t('profile.displayName')}
-              value={editableProfile.displayName}
-              onChangeText={(text) => setEditableProfile({ ...editableProfile, displayName: text })}
-              style={styles.dialogInput}
-              mode="outlined"
-            />
-          <TextInput
-              label={t('profile.bio')}
-              value={editableProfile.bio}
-              onChangeText={(text) => setEditableProfile({ ...editableProfile, bio: text })}
-              style={styles.dialogInput}
-              multiline
-              numberOfLines={3}
-              mode="outlined"
-            />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setEditDialogVisible(false)}>{t('common.cancel')}</Button>
-            <Button onPress={handleSaveProfile}>{t('common.save')}</Button>
-          </Dialog.Actions>
-        </Dialog>
-        
-        <Dialog
-          visible={deleteConfirmVisible}
-          onDismiss={() => setDeleteConfirmVisible(false)}
-          style={styles.dialog}
-        >
-          <Dialog.Title>{t('profile.deleteProfile') || 'Delete Profile'}</Dialog.Title>
-          <Dialog.Content>
-            <Text style={styles.deleteWarningText}>
-              {t('profile.deleteWarning') || 'Are you sure you want to delete your profile? This action cannot be undone.'}
-            </Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setDeleteConfirmVisible(false)}>{t('common.cancel')}</Button>
-            <Button 
-              onPress={confirmDeleteProfile} 
-              textColor={colors.error || '#B00020'}
-            >
-              {t('profile.confirmDelete') || 'Delete'}
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-    );
-  };
-
-  if (!user) return null;
 
   return (
     <View style={styles.container}>
-      <ImageBackground
-        source={{ uri: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?ixlib=rb-1.2.1&auto=format&fit=crop&w=1053&q=80' }}
-        style={styles.coverPhoto}
-      >
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.9)']}
-          style={styles.coverGradient}
-        >
-          <View style={styles.headerButtons}>
-            {/* <IconButton
-              icon="arrow-left"
-              iconColor="#FFFFFF"
-              size={24}
-              onPress={() => navigation.goBack()}
-              style={styles.backButton}
-            /> */}
+       <StatusBar barStyle="light-content" backgroundColor="#8A2BE2" />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          
+          <View style={styles.profileRow}>
+            <Avatar.Image
+              size={60}
+              source={{
+                uri: user?.avatar_url || 'https://randomuser.me/api/portraits/men/17.jpg'
+              }}
+            />
+            <View style={styles.profileInfo}>
+              <Text style={styles.username}>
+                {user?.username || t('common.welcome')}
+              </Text>
+              <Text style={styles.memberSince}>
+                {t('profile.reader')} {user?.created_at ? new Date(user.created_at).toLocaleDateString() : ''}
+              </Text>
+            </View>
+
             <Menu
               visible={menuVisible}
               onDismiss={() => setMenuVisible(false)}
               anchor={
-                <IconButton
-                  icon="dots-vertical"
-                  iconColor="#FFFFFF"
-                  size={24}
-                  onPress={() => setMenuVisible(true)}
-                />
+                <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.menuButton}>
+                  <MaterialCommunityIcons name="dots-vertical" size={24} color="#333" />
+                </TouchableOpacity>
               }
             >
-              <Menu.Item onPress={handleEditProfile} title={t('profile.editProfile')} />
-              <Menu.Item onPress={handleOpenSettings} title={t('common.settings')} />
-              <Divider />
-              <Menu.Item onPress={handleMenuLogout} title={t('common.logout')} />
+              <Menu.Item onPress={handleSettings} title={t('common.settings')} />
+              <Menu.Item onPress={handleLogout} title={t('common.logout')} />
             </Menu>
           </View>
-        </LinearGradient>
-      </ImageBackground>
 
-      <ScrollView 
-        showsVerticalScrollIndicator={false}
-        style={styles.mainScrollView}
-        contentContainerStyle={styles.scrollContentContainer}
-      >
-        <View style={styles.profileInfo}>
-          <Title style={styles.username}>{user?.username || t('common.reader')}</Title>
-          <View style={styles.levelContainer}>
-            <MaterialCommunityIcons name="star" size={20} color="#FFD700" />
-            <Text style={styles.levelText}>{t('profile.levelReader', { level: 8 })}</Text>
-          </View>
-          <Text style={styles.bio}>
-            {editableProfile.bio}
-          </Text>
-        </View>
-        
-        <View style={styles.interestsContainer}>
-          <Text style={styles.interestsLabel}>{t('profile.interests') || 'Interests'}</Text>
-          <View style={styles.interests}>
-            <Chip style={styles.interestChip} textStyle={{ color: '#666' }}>{t('categories.fiction')}</Chip>
-            <Chip style={styles.interestChip} textStyle={{ color: '#666' }}>{t('categories.theology')}</Chip>
-            <Chip style={styles.interestChip} textStyle={{ color: '#666' }}>{t('categories.jesus')}</Chip>
+          {/* Stats en ligne */}
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{stats.booksRead}</Text>
+              <Text style={styles.statLabel}>{t('profile.booksRead')}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{stats.koachPoints}</Text>
+              <Text style={styles.statLabel}>{t('profile.koachPoints')}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{stats.readingStreak}</Text>
+              <Text style={styles.statLabel}>{t('profile.days')}</Text>
+            </View>
+
+            {/* Bouton Ajouter des amis */}
+            <TouchableOpacity style={styles.addFriendsButton} onPress={handleAddFriends}>
+              <MaterialCommunityIcons name="account-plus" size={18} color="#fff" />
+              <Text style={styles.addFriendsText}>{t('profile.addFriends')}</Text>
+            </TouchableOpacity>
           </View>
         </View>
+      </View>
 
-        <View style={styles.content}>
-          {renderReadingStats()}
-          <Divider style={styles.divider} />
-          {renderBadges()}
-          <Divider style={styles.divider} />
-          {renderRecentBooks()}
-          
-          <Card style={styles.deleteCard}>
-            <Card.Content>
-              <Button 
-                mode="contained" 
-                icon="account-remove" 
-                onPress={handleDeleteProfile}
-                style={styles.deleteButton}
-                contentStyle={styles.deleteButtonContent}
-                labelStyle={styles.deleteButtonLabel}
-              >
-                {t('profile.deleteProfile') || 'Delete My Profile'}
-              </Button>
-            </Card.Content>
-          </Card>
-          
-          <View style={styles.versionContainer}>
-            <Text style={styles.versionText}>Koach Reader v1.0.0</Text>
+      {/* Contenu scrollable */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Section Statistiques détaillées */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('stats.title')}</Text>
+
+          <View style={styles.recapGrid}>
+            <View style={styles.recapCard}>
+              <View style={styles.recapIcon}>
+                <MaterialCommunityIcons name="star" size={28} color="#FFD700" />
+              </View>
+              <Text style={styles.recapNumber}>{stats.koachPoints}</Text>
+              <Text style={styles.recapLabel}>{t('profile.koachPoints')}</Text>
+            </View>
+
+            <View style={styles.recapCard}>
+              <View style={styles.recapIcon}>
+                <MaterialCommunityIcons name="fire" size={28} color="#FF6B35" />
+              </View>
+              <Text style={styles.recapNumber}>{stats.readingStreak}</Text>
+              <Text style={styles.recapLabel}>{t('profile.readingStreak')}</Text>
+            </View>
+
+            <View style={styles.recapCard}>
+              <View style={styles.recapIcon}>
+                <MaterialCommunityIcons name="book-open-variant" size={28} color="#4CAF50" />
+              </View>
+              <Text style={styles.recapNumber}>{stats.booksRead}</Text>
+              <Text style={styles.recapLabel}>{t('profile.completedBooks')}</Text>
+            </View>
+
+            <View style={styles.recapCard}>
+              <View style={styles.recapIcon}>
+                <MaterialCommunityIcons name="trophy" size={28} color="#8A2BE2" />
+              </View>
+              <Text style={styles.recapNumber}>{stats.badges}</Text>
+              <Text style={styles.recapLabel}>{t('profile.achievements')}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Section Succès */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t('profile.achievements')}</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Achievements')}>
+              <Text style={styles.viewAll}>{t('profile.viewAll')}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.achievementsGrid}>
+            {/* Records personnels
+            <View style={styles.achievementCategory}>
+              <Text style={styles.categoryTitle}>{t('achievements.personalRecords')}</Text>
+              <View style={styles.recordsRow}>
+                <TouchableOpacity 
+                  style={styles.recordCard}
+                  onPress={() => setSelectedAchievement({
+                    id: 1,
+                    title: 'Série record',
+                    description: 'Tu as terminé 388 Quêtes du jour et décroché le succès Série record !',
+                    icon: '🔥',
+                    points: 388,
+                    date: '9 août 2025',
+                    type: 'record'
+                  })}
+                >
+                  <Text style={styles.recordIcon}>🔥</Text>
+                  <Text style={styles.recordNumber}>388</Text>
+                  <Text style={styles.recordLabel}>Série record</Text>
+                  <Text style={styles.recordDate}>9 août 2025</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.recordCard}
+                  onPress={() => setSelectedAchievement({
+                    id: 2,
+                    title: 'Chez les pros',
+                    description: 'Tu as atteint le rang #10 et décroché le succès Chez les pros !',
+                    icon: '🏆',
+                    points: 10,
+                    date: '26 nov. 2024',
+                    type: 'record'
+                  })}
+                >
+                  <Text style={styles.recordIcon}>🏆</Text>
+                  <Text style={styles.recordNumber}>#10</Text>
+                  <Text style={styles.recordLabel}>Chez les pros</Text>
+                  <Text style={styles.recordDate}>26 nov. 2024</Text>
+                </TouchableOpacity>
+              </View>
+            </View> */}
+
+            {/* Distinctions récentes */}
+            <View style={styles.achievementCategory}>
+              {/* <Text style={styles.categoryTitle}>{t('achievements.distinctions')}</Text> */}
+              <View style={styles.distinctionsGrid}>
+                {[
+                  { id: 1, icon: '🏅', points: 500, title: 'En quête de gloire', progress: '9 sur 10', isNew: true },
+                  { id: 2, icon: '🎯', points: 25, title: 'Semaine parfaite', progress: '7 sur 9', isNew: true },
+                  { id: 3, icon: '⚡', points: 300, title: 'Terreur des erreurs', progress: '8 sur 10', isNew: true },
+                ].map((distinction) => (
+                  <TouchableOpacity 
+                    key={distinction.id}
+                    style={styles.distinctionCard}
+                    onPress={() => setSelectedAchievement({
+                      id: distinction.id,
+                      title: distinction.title,
+                      description: `Tu as progressé dans ${distinction.title} ! Continue pour débloquer ce succès.`,
+                      icon: distinction.icon,
+                      points: distinction.points,
+                      progress: distinction.progress,
+                      type: 'distinction'
+                    })}
+                  >
+                    {distinction.isNew && (
+                      <View style={styles.newBadge}>
+                        <Text style={styles.newBadgeText}>NOUVEAU</Text>
+                      </View>
+                    )}
+                    <Text style={styles.distinctionIcon}>{distinction.icon}</Text>
+                    <Text style={styles.distinctionPoints}>{distinction.points}</Text>
+                    <Text style={styles.distinctionTitle}>{distinction.title}</Text>
+                    <Text style={styles.distinctionProgress}>{distinction.progress}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Section Badges africains */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t('profile.badges')}</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Badges')}>
+              <Text style={styles.viewAll}>{t('profile.viewAllBadges')}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.badgesGrid}>
+            {readingBadges.slice(0, 6).map((badge) => (
+              <View key={badge.id} style={[styles.badgeItem, !badge.earned && styles.badgeItemLocked]}>
+                <View style={[styles.badgeCircle, !badge.earned && styles.badgeCircleLocked]}>
+                  <Text style={[styles.badgeEmoji, !badge.earned && styles.badgeEmojiLocked]}>
+                    {badge.icon}
+                  </Text>
+                </View>
+                <Text style={[styles.badgeName, !badge.earned && styles.badgeNameLocked]} numberOfLines={2}>
+                  {badge.name}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Section Activité récente */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('common.loading')}</Text>
+
+          <View style={styles.activityList}>
+            <View style={styles.activityItem}>
+              <MaterialCommunityIcons name="book-check" size={24} color="#4CAF50" />
+              <View style={styles.activityContent}>
+                <Text style={styles.activityText}>{t('profile.achievements')} {t('common.success')}</Text>
+                <Text style={styles.activityTime}>Il y a 1 jour</Text>
+              </View>
+              <Text style={styles.activityPoints}>+100 {t('common.points')}</Text>
+            </View>
+
+            <View style={styles.activityItem}>
+              <MaterialCommunityIcons name="fire" size={28} color="#FF6B35" />
+              <View style={styles.activityContent}>
+                <Text style={styles.activityText}>{t('profile.readingStreak')} 15 {t('profile.days')}</Text>
+                <Text style={styles.activityTime}>Il y a 2 jours</Text>
+              </View>
+              <Text style={styles.activityPoints}>+25 {t('common.points')}</Text>
+            </View>
+
+            <View style={styles.activityItem}>
+              <MaterialCommunityIcons name="account-plus" size={24} color="#2196F3" />
+              <View style={styles.activityContent}>
+                <Text style={styles.activityText}>{t('profile.addFriends')}</Text>
+                <Text style={styles.activityTime}>Il y a 3 jours</Text>
+              </View>
+              <Text style={styles.activityPoints}>+10 {t('common.points')}</Text>
+            </View>
           </View>
         </View>
       </ScrollView>
-  
-      {/* Fixed avatar that stays above scrolling content */}
-      <View style={styles.avatarContainerFixed}>
-        <Avatar.Image
-          source={{ uri: 'https://randomuser.me/api/portraits/women/17.jpg' }}
-          size={120}
-          style={styles.avatar}
-        />
-        <View style={styles.levelIndicator}>
-          <Text style={styles.levelIndicatorText}>8</Text>
+
+      {/* Modal pour les succès */}
+      <Modal
+        visible={!!selectedAchievement}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSelectedAchievement(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.achievementModal}>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setSelectedAchievement(null)}
+            >
+              <Ionicons name="close" size={24} color="#fff" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.shareButton}>
+              <Ionicons name="share" size={24} color="#fff" />
+            </TouchableOpacity>
+
+            {selectedAchievement && (
+              <>
+                <View style={styles.achievementIconContainer}>
+                  <Text style={styles.achievementModalIcon}>{selectedAchievement.icon}</Text>
+                  <Text style={styles.achievementModalPoints}>{selectedAchievement.points}</Text>
+                </View>
+                
+                <Text style={styles.achievementModalDate}>
+                  {selectedAchievement.date || new Date().toLocaleDateString()}
+                </Text>
+                
+                <Text style={styles.achievementModalDescription}>
+                  {selectedAchievement.description}
+                </Text>
+                
+                <TouchableOpacity 
+                  style={styles.rewardButton}
+                  onPress={() => setSelectedAchievement(null)}
+                >
+                  <Text style={styles.rewardButtonText}>{t('achievements.myReward')}</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
         </View>
-      </View>
-      
-      {renderEditProfileDialog()}
+      </Modal>
     </View>
   );
 };
@@ -442,323 +385,394 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  coverPhoto: {
-    height: 150,
-    width: '100%',
+  header: {
+    backgroundColor: '#FFFFFF',
+    paddingTop: 40,
+    paddingBottom: 15,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  coverGradient: {
-    flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-  },
-  headerButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingLeft: 300,
-    paddingTop: 50,
-    width: '100%',
+  headerContent: {
+    position: 'relative',
   },
   backButton: {
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    margin: 0,
-  },
-  avatarContainerFixed: {
     position: 'absolute',
-    top: 75,
-    alignSelf: 'center',
-    zIndex: 999,
-    elevation: 10,
-  },
-  avatar: {
-    borderWidth: 4,
-    borderColor: '#FFFFFF',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-  },
-  levelIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#8A2BE2',
-    borderRadius: 15,
-    width: 30,
-    height: 30,
+    top: 0,
+    left: -16,
+    zIndex: 1,
+    padding: 0,
+    // backgroundColor: '#8A2BE2',
+    // borderRadius: 20,
+    // width: 35,
+    // height: 35,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFF',
-    zIndex: 1000,
   },
-  levelIndicatorText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  profileInfo: {
-    marginTop: 45,
-    width: '100%',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  username: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-  },
-  levelContainer: {
+  profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 4,
+    marginTop: 30,
+    marginBottom: 15,
   },
-  levelText: {
-    marginLeft: 4,
-    fontSize: 14,
+  profileInfo: {
+    flex: 1,
+    marginLeft: 15,
+  },
+  username: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 2,
+  },
+  memberSince: {
+    fontSize: 11,
     color: '#666',
   },
-  bio: {
-    fontSize: 14,
-    color: '#666',
-    marginVertical: 8,
-    lineHeight: 20,
+  menuButton: {
+    padding: 5,
   },
-  interestsContainer: {
-    marginTop: 20,
-    paddingHorizontal: 20,
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 5,
   },
-  interestsLabel: {
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statNumber: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 8,
   },
-  interests: {
+  statLabel: {
+    fontSize: 10,
+    color: '#666',
+    marginTop: 2,
+  },
+  addFriendsButton: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    backgroundColor: '#8A2BE2',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 15,
+    gap: 4,
   },
-  interestChip: {
-    marginRight: 8,
-    marginBottom: 8,
-    backgroundColor: '#F0F0F0',
-  },
-  mainScrollView: {
-    flex: 1,
-  },
-  scrollContentContainer: {
-    paddingBottom: 20,
+  addFriendsText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 11,
   },
   content: {
-    paddingHorizontal: 20,
-    marginTop: 20,
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 10,
+  },
+  section: {
+    marginVertical: 15,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 15,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
+    marginBottom: 5
   },
-  seeAll: {
+  viewAll: {
+    color: '#8A2BE2',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  recapGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  recapCard: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 15,
+    width: (width - 33) / 2,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  recapIcon: {
+    marginBottom: 8,
+  },
+  recapNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  recapLabel: {
+    fontSize: 11,
+    color: '#95A5A6',
+    textAlign: 'center',
+  },
+  badgesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  badgeItem: {
+    alignItems: 'center',
+    width: (width - 68) / 3,
+  },
+  badgeItemLocked: {
+    opacity: 0.5,
+  },
+  badgeCircle: {
+    width: 55,
+    height: 55,
+    borderRadius: 27.5,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  badgeCircleLocked: {
+    backgroundColor: '#f0f0f0',
+  },
+  badgeEmoji: {
+    fontSize: 22,
+  },
+  badgeEmojiLocked: {
+    opacity: 0.5,
+  },
+  badgeName: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+    lineHeight: 12,
+  },
+  badgeNameLocked: {
+    color: '#999',
+  },
+  activityList: {
+    backgroundColor: '#fff',
+    borderRadius: 7,
+    padding: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  activityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  activityContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  activityText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
+  },
+  activityTime: {
+    fontSize: 11,
+    color: '#666',
+  },
+  activityPoints: {
+    fontSize: 13,
+    fontWeight: 'bold',
     color: '#8A2BE2',
   },
-  statsSection: {
-    marginVertical: 16,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  statsGrid: {
+  achievementModal: {
+    backgroundColor: '#2C3E50',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    width: '85%',
+    position: 'relative',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 15,
+    left: 15,
+    zIndex: 1,
+  },
+  shareButton: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    zIndex: 1,
+  },
+  achievementIconContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  achievementModalIcon: {
+    fontSize: 80,
+    marginBottom: 10,
+  },
+  achievementModalPoints: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  achievementModalDate: {
+    fontSize: 16,
+    color: '#F39C12',
+    marginBottom: 20,
+    textTransform: 'uppercase',
+  },
+  achievementModalDescription: {
+    fontSize: 18,
+    color: '#fff',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 30,
+  },
+  rewardButton: {
+    backgroundColor: '#3498DB',
+    paddingHorizontal: 40,
+    paddingVertical: 15,
+    borderRadius: 25,
+  },
+  rewardButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // Styles pour les succès
+  achievementsGrid: {
+    marginTop: 10,
+  },
+  achievementCategory: {
+    marginBottom: 0,
+  },
+  categoryTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+  },
+  recordsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  recordCard: {
+    width: '48%',
+    backgroundColor: '#34495E',
+    borderRadius: 15,
+    padding: 15,
+    alignItems: 'center',
+  },
+  recordIcon: {
+    fontSize: 30,
+    marginBottom: 8,
+  },
+  recordNumber: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 5,
+  },
+  recordLabel: {
+    fontSize: 12,
+    color: '#BDC3C7',
+    textAlign: 'center',
+    marginBottom: 3,
+  },
+  recordDate: {
+    fontSize: 10,
+    color: '#95A5A6',
+  },
+  distinctionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  statItem: {
-    width: '48%',
-    backgroundColor: '#F8F8F8',
+  distinctionCard: {
+    width: '30%',
+    backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    padding: 12,
     alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#8A2BE2',
-  },
-  statLabel: {
-    fontSize: 14,
-    marginTop: 4,
-    color: '#666',
-  },
-  weeklyGoalContainer: {
-    backgroundColor: '#F8F8F8',
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 8,
-  },
-  weeklyGoalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  weeklyGoalTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  weeklyGoalProgress: {
-    fontSize: 14,
-    color: '#666',
-  },
-  weeklyGoalBar: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(138, 43, 226, 0.2)',
-  },
-  badgeSection: {
-    marginVertical: 16,
-  },
-  badgeScroll: {
-    flexDirection: 'row',
-  },
-  badgeContainer: {
-    alignItems: 'center',
-    marginRight: 16,
-    width: 75,
-    position: 'relative',
-  },
-  badgeIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#F0F0F0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  lockedBadge: {
-    backgroundColor: '#F0F0F0',
-    opacity: 0.7,
-  },
-  badgeName: {
-    fontSize: 12,
-    color: '#333',
-    textAlign: 'center',
-  },
-  lockedText: {
-    color: '#AAAAAA',
-  },
-  lockIconContainer: {
-    position: 'absolute',
-    top: 0,
-    right: 8,
-    backgroundColor: '#AAAAAA',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  recentBooksSection: {
-    marginVertical: 16,
-  },
-  recentBooksScroll: {
-    flexDirection: 'row',
-  },
-  bookCard: {
-    width: 150,
-    marginRight: 16,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#F8F8F8',
-  },
-  bookCover: {
-    width: '100%',
-    height: 200,
-    resizeMode: 'cover',
-  },
-  bookDetails: {
-    padding: 8,
-  },
-  bookTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  bookAuthor: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  lastRead: {
-    fontSize: 10,
-    color: '#999',
-    marginTop: 4,
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  progressBar: {
-    flex: 1,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(138, 43, 226, 0.2)',
-  },
-  progressText: {
-    fontSize: 10,
-    marginLeft: 8,
-    color: '#666',
-  },
-  divider: {
-    backgroundColor: '#EEEEEE',
-    height: 1,
-    marginVertical: 8,
-  },
-  deleteCard: {
-    marginTop: 30,
-    elevation: 4,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  deleteButton: {
-    backgroundColor: colors.error || '#B00020',
-    borderRadius: 8,
-    marginVertical: 10,
-  },
-  deleteButtonContent: {
-    height: 50,
-  },
-  deleteButtonLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  versionContainer: {
-    alignItems: 'center',
-    marginTop: 20,
     marginBottom: 10,
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  versionText: {
-    color: '#999',
-    fontSize: 12,
+  newBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#E74C3C',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
   },
-  dialog: {
-    borderRadius: 12,
+  newBadgeText: {
+    color: '#fff',
+    fontSize: 8,
+    fontWeight: 'bold',
   },
-  dialogInput: {
-    marginBottom: 12,
+  distinctionIcon: {
+    fontSize: 25,
+    marginBottom: 5,
   },
-  deleteWarningText: {
+  distinctionPoints: {
     fontSize: 16,
-    lineHeight: 24,
+    fontWeight: 'bold',
     color: '#333',
-  }
+    marginBottom: 3,
+  },
+  distinctionTitle: {
+    fontSize: 10,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  distinctionProgress: {
+    fontSize: 9,
+    color: '#999',
+  },
 });
 
 export default ProfileScreen;
+
+
+
+
+

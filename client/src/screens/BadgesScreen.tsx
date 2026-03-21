@@ -1,218 +1,225 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  FlatList, 
-  Image, 
-  TouchableOpacity, 
-  ActivityIndicator
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
+  Modal,
 } from 'react-native';
-import { 
-  Card, 
-  Title, 
-  Paragraph, 
-  Chip, 
-  Divider, 
-  Button,
-  Searchbar
-} from 'react-native-paper';
-import { useDispatch, useSelector } from 'react-redux';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../../App';
-import { AppDispatch } from '../store';
-import { 
-  fetchBadges, 
-  fetchUserBadges, 
-  selectBadges, 
-  selectUserBadges, 
-  selectIsLoading,
-  Badge,
-  UserBadge
-} from '../slices/koachSlice';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
-type BadgesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Badges'>;
+const BadgesScreen: React.FC = () => {
+  const navigation = useNavigation();
+  const { t } = useTranslation();
+  const [selectedBadge, setSelectedBadge] = useState<any>(null);
 
-interface BadgesScreenProps {
-  navigation: BadgesScreenNavigationProp;
-}
-
-const BadgesScreen: React.FC<BadgesScreenProps> = ({ navigation }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const badges = useSelector(selectBadges);
-  const userBadges = useSelector(selectUserBadges);
-  const isLoading = useSelector(selectIsLoading);
-  
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'earned' | 'unearned'>('all');
-  const [displayBadges, setDisplayBadges] = useState<Badge[]>([]);
+  const badges = [
+    { 
+      id: 1, 
+      name: 'Baobab de Sagesse', 
+      icon: '🌳', 
+      earned: true,
+      description: 'Symbole de sagesse et de longévité en Afrique',
+      howToEarn: 'Lire 50 livres de philosophie africaine',
+      points: 500
+    },
+    { 
+      id: 2, 
+      name: 'Griot Moderne', 
+      icon: '🎭', 
+      earned: true,
+      description: 'Gardien des traditions orales africaines',
+      howToEarn: 'Partager 25 histoires avec la communauté',
+      points: 300
+    },
+    { 
+      id: 3, 
+      name: 'Explorateur du Sahel', 
+      icon: '🏜️', 
+      earned: false,
+      description: 'Découvreur des richesses du Sahel',
+      howToEarn: 'Lire 30 livres sur l\'histoire du Sahel',
+      points: 400
+    },
+    { 
+      id: 4, 
+      name: 'Gardien des Traditions', 
+      icon: '👑', 
+      earned: true,
+      description: 'Protecteur du patrimoine culturel africain',
+      howToEarn: 'Compléter la collection "Traditions Africaines"',
+      points: 600
+    },
+    { 
+      id: 5, 
+      name: 'Conteur des Savanes', 
+      icon: '🦁', 
+      earned: false,
+      description: 'Maître des récits de la savane',
+      howToEarn: 'Lire 40 contes et légendes africaines',
+      points: 350
+    },
+    { 
+      id: 6, 
+      name: 'Sage du Kilimandjaro', 
+      icon: '⛰️', 
+      earned: false,
+      description: 'Atteindre les sommets de la connaissance',
+      howToEarn: 'Maintenir une série de lecture de 100 jours',
+      points: 800
+    },
+    { 
+      id: 7, 
+      name: 'Djembé Rythmé', 
+      icon: '🥁', 
+      earned: true,
+      description: 'En harmonie avec les rythmes africains',
+      howToEarn: 'Lire 20 livres sur la musique africaine',
+      points: 250
+    },
+    { 
+      id: 8, 
+      name: 'Tisserand de Mots', 
+      icon: '🧵', 
+      earned: false,
+      description: 'Artisan des belles lettres africaines',
+      howToEarn: 'Écrire 10 critiques de livres africains',
+      points: 200
+    },
+  ];
 
   useEffect(() => {
-    // Fetch badges when component mounts
-    dispatch(fetchBadges());
-    dispatch(fetchUserBadges());
-  }, [dispatch]);
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
-  useEffect(() => {
-    if (badges && badges.length > 0) {
-      applyFilters();
-    }
-  }, [badges, userBadges, filter, searchQuery]);
-
-  const applyFilters = () => {
-    if (!badges) return;
-
-    let filtered = [...badges];
-    
-    // Apply search filter
-    if (searchQuery) {
-      filtered = filtered.filter(badge => 
-        badge.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        badge.description.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    
-    // Apply earned/unearned filter
-    if (filter === 'earned' && userBadges) {
-      const earnedBadgeIds = userBadges.map(ub => ub.badgeId);
-      filtered = filtered.filter(badge => earnedBadgeIds.includes(badge.id));
-    } else if (filter === 'unearned' && userBadges) {
-      const earnedBadgeIds = userBadges.map(ub => ub.badgeId);
-      filtered = filtered.filter(badge => !earnedBadgeIds.includes(badge.id));
-    }
-    
-    setDisplayBadges(filtered);
-  };
-
-  const isEarned = (badgeId: number) => {
-    return userBadges && userBadges.some(ub => ub.badgeId === badgeId);
-  };
-
-  const getEarnedDate = (badgeId: number) => {
-    if (!userBadges) return null;
-    const userBadge = userBadges.find(ub => ub.badgeId === badgeId);
-    if (userBadge) {
-      return new Date(userBadge.dateEarned).toLocaleDateString();
-    }
-    return null;
-  };
-
-  const renderBadge = ({ item }: { item: Badge }) => {
-    const earned = isEarned(item.id);
-    const earnedDate = getEarnedDate(item.id);
-    
-    return (
-      <Card style={[styles.badgeCard, earned ? styles.earnedBadge : styles.unearnedBadge]}>
-        <Card.Content style={styles.badgeContent}>
-          <Image 
-            source={{ uri: item.imageUrl }} 
-            style={styles.badgeImage} 
-            resizeMode="contain"
-          />
-          <View style={styles.badgeInfo}>
-            <Title style={earned ? styles.earnedTitle : styles.unearnedTitle}>
-              {item.name}
-            </Title>
-            <Paragraph style={styles.badgeDescription}>
-              {item.description}
-            </Paragraph>
-            <Divider style={styles.divider} />
-            <View style={styles.badgeDetails}>
-              <Text style={styles.requirementLabel}>Requirement:</Text>
-              <Text style={styles.requirement}>{item.requirement}</Text>
-            </View>
-            <View style={styles.badgeDetails}>
-              <Text style={styles.pointsLabel}>Points:</Text>
-              <Text style={styles.points}>{item.points}</Text>
-            </View>
-            {earned && earnedDate && (
-              <Chip icon="calendar" style={styles.dateChip}>
-                Earned on {earnedDate}
-              </Chip>
-            )}
-          </View>
-        </Card.Content>
-      </Card>
-    );
-  };
+  const earnedBadges = badges.filter(badge => badge.earned);
+  const lockedBadges = badges.filter(badge => !badge.earned);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Title style={styles.title}>My Badges</Title>
-        <Text style={styles.subtitle}>
-          {userBadges?.length || 0} earned out of {badges?.length || 0} total badges
-        </Text>
-        
-        <Searchbar
-          placeholder="Search badges"
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={styles.searchBar}
-        />
-        
-        <View style={styles.filterContainer}>
-          <TouchableOpacity
-            style={[styles.filterButton, filter === 'all' && styles.activeFilter]}
-            onPress={() => setFilter('all')}
-          >
-            <Text style={[styles.filterText, filter === 'all' && styles.activeFilterText]}>
-              All
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterButton, filter === 'earned' && styles.activeFilter]}
-            onPress={() => setFilter('earned')}
-          >
-            <Text style={[styles.filterText, filter === 'earned' && styles.activeFilterText]}>
-              Earned
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterButton, filter === 'unearned' && styles.activeFilter]}
-            onPress={() => setFilter('unearned')}
-          >
-            <Text style={[styles.filterText, filter === 'unearned' && styles.activeFilterText]}>
-              Unearned
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#8A2BE2" />
       
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6200ee" />
-          <Text style={styles.loadingText}>Loading badges...</Text>
-        </View>
-      ) : displayBadges.length > 0 ? (
-        <FlatList
-          data={displayBadges}
-          renderItem={renderBadge}
-          keyExtractor={item => item.id.toString()}
-          contentContainerStyle={styles.badgesList}
-        />
-      ) : (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            {filter === 'earned' 
-              ? "You haven't earned any badges yet. Keep reading to earn badges!"
-              : filter === 'unearned'
-                ? "No unearned badges found with your search criteria."
-                : "No badges found with your search criteria."
-            }
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{t('profile.badges')}</Text>
+        <View style={{ width: 24 }} />
+      </View>
+
+      <ScrollView style={styles.content}>
+        {/* Badges obtenus */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            {t('badges.earned')} ({earnedBadges.length}/{badges.length})
           </Text>
-          {filter !== 'all' && (
-            <Button 
-              mode="outlined" 
-              onPress={() => setFilter('all')}
-              style={styles.resetButton}
-            >
-              Show All Badges
-            </Button>
-          )}
+          <View style={styles.badgesGrid}>
+            {earnedBadges.map((badge) => (
+              <TouchableOpacity 
+                key={badge.id}
+                style={styles.badgeItem}
+                onPress={() => setSelectedBadge(badge)}
+              >
+                <View style={styles.badgeCircle}>
+                  <Text style={styles.badgeEmoji}>{badge.icon}</Text>
+                </View>
+                <Text style={styles.badgeName}>{badge.name}</Text>
+                <Text style={styles.badgePoints}>+{badge.points} pts</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-      )}
-    </View>
+
+        {/* Badges à débloquer */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('badges.locked')}</Text>
+          <View style={styles.badgesGrid}>
+            {lockedBadges.map((badge) => (
+              <TouchableOpacity 
+                key={badge.id}
+                style={[styles.badgeItem, styles.badgeItemLocked]}
+                onPress={() => setSelectedBadge(badge)}
+              >
+                <View style={[styles.badgeCircle, styles.badgeCircleLocked]}>
+                  <Text style={[styles.badgeEmoji, styles.badgeEmojiLocked]}>
+                    {badge.icon}
+                  </Text>
+                </View>
+                <Text style={[styles.badgeName, styles.badgeNameLocked]}>
+                  {badge.name}
+                </Text>
+                <Text style={styles.badgePoints}>+{badge.points} pts</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Modal Badge Detail */}
+      <Modal
+        visible={!!selectedBadge}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSelectedBadge(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.badgeModal}>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setSelectedBadge(null)}
+            >
+              <Ionicons name="close" size={24} color="#333" />
+            </TouchableOpacity>
+            
+            {selectedBadge && (
+              <>
+                <View style={[
+                  styles.badgeModalCircle,
+                  !selectedBadge.earned && styles.badgeModalCircleLocked
+                ]}>
+                  <Text style={[
+                    styles.badgeModalIcon,
+                    !selectedBadge.earned && styles.badgeModalIconLocked
+                  ]}>
+                    {selectedBadge.icon}
+                  </Text>
+                </View>
+                
+                <Text style={styles.badgeModalName}>{selectedBadge.name}</Text>
+                <Text style={styles.badgeModalPoints}>+{selectedBadge.points} points</Text>
+                
+                <Text style={styles.badgeModalDescription}>
+                  {selectedBadge.description}
+                </Text>
+                
+                <View style={styles.howToEarnSection}>
+                  <Text style={styles.howToEarnTitle}>
+                    {selectedBadge.earned ? t('badges.earned') : t('badges.howToEarn')}
+                  </Text>
+                  <Text style={styles.howToEarnText}>
+                    {selectedBadge.howToEarn}
+                  </Text>
+                </View>
+                
+                {selectedBadge.earned && (
+                  <View style={styles.earnedBadge}>
+                    <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+                    <Text style={styles.earnedText}>{t('badges.completed')}</Text>
+                  </View>
+                )}
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
   );
 };
 
@@ -222,142 +229,174 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: '#6200ee',
-    padding: 16,
-    paddingTop: 24,
-    paddingBottom: 24,
-  },
-  title: {
-    color: 'white',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  searchBar: {
-    marginBottom: 16,
-    elevation: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-  },
-  filterContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  filterButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'white',
-  },
-  filterText: {
-    color: 'white',
-  },
-  activeFilter: {
-    backgroundColor: 'white',
-  },
-  activeFilterText: {
-    color: '#6200ee',
-    fontWeight: 'bold',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+    paddingVertical: 20,
+    backgroundColor: '#8A2BE2',
+    marginTop: 20,
   },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
   },
-  badgesList: {
-    padding: 16,
+  content: {
+    flex: 1,
   },
-  badgeCard: {
-    marginBottom: 16,
-    borderRadius: 12,
+  section: {
+    padding: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+  },
+  badgesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  badgeItem: {
+    width: '48%',
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 15,
+    alignItems: 'center',
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 3,
   },
-  earnedBadge: {
-    borderLeftWidth: 6,
-    borderLeftColor: '#4CAF50',
+  badgeItemLocked: {
+    backgroundColor: '#f8f8f8',
   },
-  unearnedBadge: {
-    opacity: 0.7,
-    borderLeftWidth: 6,
-    borderLeftColor: '#9E9E9E',
-  },
-  badgeContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  badgeImage: {
-    width: 80,
-    height: 80,
-    marginRight: 16,
-  },
-  badgeInfo: {
-    flex: 1,
-  },
-  earnedTitle: {
-    fontWeight: 'bold',
-    color: '#4CAF50',
-  },
-  unearnedTitle: {
-    fontWeight: 'bold',
-    color: '#666',
-  },
-  badgeDescription: {
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  divider: {
-    marginVertical: 8,
-  },
-  badgeDetails: {
-    flexDirection: 'row',
-    marginBottom: 4,
-  },
-  requirementLabel: {
-    fontWeight: 'bold',
-    width: 100,
-    fontSize: 13,
-  },
-  requirement: {
-    flex: 1,
-    fontSize: 13,
-  },
-  pointsLabel: {
-    fontWeight: 'bold',
-    width: 100,
-    fontSize: 13,
-  },
-  points: {
-    flex: 1,
-    fontSize: 13,
-  },
-  dateChip: {
-    marginTop: 8,
-    alignSelf: 'flex-start',
-    backgroundColor: '#E8F5E9',
-  },
-  emptyContainer: {
-    flex: 1,
+  badgeCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#8A2BE2',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    marginBottom: 10,
   },
-  emptyText: {
+  badgeCircleLocked: {
+    backgroundColor: '#ccc',
+  },
+  badgeEmoji: {
+    fontSize: 30,
+  },
+  badgeEmojiLocked: {
+    opacity: 0.5,
+  },
+  badgeName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+  badgeNameLocked: {
+    color: '#999',
+  },
+  badgePoints: {
+    fontSize: 12,
+    color: '#8A2BE2',
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeModal: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    width: '85%',
+    position: 'relative',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    zIndex: 1,
+  },
+  badgeModalCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#8A2BE2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  badgeModalCircleLocked: {
+    backgroundColor: '#ccc',
+  },
+  badgeModalIcon: {
+    fontSize: 50,
+  },
+  badgeModalIconLocked: {
+    opacity: 0.5,
+  },
+  badgeModalName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  badgeModalPoints: {
+    fontSize: 16,
+    color: '#8A2BE2',
+    fontWeight: '600',
+    marginBottom: 20,
+  },
+  badgeModalDescription: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
-    marginBottom: 16,
+    lineHeight: 22,
+    marginBottom: 20,
   },
-  resetButton: {
-    marginTop: 8,
+  howToEarnSection: {
+    backgroundColor: '#f8f8f8',
+    borderRadius: 10,
+    padding: 15,
+    width: '100%',
+    marginBottom: 20,
+  },
+  howToEarnTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
+  },
+  howToEarnText: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+  },
+  earnedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E8',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  earnedText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: '600',
   },
 });
 

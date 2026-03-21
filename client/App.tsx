@@ -38,7 +38,12 @@ import AppWithLanguage from './src/components/AppWithLanguage';
 import Toast from 'react-native-toast-message';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
-
+import { isFirstLaunch, setFirstLaunchComplete } from './src/utils/storage';
+import AppOnboardingScreen from './src/screens/AppOnboardingScreen';
+import ReadingGroupDetailScreen from './src/screens/ReadingGroupDetailScreen';
+import CommunityDetailScreen from './src/screens/CommunityDetailScreen';
+import AddFriendsScreen from './src/screens/AddFriendsScreen';
+import AchievementsScreen from './src/screens/AchievementsScreen';
 
 LogBox.ignoreLogs(['Require cycle:']);
 
@@ -64,6 +69,10 @@ export type RootStackParamList = {
   Onboarding: undefined;
   LanguageSettings: undefined;
   AddBook: { bookId?: string };
+  GroupDetail: { groupId: number };
+  CommunityDetail: { communityId: number };
+  AddFriends: undefined;
+  Achievements: undefined;
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
@@ -164,27 +173,9 @@ type AppNavigatorProps = {
 const AppNavigator = ({ initialRoute, resetToken }: AppNavigatorProps) => {
   const user = useSelector(selectUser);
   const { t } = useTranslation();
-  const navigationState = useNavigationState(state => state);
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  
-  // Si nous avons un token de réinitialisation et que l'utilisateur n'est pas connecté,
-  // nous devons afficher l'écran de réinitialisation
-  React.useEffect(() => {
-    if (resetToken && !user) {
-      navigation.navigate('ResetPassword', { token: resetToken });
-    }
-  }, [resetToken, user, navigation]);
-  
-  // Déterminer si nous devons afficher le footer
-  const shouldShowFooter = () => {
-    if (!navigationState || !navigationState.routes || navigationState.routes.length === 0) return false;
-    const currentRoute = navigationState.routes[navigationState.routes.length - 1].name;
-    const noFooterRoutes = ['Login', 'Register', 'Onboarding', 'MediaViewer', 'ResetPassword', 'ForgotPassword'];
-    return !noFooterRoutes.includes(currentRoute);
-  };
   
   return (
-    <>
+    <NavigationContainer>
       <Stack.Navigator 
         screenOptions={{
           headerStyle: {
@@ -256,21 +247,39 @@ const AppNavigator = ({ initialRoute, resetToken }: AppNavigatorProps) => {
             <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
             <Stack.Screen name="Challenges" component={ChallengesScreen} />
             <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
-            <Stack.Screen name="Notifications" component={NotificationsScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="MediaViewer" component={MediaViewerScreen} />
             <Stack.Screen name="Badges" component={BadgesScreen} />
             <Stack.Screen name="Stats" component={StatsScreen} />
-            <Stack.Screen name="MediaViewer" component={MediaViewerScreen} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="AddBook" component={AddBookScreen} />
             <Stack.Screen 
-              name="AddBook" 
-              component={AddBookScreen} 
-              options={{ title: 'Add Book' }}
+              name="GroupDetail" 
+              component={ReadingGroupDetailScreen}
+              options={{ title: 'Groupe de Lecture' }}
+            />
+            <Stack.Screen 
+              name="CommunityDetail" 
+              component={CommunityDetailScreen}
+              options={{ title: 'Communauté' }}
+            />
+            <Stack.Screen 
+              name="AddFriends" 
+              component={AddFriendsScreen} 
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen 
+              name="Achievements" 
+              component={AchievementsScreen} 
+              options={{ headerShown: true, title: 'Mes Succès' }}
             />
           </>
         )}
       </Stack.Navigator>
-      {shouldShowFooter() && <BottomNavigationBar />}
-    </>
+      <AppFooter />
+    </NavigationContainer>
   );
 };
 
@@ -317,68 +326,85 @@ const styles = StyleSheet.create({
   },
 });
 
+// Composant pour le footer conditionnel
+const AppFooter = () => {
+  const navigationState = useNavigationState(state => state);
+  
+  // Déterminer si nous devons afficher le footer
+  const shouldShowFooter = () => {
+    if (!navigationState || !navigationState.routes || navigationState.routes.length === 0) return false;
+    const currentRoute = navigationState.routes[navigationState.routes.length - 1].name;
+    const noFooterRoutes = ['Login', 'Register', 'Onboarding', 'MediaViewer', 'ResetPassword', 'ForgotPassword'];
+    return !noFooterRoutes.includes(currentRoute);
+  };
+  
+  return shouldShowFooter() ? <BottomNavigationBar /> : null;
+};
+
 // Root component
 export default function App() {
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
   const [resetToken, setResetToken] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isCheckingFirstLaunch, setIsCheckingFirstLaunch] = useState(true);
 
-  React.useEffect(() => {
-    // Fonction pour gérer les liens profonds
-    const handleDeepLink = (event: { url: string }) => {
-      console.log('Deep link handled:', event.url);
-      if (event.url.includes('type=recovery')) {
-        // Extraire le token de réinitialisation
-        const token = event.url.split('token=')[1]?.split('&')[0];
-        if (token) {
-          setResetToken(token);
-          setInitialRoute('ResetPassword');
-        }
-      }
-    };
-
-    // Vérifier si l'app a été ouverte via un lien profond
-    Linking.getInitialURL().then((url) => {
-      if (url) {
-        handleDeepLink({ url });
-      }
-    });
-
-    // Ajouter les listeners pour les liens profonds
-    const subscription = Linking.addEventListener('url', handleDeepLink);
-
-    return () => {
-      subscription.remove();
-    };
+  useEffect(() => {
+    checkFirstLaunch();
   }, []);
 
+  const checkFirstLaunch = async () => {
+    try {
+      const isFirst = await isFirstLaunch();
+      console.log('🚀 First launch check:', isFirst);
+      // TEMPORAIRE: Forcer l'affichage du welcome screen
+      setShowOnboarding(true);
+    } catch (error) {
+      console.error('Error checking first launch:', error);
+      setShowOnboarding(true);
+    } finally {
+      setIsCheckingFirstLaunch(false);
+    }
+  };
+
+  const handleOnboardingComplete = async () => {
+    console.log('🎉 Onboarding completed');
+    await setFirstLaunchComplete();
+    setShowOnboarding(false);
+  };
+
+  // Affichage de l'écran de chargement
+  if (isCheckingFirstLaunch) {
+    return (
+      <SafeAreaProvider>
+        <View style={{ flex: 1, backgroundColor: '#fff' }} />
+      </SafeAreaProvider>
+    );
+  }
+
+  // Affichage de l'onboarding complet
+  if (showOnboarding) {
+    return (
+      <SafeAreaProvider>
+        <ReduxProvider store={store}>
+          <PaperProvider theme={theme}>
+            <LanguageProvider>
+              <AppOnboardingScreen onComplete={handleOnboardingComplete} />
+            </LanguageProvider>
+          </PaperProvider>
+        </ReduxProvider>
+        <StatusBar style="light" />
+        <Toast />
+      </SafeAreaProvider>
+    );
+  }
+
+  // Votre app principale existante
   return (
     <SafeAreaProvider>
       <ReduxProvider store={store}>
         <PaperProvider theme={theme}>
           <LanguageProvider>
-            <NavigationContainer
-              linking={{
-                prefixes: [
-                  'koachreader://',
-                  'exp://',
-                  'exp://192.168.70.160:8081',
-                  'exp://127.0.0.1:8081',
-                  'exp://localhost:8081'
-                ],
-                config: {
-                  screens: {
-                    ResetPassword: {
-                      path: 'reset-password',
-                      parse: {
-                        token: (token: string) => token,
-                      },
-                    },
-                  },
-                },
-              }}
-            >
-              <AppNavigator initialRoute={initialRoute} resetToken={resetToken} />
-            </NavigationContainer>
+            <AppNavigator initialRoute={initialRoute} resetToken={resetToken} />
           </LanguageProvider>
         </PaperProvider>
       </ReduxProvider>
@@ -387,3 +413,11 @@ export default function App() {
     </SafeAreaProvider>
   );
 } 
+
+
+
+
+
+
+
+

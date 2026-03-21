@@ -48,22 +48,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-dev-client",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "newArchEnabled": false,
-            "enableProguardInReleaseBuilds": false
-          },
-          "ios": {
-            "newArchEnabled": false,
-            "flipper": false
-          }
-        }
-      ]
-    ],
+
     "extra": {
       "eas": {
         "projectId": "7609ec84-5b76-49f6-914c-319df8276ca2"

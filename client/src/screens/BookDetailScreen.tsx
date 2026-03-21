@@ -51,7 +51,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Author } from '../types/author';
 import { supabase } from '../lib/supabase';
-import LottieView from 'lottie-react-native';
 import { fixBookUrlsInObject } from '../utils/fixSupabaseUrls';
 import { useNavigation } from '@react-navigation/native';
 
@@ -147,7 +146,6 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   
   // Animation values et refs - Les refs peuvent être utilisées avant les early returns
-  const animationRef = useRef<LottieView>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
   
@@ -1177,13 +1175,9 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
       {/* Points earned animation */}
       {showRewardAnimation && (
         <View style={styles.rewardAnimationContainer}>
-          <LottieView
-            ref={animationRef}
-            source={require('../assets/animations/success.json')}
-            autoPlay
-            loop={false}
-            style={styles.rewardAnimation}
-          />
+          <View style={styles.rewardAnimation}>
+            <MaterialCommunityIcons name="trophy" size={100} color="#FFD700" />
+          </View>
           <Text style={styles.pointsEarned}>+{pointsEarned} {t('common.points')}</Text>
         </View>
       )}

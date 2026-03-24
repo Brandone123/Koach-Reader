@@ -1,9 +1,9 @@
 import { Express } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth, hashPassword } from "./auth-new";
-import { verifyJWT } from "./utils/auth-new";
+import { setupAuth } from "./auth";
+import { verifyJWT } from "./utils/auth";
 import { setupBooksRoutes } from "./api/books";
-import { setupReadingPlansRoutes } from "./api/readingPlans-new";
+import { setupReadingPlansRoutes } from "./api/reading-plans";
 import { setupSocialRoutes } from "./api/social";
 import { setupKoachRoutes } from "./api/koach";
 import { setupNotificationsRoutes } from "./api/notifications";
@@ -13,7 +13,7 @@ export function registerRoutes(app: Express): Server {
   setupAuth(app);
 
   // Set up other API routes with JWT verification
-  setupBooksRoutes(app, verifyJWT, hashPassword);
+  setupBooksRoutes(app, verifyJWT);
   setupReadingPlansRoutes(app, verifyJWT);
   setupSocialRoutes(app, verifyJWT);
   setupKoachRoutes(app, verifyJWT);

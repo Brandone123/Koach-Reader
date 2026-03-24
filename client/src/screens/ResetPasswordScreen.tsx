@@ -63,8 +63,6 @@ const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({ navigation, r
         throw new Error('Token de réinitialisation manquant');
       }
 
-      console.log('Token reçu:', token);
-
       // Le token est déjà l'access token dans ce cas
       const { data: { session }, error: sessionError } = await supabase.auth.setSession({
         access_token: token,

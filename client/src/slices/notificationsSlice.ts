@@ -1,10 +1,14 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { RootState } from '../store';
+import { ApiNotification, toUiNotification } from '../utils/notificationMappers';
+import { supabase } from '../lib/supabase';
 
-// Types
+let notificationsRealtimeChannel: RealtimeChannel | null = null;
+
 export interface Notification {
   id: number;
-  userId: number;
+  userId: string;
   type: 'achievement' | 'challenge' | 'friend' | 'reading' | 'system' | 'reminder';
   title: string;
   message: string;
@@ -29,81 +33,26 @@ const initialState: NotificationsState = {
   error: null,
 };
 
-// Async actions
 export const fetchNotifications = createAsyncThunk(
   'notifications/fetchNotifications',
-  async (_, { rejectWithValue }) => {
+  async (_, { getState, rejectWithValue }) => {
     try {
-      // Mock data - will connect to server later
-      const mockNotifications: Notification[] = [
-        {
-          id: 1,
-          userId: 1,
-          type: 'achievement' as const,
-          title: 'Badge Earned!',
-          message: 'You earned the Bookworm badge for reading 7 days in a row!',
-          read: false,
-          data: {
-            badgeId: 1,
-          },
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: 2,
-          userId: 1,
-          type: 'challenge' as const,
-          title: 'Challenge Update',
-          message: 'You\'re halfway through the Summer Reading Challenge!',
-          read: true,
-          data: {
-            challengeId: 1,
-            progress: 50,
-          },
-          createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-        },
-        {
-          id: 3,
-          userId: 1,
-          type: 'friend' as const,
-          title: 'Friend Request',
-          message: 'User2 sent you a friend request',
-          read: false,
-          data: {
-            friendId: 2,
-            friendUsername: 'User2',
-          },
-          createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-        },
-        {
-          id: 4,
-          userId: 1,
-          type: 'reading' as const,
-          title: 'Reading Activity',
-          message: 'You read 30 pages of "The Great Book"',
-          read: false,
-          data: {
-            bookId: 3,
-            bookTitle: 'The Great Book',
-            pagesRead: 30
-          },
-          createdAt: new Date(Date.now() - 30000).toISOString(), // 30 seconds ago
-        },
-        {
-          id: 5,
-          userId: 1,
-          type: 'reminder' as const,
-          title: 'Reading Reminder',
-          message: 'Time to continue reading "The Great Book"',
-          read: false,
-          data: {
-            bookId: 3,
-            bookTitle: 'The Great Book'
-          },
-          createdAt: new Date(Date.now() - 10000).toISOString(), // 10 seconds ago
-        },
-      ];
-      return mockNotifications;
+      const state = getState() as RootState;
+      const userId = state.auth.user?.id;
+      if (!userId) {
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return ((data || []) as ApiNotification[]).map(toUiNotification);
     } catch (error) {
+      console.error('[notifications/fetch]', error);
       return rejectWithValue('Failed to fetch notifications.');
     }
   }
@@ -113,7 +62,11 @@ export const markNotificationAsRead = createAsyncThunk(
   'notifications/markNotificationAsRead',
   async (notificationId: number, { rejectWithValue }) => {
     try {
-      // Mock API call - will connect to server later
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId);
+      if (error) throw error;
       return notificationId;
     } catch (error) {
       return rejectWithValue('Failed to mark notification as read.');
@@ -121,11 +74,69 @@ export const markNotificationAsRead = createAsyncThunk(
   }
 );
 
+export const subscribeNotificationsRealtime = createAsyncThunk(
+  'notifications/subscribeRealtime',
+  async (userId: string, { dispatch }) => {
+    if (notificationsRealtimeChannel) {
+      await supabase.removeChannel(notificationsRealtimeChannel);
+      notificationsRealtimeChannel = null;
+    }
+    const channel = supabase
+      .channel(`notifications:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          dispatch(fetchNotifications());
+        }
+      )
+      .subscribe((status, err) => {
+        if (err) {
+          console.warn('[notifications realtime]', status, err.message || err);
+        }
+        if (status === 'SUBSCRIBED') {
+          dispatch(fetchNotifications());
+        }
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn(
+            '[notifications realtime] Vérifiez que la table public.notifications est dans la publication supabase_realtime (voir supabase-notifications-realtime.sql).'
+          );
+        }
+      });
+    notificationsRealtimeChannel = channel;
+    await dispatch(fetchNotifications());
+  }
+);
+
+export const unsubscribeNotificationsRealtime = createAsyncThunk(
+  'notifications/unsubscribeRealtime',
+  async () => {
+    if (notificationsRealtimeChannel) {
+      await supabase.removeChannel(notificationsRealtimeChannel);
+      notificationsRealtimeChannel = null;
+    }
+  }
+);
+
 export const markAllNotificationsAsRead = createAsyncThunk(
   'notifications/markAllNotificationsAsRead',
-  async (_, { rejectWithValue }) => {
+  async (_, { getState, rejectWithValue }) => {
     try {
-      // Mock API call - will connect to server later
+      const state = getState() as RootState;
+      const userId = state.auth.user?.id;
+      if (!userId) return true;
+
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', userId)
+        .eq('is_read', false);
+      if (error) throw error;
       return true;
     } catch (error) {
       return rejectWithValue('Failed to mark all notifications as read.');
@@ -133,7 +144,6 @@ export const markAllNotificationsAsRead = createAsyncThunk(
   }
 );
 
-// Slice
 const notificationsSlice = createSlice({
   name: 'notifications',
   initialState,
@@ -148,7 +158,6 @@ const notificationsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Fetch Notifications
     builder.addCase(fetchNotifications.pending, (state) => {
       state.isLoading = true;
       state.error = null;
@@ -163,7 +172,6 @@ const notificationsSlice = createSlice({
       state.error = action.payload as string;
     });
 
-    // Mark Notification As Read
     builder.addCase(markNotificationAsRead.fulfilled, (state, action) => {
       const notification = state.notifications.find((n) => n.id === action.payload);
       if (notification && !notification.read) {
@@ -172,7 +180,6 @@ const notificationsSlice = createSlice({
       }
     });
 
-    // Mark All Notifications As Read
     builder.addCase(markAllNotificationsAsRead.fulfilled, (state) => {
       state.notifications.forEach((notification) => {
         notification.read = true;
@@ -182,10 +189,7 @@ const notificationsSlice = createSlice({
   },
 });
 
-// Actions
 export const { addNotification, clearAllNotifications } = notificationsSlice.actions;
-
-// Selectors
 export const selectAllNotifications = (state: RootState) => state.notifications.notifications;
 export const selectNotifications = (state: RootState) => state.notifications.notifications;
 export const selectNotificationsLoading = (state: RootState) => state.notifications.isLoading;

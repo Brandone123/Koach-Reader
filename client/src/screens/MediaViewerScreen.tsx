@@ -42,7 +42,6 @@ const MediaViewerScreen: React.FC<MediaViewerScreenProps> = ({ navigation, route
     
     // If URL is empty or undefined
     if (!url) {
-      console.log(`${type.toUpperCase()} URL is undefined or empty for book ID:${book.id}`);
       return null;
     }
     
@@ -61,8 +60,6 @@ const MediaViewerScreen: React.FC<MediaViewerScreenProps> = ({ navigation, route
           
         if (error) {
           console.error('Error fixing URL:', error);
-        } else {
-          console.log(`${type} URL fixed in database`);
         }
         
         // Return null as URL is not usable
@@ -90,8 +87,7 @@ const MediaViewerScreen: React.FC<MediaViewerScreenProps> = ({ navigation, route
       
       // Construct the correct URL format
       const fixedUrl = `https://amjodckmmxmpholspskm.supabase.co/storage/v1/object/public/${bucket}/${filename}`;
-      console.log(`${type.toUpperCase()} URL format fixed:`, fixedUrl);
-      
+
       // Update the URL in the database with the fixed URL
       try {
         const updates = type === 'pdf' ? { pdf_url: fixedUrl } : { audio_url: fixedUrl };
@@ -103,8 +99,6 @@ const MediaViewerScreen: React.FC<MediaViewerScreenProps> = ({ navigation, route
           
         if (error) {
           console.error('Error updating URL format:', error);
-        } else {
-          console.log(`${type} URL format updated in database`);
         }
       } catch (error) {
         console.error('Error updating URL format:', error);
@@ -113,9 +107,6 @@ const MediaViewerScreen: React.FC<MediaViewerScreenProps> = ({ navigation, route
       // Return the fixed URL
       return fixedUrl;
     }
-    
-    // URL is valid and in correct format
-    console.log(`${type.toUpperCase()} URL valid:`, url);
     
     return url;
   };
@@ -158,8 +149,6 @@ const MediaViewerScreen: React.FC<MediaViewerScreenProps> = ({ navigation, route
             is_favorite: false
           });
       }
-      
-      console.log(`Updated reading progress for book ${bookId}: page ${pageNumber}`);
     } catch (error) {
       console.error('Error updating reading progress:', error);
     }
@@ -190,15 +179,14 @@ const MediaViewerScreen: React.FC<MediaViewerScreenProps> = ({ navigation, route
     loadMedia();
   }, [book, type]);
 
-  const handleLoadComplete = (numberOfPages: number, filePath: string) => {
-    console.log(`PDF loaded successfully with ${numberOfPages} pages`);
+  const handleLoadComplete = (numberOfPages: number, _filePath: string) => {
     setIsLoading(false);
     setTotalPages(numberOfPages);
     // Increment viewers count
     if (bookId) {
       try {
-        supabase.rpc('increment_book_viewers', {
-          book_id: bookId
+        supabase.rpc('register_book_view', {
+          p_book_id: parseInt(bookId, 10),
         });
       } catch (error) {
         console.error('Error incrementing viewers:', error);

@@ -24,16 +24,13 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import axios from 'axios';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { fetchBooks } from '../slices/booksSlice';
-import { AppDispatch } from '../store';
+import { useAppDispatch } from '../store/hooks';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AUTH_TOKEN_KEY } from '../constants';
+import { AUTH_TOKEN_KEY, API_URL } from '../constants';
 import { selectUser } from '../slices/authSlice';
-
-// Backend URL
-const API_URL = 'http://localhost:3001';
 
 // File mime types
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/jpg'];
@@ -43,7 +40,7 @@ const ALLOWED_AUDIO_TYPES = ['audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/ogg'
 const AddBookForm = ({ onSuccess }: { onSuccess?: () => void }) => {
   const { t } = useTranslation();
   const user = useSelector(selectUser);
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const [token, setToken] = useState<string | null>(null);
   
   // Get auth token on component mount

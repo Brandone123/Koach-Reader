@@ -1,10 +1,11 @@
 // import 'react-native-get-random-values'; // Déplacé dans index.js
-import { LogBox, StyleSheet, Platform, View, Text, TouchableOpacity, Image, Linking } from 'react-native';
+import { LogBox, StyleSheet, Platform, View, Text, TouchableOpacity, Image } from 'react-native';
 import React, { useState, useEffect } from 'react';
+import { useAppDispatch } from './src/store/hooks';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { Provider as PaperProvider, DefaultTheme, IconButton, Badge } from 'react-native-paper';
-import { NavigationContainer, useNavigation, useRoute, useNavigationState } from '@react-navigation/native';
+import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
+import { NavigationContainer, useNavigation, useNavigationState } from '@react-navigation/native';
 import { createStackNavigator, StackNavigationProp } from '@react-navigation/stack';
 import { Provider as ReduxProvider } from 'react-redux';
 import { store } from './src/store';
@@ -29,7 +30,6 @@ import BottomNavigationBar from './src/components/BottomNavigationBar';
 import { useSelector } from 'react-redux';
 import { selectUser } from './src/slices/authSlice';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Animated } from 'react-native';
 import './src/utils/i18n'; // Import i18n configuration
 import { LanguageProvider } from './src/context/LanguageContext';
 import LanguageSwitcher from './src/components/LanguageSwitcher';
@@ -44,6 +44,11 @@ import ReadingGroupDetailScreen from './src/screens/ReadingGroupDetailScreen';
 import CommunityDetailScreen from './src/screens/CommunityDetailScreen';
 import AddFriendsScreen from './src/screens/AddFriendsScreen';
 import AchievementsScreen from './src/screens/AchievementsScreen';
+import {
+  subscribeNotificationsRealtime,
+  unsubscribeNotificationsRealtime,
+  selectUnreadCount,
+} from './src/slices/notificationsSlice';
 
 LogBox.ignoreLogs(['Require cycle:']);
 
@@ -123,30 +128,113 @@ type HeaderRightProps = {
   navigation: StackNavigationProp<RootStackParamList, 'Home'>;
 };
 
-function HeaderRight({ navigation }: HeaderRightProps) {
-  const user = useSelector(selectUser);
-  
-  // Récupérer les points et le streak de l'utilisateur
-  const koachPoints = user?.koach_points || 0;
-  const streak = user?.reading_streak || 0;
-  
+/** Cloche + compteur non lus → écran Notifications */
+function NotificationsBellButton({
+  navigation,
+  iconColor = '#fff',
+}: {
+  navigation: StackNavigationProp<RootStackParamList>;
+  iconColor?: string;
+}) {
+  const unread = useSelector(selectUnreadCount);
+  const { t } = useTranslation();
+
+  return (
+    <TouchableOpacity
+      onPress={() => navigation.navigate('Notifications')}
+      style={styles.headerBellWrap}
+      accessibilityRole="button"
+      accessibilityLabel={t('notifications.title')}
+    >
+      <MaterialCommunityIcons name="bell-outline" size={24} color={iconColor} />
+      {unread > 0 ? (
+        <View style={styles.bellBadgeDot}>
+          <Text style={styles.bellBadgeText}>
+            {unread > 99 ? '99+' : String(unread)}
+          </Text>
+        </View>
+      ) : null}
+    </TouchableOpacity>
+  );
+}
+
+/** Header des écrans autres que Home : notifications + langue */
+function DefaultStackHeaderRight({
+  navigation,
+}: {
+  navigation: StackNavigationProp<RootStackParamList>;
+}) {
   return (
     <View style={styles.headerRightContainer}>
-      {/* Streak */}
+      <NotificationsBellButton navigation={navigation} />
+      <LanguageSwitcher isHeader={true} />
+    </View>
+  );
+}
+
+function HomeHeaderRight({ navigation }: HeaderRightProps) {
+  const user = useSelector(selectUser);
+  const koachPoints = user?.koach_points || 0;
+  const streak = user?.reading_streak || 0;
+
+  return (
+    <View style={styles.headerRightContainer}>
       <View style={styles.statContainer}>
         <MaterialCommunityIcons name="fire" size={16} color="#FFC107" />
         <Text style={styles.statText}>{streak}</Text>
       </View>
-      
-      {/* Points */}
       <View style={styles.statContainer}>
         <MaterialCommunityIcons name="star" size={16} color="#FFC107" />
         <Text style={styles.statText}>{koachPoints}</Text>
       </View>
-      
-      {/* Language Switcher */}
+      <NotificationsBellButton navigation={navigation} />
       <LanguageSwitcher isHeader={true} />
     </View>
+  );
+}
+
+/** Écrans sans barre de navigation (Défis, etc.) : accès permanent aux notifications */
+function NotificationsFloatingButton() {
+  const navigation = useNavigation<NavigationProp>();
+  const routeName = useNavigationState((state) => state?.routes[state?.index]?.name);
+  const user = useSelector(selectUser);
+  const unread = useSelector(selectUnreadCount);
+  const { t } = useTranslation();
+
+  if (!user?.id || !user.has_completed_onboarding) return null;
+  if (!routeName) return null;
+  if (routeName === 'Notifications' || routeName === 'MediaViewer') return null;
+
+  /* Ces écrans masquent le header (pas de cloche) : bouton flottant obligatoire */
+  const headerHiddenRoutes: (keyof RootStackParamList)[] = [
+    'Profile',
+    'BookDetail',
+    'Leaderboard',
+    'Achievements',
+    'Badges',
+    'Challenges',
+    'ChallengeDetail',
+    'AddFriends',
+  ];
+  if (!headerHiddenRoutes.includes(routeName as keyof RootStackParamList)) return null;
+
+  return (
+    <TouchableOpacity
+      style={styles.notifFab}
+      onPress={() => navigation.navigate('Notifications')}
+      activeOpacity={0.88}
+      accessibilityRole="button"
+      accessibilityLabel={t('notifications.title')}
+    >
+      <MaterialCommunityIcons name="bell" size={26} color="#fff" />
+      {unread > 0 ? (
+        <View style={styles.notifFabBadge}>
+          <Text style={styles.notifFabBadgeText}>
+            {unread > 99 ? '99+' : String(unread)}
+          </Text>
+        </View>
+      ) : null}
+    </TouchableOpacity>
   );
 }
 
@@ -164,22 +252,29 @@ function HomeTitle() {
   );
 }
 
-type AppNavigatorProps = {
-  initialRoute: keyof RootStackParamList | null;
-  resetToken: string | null;
-};
-
 // Main app navigation wrapper
-const AppNavigator = ({ initialRoute, resetToken }: AppNavigatorProps) => {
+const AppNavigator = () => {
   const user = useSelector(selectUser);
   const { t } = useTranslation();
-  
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    if (!user?.id || !user.has_completed_onboarding) {
+      dispatch(unsubscribeNotificationsRealtime());
+      return;
+    }
+    dispatch(subscribeNotificationsRealtime(user.id));
+    return () => {
+      dispatch(unsubscribeNotificationsRealtime());
+    };
+  }, [dispatch, user?.id, user?.has_completed_onboarding]);
+
   return (
     <NavigationContainer>
-      <Stack.Navigator 
-        screenOptions={{
+      <Stack.Navigator
+        screenOptions={({ navigation }) => ({
           headerStyle: {
-            backgroundColor: "#9317ed",
+            backgroundColor: '#9317ed',
             elevation: 0,
             shadowOpacity: 0,
           },
@@ -195,8 +290,9 @@ const AppNavigator = ({ initialRoute, resetToken }: AppNavigatorProps) => {
           headerRightContainerStyle: {
             paddingRight: 10,
           },
-        }}
-        initialRouteName={initialRoute || (user ? 'Home' : 'Login')}
+          // headerRight: () => <DefaultStackHeaderRight navigation={navigation} />,
+        })}
+        initialRouteName={user ? 'Home' : 'Login'}
       >
         {!user ? (
           // Non authentifié
@@ -232,21 +328,21 @@ const AppNavigator = ({ initialRoute, resetToken }: AppNavigatorProps) => {
         ) : (
           // Authentifié et a complété l'onboarding
           <>
-            <Stack.Screen 
-              name="Home" 
+            <Stack.Screen
+              name="Home"
               component={HomeScreen}
               options={({ navigation }) => ({
                 headerTitle: () => <HomeTitle />,
-                headerRight: () => <HeaderRight navigation={navigation} />,
+                headerRight: () => <HomeHeaderRight navigation={navigation} />,
               })}
             />
-            <Stack.Screen name="BookDetail" component={BookDetailScreen} />
-            <Stack.Screen name="ReadingPlan" component={ReadingPlanScreen} />
+            <Stack.Screen name="BookDetail" options={{ headerShown: true, title: t('bookDetail.title') }} component={BookDetailScreen} />
+            <Stack.Screen name="ReadingPlan" options={{ headerShown: true, title: t('readingPlan.title') }} component={ReadingPlanScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
-            <Stack.Screen name="ReadingSession" component={ReadingSessionScreen} />
+            <Stack.Screen name="ReadingSession" options={{ headerShown: true, title: t('readingSession.title') }} component={ReadingSessionScreen} />
             <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
-            <Stack.Screen name="Challenges" component={ChallengesScreen} />
-            <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
+            <Stack.Screen name="Challenges" component={ChallengesScreen} options={{ headerShown: false}}/>
+            <Stack.Screen name="ChallengeDetail" options={{ headerShown: false}} component={ChallengeDetailScreen} />
             <Stack.Screen name="MediaViewer" component={MediaViewerScreen} />
             <Stack.Screen name="Badges" component={BadgesScreen} />
             <Stack.Screen name="Stats" component={StatsScreen} />
@@ -256,7 +352,7 @@ const AppNavigator = ({ initialRoute, resetToken }: AppNavigatorProps) => {
             <Stack.Screen 
               name="GroupDetail" 
               component={ReadingGroupDetailScreen}
-              options={{ title: 'Groupe de Lecture' }}
+              options={{ title: t('profile.readingGroup') }}
             />
             <Stack.Screen 
               name="CommunityDetail" 
@@ -302,6 +398,64 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
     marginLeft: 3,
+  },
+  headerBellWrap: {
+    marginRight: 6,
+    padding: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  bellBadgeDot: {
+    position: 'absolute',
+    top: -2,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#ef4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  bellBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  notifFab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 96,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#7c3aed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.28,
+    shadowRadius: 4,
+    zIndex: 100,
+  },
+  notifFabBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#ef4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  notifFabBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
   langButton: {
     marginLeft: 4,
@@ -404,7 +558,7 @@ export default function App() {
       <ReduxProvider store={store}>
         <PaperProvider theme={theme}>
           <LanguageProvider>
-            <AppNavigator initialRoute={initialRoute} resetToken={resetToken} />
+            <AppNavigator />
           </LanguageProvider>
         </PaperProvider>
       </ReduxProvider>
@@ -412,11 +566,7 @@ export default function App() {
       <Toast />
     </SafeAreaProvider>
   );
-} 
-
-
-
-
+}
 
 
 

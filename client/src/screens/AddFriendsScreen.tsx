@@ -23,7 +23,9 @@ import { Avatar } from 'react-native-paper';
 import * as Contacts from 'expo-contacts';
 import { useTranslation } from 'react-i18next';
 import { selectUser, logout } from '../slices/authSlice';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
+import { supabase } from '../lib/supabase';
 
 interface Contact {
   id: string;
@@ -31,12 +33,38 @@ interface Contact {
   phoneNumbers?: { number: string }[];
 }
 
+type FriendRelation =
+  | 'none'
+  | 'friends'
+  | 'outgoing_pending'
+  | 'incoming_pending'
+  | 'outgoing_declined';
+
 interface Friend {
-  id: number;
+  userId: string;
   name: string;
   subtitle: string;
   avatar: string;
-  following: boolean;
+}
+
+function relationFromRows(
+  rows: { user_id: string; friend_id: string; status: string }[] | null,
+  myId: string,
+  otherUserId: string
+): FriendRelation {
+  if (!rows?.length) return 'none';
+  for (const r of rows) {
+    if (r.user_id === myId && r.friend_id === otherUserId) {
+      if (r.status === 'accepted') return 'friends';
+      if (r.status === 'pending') return 'outgoing_pending';
+      if (r.status === 'declined') return 'outgoing_declined';
+    }
+    if (r.friend_id === myId && r.user_id === otherUserId) {
+      if (r.status === 'accepted') return 'friends';
+      if (r.status === 'pending') return 'incoming_pending';
+    }
+  }
+  return 'none';
 }
 
 interface AddFriendsScreenProps {
@@ -56,30 +84,71 @@ const AddFriendsScreen: React.FC<AddFriendsScreenProps> = ({ navigation }) => {
   const [isSearching, setIsSearching] = useState(false);
   
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const latestSearchQueryRef = useRef('');
 
-  const friendSuggestions = [
-    { id: 1, name: 'Sara empavy', subtitle: t('addFriends.followsYou'), avatar: 'https://randomuser.me/api/portraits/women/1.jpg', following: false },
-    { id: 2, name: 'june', subtitle: t('addFriends.followsYou'), avatar: 'https://randomuser.me/api/portraits/women/2.jpg', following: false },
-    { id: 3, name: 'Ephraïm Takoua', subtitle: t('addFriends.followsYou'), avatar: 'https://randomuser.me/api/portraits/men/3.jpg', following: false },
-    { id: 4, name: 'Michel Leundjie...', subtitle: t('addFriends.followsYou'), avatar: 'https://randomuser.me/api/portraits/men/4.jpg', following: false },
-    { id: 5, name: 'Herman Diabaté', subtitle: t('addFriends.followsYou'), avatar: 'https://randomuser.me/api/portraits/men/5.jpg', following: false },
-    { id: 6, name: 'Flosy Djach', subtitle: t('addFriends.followsYou'), avatar: 'https://randomuser.me/api/portraits/women/6.jpg', following: false },
-    { id: 7, name: 'RAHIM', subtitle: t('addFriends.followsYou'), avatar: 'https://randomuser.me/api/portraits/men/7.jpg', following: false },
-    { id: 8, name: 'Djeuko glyph', subtitle: t('addFriends.followsYou'), avatar: 'https://randomuser.me/api/portraits/women/8.jpg', following: false },
-  ];
+  const [suggestions, setSuggestions] = useState<Friend[]>([]);
+  const [friendshipRows, setFriendshipRows] = useState<
+    { user_id: string; friend_id: string; status: string }[]
+  >([]);
 
-  const [suggestions, setSuggestions] = useState(friendSuggestions);
+  useEffect(() => {
+    if (!user?.id) {
+      setFriendshipRows([]);
+      return;
+    }
+    (async () => {
+      const { data, error } = await supabase
+        .from('friends')
+        .select('user_id, friend_id, status')
+        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
+      if (error) {
+        console.error('friends load', error);
+        return;
+      }
+      setFriendshipRows(data || []);
+    })();
+  }, [user?.id]);
 
-  const handleFollow = (id: number) => {
-    setSuggestions(prev => 
-      prev.map(person => 
-        person.id === id ? { ...person, following: !person.following } : person
-      )
-    );
+  const relationTo = (otherUserId: string) =>
+    relationFromRows(friendshipRows, String(user?.id || ''), otherUserId);
+
+  const refreshFriendships = async () => {
+    if (!user?.id) return;
+    const { data } = await supabase
+      .from('friends')
+      .select('user_id, friend_id, status')
+      .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
+    setFriendshipRows(data || []);
   };
 
-  const handleDismiss = (id: number) => {
-    setSuggestions(prev => prev.filter(person => person.id !== id));
+  const sendFriendRequest = async (targetUserId: string) => {
+    if (!user?.id || targetUserId === user.id) return;
+    const rel = relationTo(targetUserId);
+    if (rel === 'friends' || rel === 'outgoing_pending' || rel === 'incoming_pending') {
+      if (rel === 'incoming_pending') {
+        Alert.alert(t('addFriends.sendRequest'), t('addFriends.respondInProfile'));
+      }
+      return;
+    }
+    const { error } = await supabase.from('friends').insert({
+      user_id: user.id,
+      friend_id: targetUserId,
+      status: 'pending',
+    });
+    if (error) {
+      if ((error as { code?: string }).code === '23505') {
+        Alert.alert(t('common.errorText'), t('addFriends.alreadyPending'));
+      } else {
+        Alert.alert(t('common.errorText'), t('addFriends.friendRequestError'));
+      }
+      return;
+    }
+    await refreshFriendships();
+    Alert.alert(t('common.success'), t('addFriends.requestSent'));
+  };
+
+  const handleDismiss = (userId: string) => {
+    setSuggestions((prev) => prev.filter((person) => person.userId !== userId));
   };
 
   const handleSearchContacts = async () => {
@@ -99,7 +168,7 @@ const AddFriendsScreen: React.FC<AddFriendsScreenProps> = ({ navigation }) => {
               phoneNumbers: contact.phoneNumbers || []
             }));
           
-          setContacts(formattedContacts);
+          setContacts(formattedContacts as Contact[]);
           setShowContactsModal(true);
         } else {
           Alert.alert(t('addFriends.noContactsFound'), t('addFriends.noContactsFoundMessage'));
@@ -122,51 +191,50 @@ const AddFriendsScreen: React.FC<AddFriendsScreenProps> = ({ navigation }) => {
 
   // Fonction de recherche optimisée avec debounce
   const performSearch = async (query: string) => {
-    // Toujours mettre à jour le texte immédiatement
     setSearchQuery(query);
-    
-    // Annuler la recherche précédente
+    latestSearchQueryRef.current = query;
+
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-    
-    // Si la requête est trop courte, vider les résultats
+
     if (query.trim().length < 2) {
       setSearchResults([]);
       setIsSearching(false);
       return;
     }
-    
-    // Indiquer qu'une recherche est en cours
+
     setIsSearching(true);
-    
-    // Débounce de 300ms pour éviter trop de requêtes
+    const queryAtSchedule = query;
+
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        // Simulation d'une recherche API avec délai
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Données mock pour la recherche
-        const mockUsers = [
-          { id: 101, name: 'Alice Kouame', subtitle: t('addFriends.activeUser'), avatar: 'https://randomuser.me/api/portraits/women/10.jpg', following: false },
-          { id: 102, name: 'Bob Traore', subtitle: t('addFriends.newMember'), avatar: 'https://randomuser.me/api/portraits/men/11.jpg', following: false },
-          { id: 103, name: 'Claire Diallo', subtitle: t('addFriends.passionateReader'), avatar: 'https://randomuser.me/api/portraits/women/12.jpg', following: false },
-          { id: 104, name: 'David Kone', subtitle: t('addFriends.activeUser'), avatar: 'https://randomuser.me/api/portraits/men/13.jpg', following: false },
-          { id: 105, name: 'Emma Bamba', subtitle: t('addFriends.newMember'), avatar: 'https://randomuser.me/api/portraits/women/14.jpg', following: false },
-          { id: 106, name: 'Frank Ouattara', subtitle: t('addFriends.newMember'), avatar: 'https://randomuser.me/api/portraits/men/15.jpg', following: false },
-          { id: 107, name: 'Grace Yao', subtitle: t('addFriends.activeUser'), avatar: 'https://randomuser.me/api/portraits/women/16.jpg', following: false },
-          { id: 108, name: 'Henri Diabate', subtitle: t('addFriends.passionateReader'), avatar: 'https://randomuser.me/api/portraits/men/17.jpg', following: false },
-        ];
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, username, avatar_url')
+          .ilike('username', `%${queryAtSchedule}%`)
+          .limit(20);
+        if (error) throw error;
 
-        // Filtrer les résultats
-        const filtered = mockUsers.filter(user => 
-          user.name.toLowerCase().includes(query.toLowerCase())
-        );
-        
-        // Vérifier que la requête n'a pas changé pendant la recherche
-        if (query === searchQuery) {
-          setSearchResults(filtered);
+        if (latestSearchQueryRef.current !== queryAtSchedule) {
+          return;
         }
+
+        const filtered: Friend[] = (data || [])
+          .filter((u: { id: string }) => String(u.id) !== String(user?.id))
+          .map((u: { id: string; username?: string; avatar_url?: string | null }) => {
+            const name = u.username || t('addFriends.contactNoName');
+            return {
+              userId: String(u.id),
+              name,
+              subtitle: t('addFriends.activeUser'),
+              avatar:
+                u.avatar_url ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`,
+            };
+          });
+
+        setSearchResults(filtered);
       } catch (error) {
         console.error('Erreur de recherche:', error);
       } finally {
@@ -174,6 +242,35 @@ const AddFriendsScreen: React.FC<AddFriendsScreenProps> = ({ navigation }) => {
       }
     }, 300);
   };
+
+  useEffect(() => {
+    const loadSuggestions = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, username, avatar_url')
+          .limit(12);
+        if (error) throw error;
+        const mapped: Friend[] = (data || [])
+          .filter((u: { id: string }) => String(u.id) !== String(user?.id))
+          .map((u: { id: string; username?: string; avatar_url?: string | null }) => {
+            const name = u.username || t('addFriends.contactNoName');
+            return {
+              userId: String(u.id),
+              name,
+              subtitle: t('addFriends.activeUser'),
+              avatar:
+                u.avatar_url ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`,
+            };
+          });
+        setSuggestions(mapped);
+      } catch (error) {
+        console.error('Erreur chargement suggestions:', error);
+      }
+    };
+    loadSuggestions();
+  }, [user?.id, t]);
 
   // Nettoyer le timeout au démontage du composant
   useEffect(() => {
@@ -292,7 +389,6 @@ const AddFriendsScreen: React.FC<AddFriendsScreenProps> = ({ navigation }) => {
                 autoFocus
                 returnKeyType="search"
                 blurOnSubmit={false}
-                keyboardShouldPersistTaps="always"
                 onSubmitEditing={() => {}}
                 onBlur={() => {}}
                 onFocus={() => {}}
@@ -307,37 +403,70 @@ const AddFriendsScreen: React.FC<AddFriendsScreenProps> = ({ navigation }) => {
           
           <FlatList
             data={searchResults}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => item.userId}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="none"
             scrollEnabled={true}
             nestedScrollEnabled={true}
             removeClippedSubviews={false}
-            renderItem={({ item }) => (
-              <TouchableOpacity 
-                style={styles.searchResultItem}
-                activeOpacity={0.7}
-                onPress={() => {}}
-              >
-                <View style={styles.suggestionLeft}>
-                  <Avatar.Image
-                    source={{ uri: item.avatar }}
-                    size={50}
-                  />
-                  <View style={styles.suggestionInfo}>
-                    <Text style={styles.suggestionName}>{item.name}</Text>
-                    <Text style={styles.suggestionSubtitle}>{item.subtitle}</Text>
-                  </View>
-                </View>
+            renderItem={({ item }) => {
+              const rel = relationTo(item.userId);
+              const disabled =
+                rel === 'friends' ||
+                rel === 'outgoing_pending' ||
+                rel === 'incoming_pending';
+              return (
                 <TouchableOpacity
-                  style={styles.followButton}
-                  onPress={() => handleFollow(item.id)}
-                  activeOpacity={0.8}
+                  style={styles.searchResultItem}
+                  activeOpacity={0.7}
+                  onPress={() => {}}
                 >
-                  <Ionicons name="person-add" size={16} color="#fff" />
+                  <View style={styles.suggestionLeft}>
+                    <Avatar.Image source={{ uri: item.avatar }} size={50} />
+                    <View style={styles.suggestionInfo}>
+                      <Text style={styles.suggestionName}>{item.name}</Text>
+                      <Text style={styles.suggestionSubtitle}>
+                        {rel === 'friends'
+                          ? t('addFriends.alreadyFriends')
+                          : rel === 'outgoing_pending'
+                            ? t('addFriends.alreadyPending')
+                            : rel === 'incoming_pending'
+                              ? t('addFriends.respondInProfile')
+                              : item.subtitle}
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={[
+                      styles.followButton,
+                      rel === 'friends' && styles.followingButton,
+                      disabled && rel !== 'friends' && { opacity: 0.6 },
+                    ]}
+                    onPress={() => {
+                      if (rel === 'incoming_pending') {
+                        setShowSearchModal(false);
+                        navigation.navigate('Profile');
+                        return;
+                      }
+                      sendFriendRequest(item.userId);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name={
+                        rel === 'friends'
+                          ? 'checkmark'
+                          : rel === 'outgoing_pending'
+                            ? 'time'
+                            : 'person-add'
+                      }
+                      size={16}
+                      color="#fff"
+                    />
+                  </TouchableOpacity>
                 </TouchableOpacity>
-              </TouchableOpacity>
-            )}
+              );
+            }}
             ListEmptyComponent={() => {
               if (isSearching) {
                 return (
@@ -429,44 +558,72 @@ const AddFriendsScreen: React.FC<AddFriendsScreenProps> = ({ navigation }) => {
 
           {/* Liste des suggestions */}
           <View style={styles.suggestionsList}>
-            {displayedSuggestions.map((person) => (
-              <View key={person.id} style={styles.suggestionItem}>
-                <View style={styles.suggestionLeft}>
-                  <Avatar.Image
-                    source={{ uri: person.avatar }}
-                    size={50}
-                    style={styles.suggestionAvatar}
-                  />
-                  <View style={styles.suggestionInfo}>
-                    <Text style={styles.suggestionName}>{person.name}</Text>
-                    <Text style={styles.suggestionSubtitle}>{person.subtitle}</Text>
+            {displayedSuggestions.map((person) => {
+              const rel = relationTo(person.userId);
+              const disabled =
+                rel === 'friends' ||
+                rel === 'outgoing_pending' ||
+                rel === 'incoming_pending';
+              return (
+                <View key={person.userId} style={styles.suggestionItem}>
+                  <View style={styles.suggestionLeft}>
+                    <Avatar.Image
+                      source={{ uri: person.avatar }}
+                      size={50}
+                      style={styles.suggestionAvatar}
+                    />
+                    <View style={styles.suggestionInfo}>
+                      <Text style={styles.suggestionName}>{person.name}</Text>
+                      <Text style={styles.suggestionSubtitle}>
+                        {rel === 'friends'
+                          ? t('addFriends.alreadyFriends')
+                          : rel === 'outgoing_pending'
+                            ? t('addFriends.alreadyPending')
+                            : rel === 'incoming_pending'
+                              ? t('addFriends.respondInProfile')
+                              : person.subtitle}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.suggestionActions}>
+                    <TouchableOpacity
+                      style={[
+                        styles.followButton,
+                        rel === 'friends' && styles.followingButton,
+                        disabled && rel !== 'friends' && { opacity: 0.6 },
+                      ]}
+                      onPress={() => {
+                        if (rel === 'incoming_pending') {
+                          navigation.navigate('Profile');
+                          return;
+                        }
+                        sendFriendRequest(person.userId);
+                      }}
+                    >
+                      <Ionicons
+                        name={
+                          rel === 'friends'
+                            ? 'checkmark'
+                            : rel === 'outgoing_pending'
+                              ? 'time'
+                              : 'person-add'
+                        }
+                        size={16}
+                        color="#fff"
+                      />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.dismissButton}
+                      onPress={() => handleDismiss(person.userId)}
+                    >
+                      <Ionicons name="close" size={16} color="#666" />
+                    </TouchableOpacity>
                   </View>
                 </View>
-
-                <View style={styles.suggestionActions}>
-                  <TouchableOpacity
-                    style={[
-                      styles.followButton,
-                      person.following && styles.followingButton
-                    ]}
-                    onPress={() => handleFollow(person.id)}
-                  >
-                    <Ionicons 
-                      name={person.following ? "checkmark" : "person-add"} 
-                      size={16} 
-                      color="#fff" 
-                    />
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity
-                    style={styles.dismissButton}
-                    onPress={() => handleDismiss(person.id)}
-                  >
-                    <Ionicons name="close" size={16} color="#666" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
       </ScrollView>

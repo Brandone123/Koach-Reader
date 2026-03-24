@@ -47,18 +47,14 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation 
     setLoading(true);
     try {
       // Pour Expo Go, on utilise l'URL exacte
+      // Ajoutez cette URL (et la variante LAN) dans Supabase Auth > URL Configuration > Redirect URLs
       const redirectUrl = __DEV__
-        ? `exp://192.168.70.160:8081/--/reset-password`
+        ? 'exp://127.0.0.1:8081/--/reset-password'
         : 'koachreader://reset-password';
 
-      console.log('Sending reset password email with redirect URL:', redirectUrl);
-      console.log('Email address:', email);
-
-      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,
       });
-
-      console.log('Reset password response:', error ? 'Error: ' + error.message : 'Success', data);
 
       if (error) throw error;
 
@@ -91,7 +87,6 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation 
   React.useEffect(() => {
     // Fonction pour gérer les liens profonds
     const handleDeepLink = async (event: { url: string }) => {
-      console.log('Deep link handled:', event.url);
       if (event.url.includes('reset-password')) {
         // Extraire le token de réinitialisation si nécessaire
         const token = event.url.split('token=')[1];

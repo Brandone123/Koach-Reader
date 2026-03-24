@@ -4,8 +4,9 @@ import { Text, Button, ActivityIndicator, ProgressBar } from 'react-native-paper
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../store';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
+import { RootState } from '../store';
 import { fetchBooks } from '../slices/booksSlice';
 import { fetchReadingPlans, fetchReadingSessions } from '../slices/readingPlansSlice';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +23,7 @@ interface ReadingSessionScreenProps {
 const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { bookId, planId } = route.params;
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
 
   // Données de l'application
   const book = useSelector((state: RootState) => 
@@ -95,7 +96,7 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
   // Handlers
   const handleOpenPDF = () => navigation.navigate('MediaViewer', { bookId, type: 'pdf' });
   const handleAudio = () => alert(t('common.comingSoon'));
-  const handleEditPlan = () => navigation.navigate('EditReadingPlan', { planId });
+  const handleEditPlan = () => navigation.navigate('EditReadingPlan', { planId, bookId });
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -184,7 +185,7 @@ const ReadingSessionScreen: React.FC<ReadingSessionScreenProps> = ({ route, navi
         <Text style={styles.emptyText}>{t('readingSession.noSessions')}</Text>
       ) : (
         sessions.map((session) => (
-          <SessionItem key={session.id} session={session} />
+          <SessionItem key={session.id} session={session} t={t} />
         ))
       )}
     </ScrollView>
@@ -212,7 +213,7 @@ const ActionButton = ({ icon, label, onPress, primary = false }: { icon: string,
   </Button>
 );
 
-const SessionItem = ({ session }: { session: any }) => (
+const SessionItem = ({ session, t }: { session: any; t: (k: string) => string }) => (
   <View style={styles.sessionItem}>
     <Icon name="calendar" size={20} color="#8A2BE2" style={styles.sessionIcon} />
     <View style={styles.sessionDetails}>

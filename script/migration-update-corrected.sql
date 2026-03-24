@@ -228,19 +228,58 @@ ALTER TABLE public.reading_goals ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can view categories" ON public.categories
   FOR SELECT USING (true);
 
-CREATE POLICY "Authenticated users can manage categories" ON public.categories
-  FOR ALL TO authenticated
-  USING (true)
-  WITH CHECK (true);
+CREATE POLICY "Authenticated insert categories" ON public.categories
+  FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Admins update categories" ON public.categories
+  FOR UPDATE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.users u
+      WHERE u.id = auth.uid() AND COALESCE(u.is_admin, false) = true
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.users u
+      WHERE u.id = auth.uid() AND COALESCE(u.is_admin, false) = true
+    )
+  );
+
+CREATE POLICY "Admins delete categories" ON public.categories
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.users u
+      WHERE u.id = auth.uid() AND COALESCE(u.is_admin, false) = true
+    )
+  );
 
 -- 16. Politiques RLS pour book_categories
 CREATE POLICY "Anyone can view book categories" ON public.book_categories
   FOR SELECT USING (true);
 
-CREATE POLICY "Authenticated users can manage book categories" ON public.book_categories
-  FOR ALL TO authenticated
-  USING (true)
-  WITH CHECK (true);
+CREATE POLICY "Authenticated insert book_categories" ON public.book_categories
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    auth.uid() IS NOT NULL
+    AND EXISTS (SELECT 1 FROM public.books b WHERE b.id = book_id)
+    AND EXISTS (SELECT 1 FROM public.categories c WHERE c.id = category_id)
+  );
+
+CREATE POLICY "Authenticated update book_categories" ON public.book_categories
+  FOR UPDATE TO authenticated
+  USING (auth.uid() IS NOT NULL)
+  WITH CHECK (
+    auth.uid() IS NOT NULL
+    AND EXISTS (SELECT 1 FROM public.books b WHERE b.id = book_id)
+    AND EXISTS (SELECT 1 FROM public.categories c WHERE c.id = category_id)
+  );
+
+CREATE POLICY "Authenticated delete book_categories" ON public.book_categories
+  FOR DELETE TO authenticated
+  USING (auth.uid() IS NOT NULL);
 
 -- 17. Politiques RLS pour reading_sessions
 CREATE POLICY "Users can view own reading sessions" ON public.reading_sessions
@@ -259,9 +298,14 @@ CREATE POLICY "Users can delete own reading sessions" ON public.reading_sessions
 CREATE POLICY "Users can view own achievements" ON public.user_achievements
   FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "System can manage achievements" ON public.user_achievements
-  FOR ALL USING (true)
-  WITH CHECK (true);
+CREATE POLICY "Users insert own achievements" ON public.user_achievements
+  FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users update own achievements" ON public.user_achievements
+  FOR UPDATE TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
 -- 19. Politiques RLS pour book_reviews
 CREATE POLICY "Anyone can view reviews" ON public.book_reviews
@@ -326,63 +370,79 @@ CREATE POLICY "Users can manage own reading goals" ON public.reading_goals
 
 -- 24. Mettre à jour les fonctions existantes et en ajouter de nouvelles
 CREATE OR REPLACE FUNCTION public.update_user_stats(user_id uuid)
-RETURNS void AS $$
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   UPDATE public.users SET
     books_completed = (
-      SELECT COUNT(*) FROM public.reading_plans 
+      SELECT COUNT(*)::integer FROM public.reading_plans 
       WHERE reading_plans.user_id = users.id AND status = 'completed'
     ),
     total_pages_read = (
-      SELECT COALESCE(SUM(pages_read), 0) FROM public.reading_sessions 
+      SELECT COALESCE(SUM(pages_read), 0)::integer FROM public.reading_sessions 
       WHERE reading_sessions.user_id = users.id
     ),
     total_reading_time = (
-      SELECT COALESCE(SUM(minutes_spent), 0) FROM public.reading_sessions 
+      SELECT COALESCE(SUM(minutes_spent), 0)::integer FROM public.reading_sessions 
       WHERE reading_sessions.user_id = users.id
     )
   WHERE id = user_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- 25. Fonction pour calculer la note moyenne d'un livre
 CREATE OR REPLACE FUNCTION public.update_book_rating(book_id integer)
-RETURNS void AS $$
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   UPDATE public.books SET
     rating = (
-      SELECT COALESCE(AVG(rating::decimal), 0) 
+      SELECT COALESCE(AVG(rating::real), 0)
       FROM public.book_reviews 
       WHERE book_reviews.book_id = books.id
     ),
     rating_count = (
-      SELECT COUNT(*) 
+      SELECT COUNT(*)::integer
       FROM public.book_reviews 
       WHERE book_reviews.book_id = books.id
     )
   WHERE id = book_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- 26. Améliorer la fonction add_koach_points existante
 CREATE OR REPLACE FUNCTION public.add_koach_points(user_id uuid, points_to_add integer)
-RETURNS void AS $$
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   UPDATE public.users
   SET koach_points = COALESCE(koach_points, 0) + points_to_add
   WHERE id = user_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- 27. Améliorer la fonction increment_book_viewers existante
 CREATE OR REPLACE FUNCTION public.increment_book_viewers(book_id integer)
-RETURNS void AS $$
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   UPDATE public.books
   SET viewers = COALESCE(viewers, 0) + 1
   WHERE id = book_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- 28. Ajouter des triggers pour les nouvelles tables
 CREATE TRIGGER update_book_reviews_updated_at
@@ -402,19 +462,18 @@ CREATE TRIGGER update_reading_goals_updated_at
 
 -- 29. Trigger pour mettre à jour les stats après une session de lecture
 CREATE OR REPLACE FUNCTION public.handle_reading_session_update()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 BEGIN
-  -- Mettre à jour les stats utilisateur
   PERFORM public.update_user_stats(NEW.user_id);
-  
-  -- Ajouter des points Koach
-  IF NEW.koach_earned > 0 THEN
+  IF NEW.koach_earned IS NOT NULL AND NEW.koach_earned > 0 THEN
     PERFORM public.add_koach_points(NEW.user_id, NEW.koach_earned);
   END IF;
-  
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 DROP TRIGGER IF EXISTS on_reading_session_insert ON public.reading_sessions;
 CREATE TRIGGER on_reading_session_insert
@@ -424,12 +483,19 @@ CREATE TRIGGER on_reading_session_insert
 
 -- 30. Trigger pour mettre à jour la note des livres après un avis
 CREATE OR REPLACE FUNCTION public.handle_review_update()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 BEGIN
+  IF TG_OP = 'DELETE' THEN
+    PERFORM public.update_book_rating(OLD.book_id);
+    RETURN OLD;
+  END IF;
   PERFORM public.update_book_rating(NEW.book_id);
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 DROP TRIGGER IF EXISTS on_review_insert ON public.book_reviews;
 DROP TRIGGER IF EXISTS on_review_update ON public.book_reviews;

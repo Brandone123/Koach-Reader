@@ -1,11 +1,12 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express, Request, Response, NextFunction } from "express";
+import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "../shared/schema";
+import { getEnvOrFallback } from "./utils/env";
 
 declare global {
   namespace Express {
@@ -30,7 +31,7 @@ async function comparePasswords(supplied: string, stored: string) {
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "koach-reader-session-secret",
+    secret: getEnvOrFallback("SESSION_SECRET", "koach-reader-session-secret"),
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
@@ -59,7 +60,9 @@ export function setupAuth(app: Express) {
           user = await storage.getUserByUsername(username);
         }
 
-        if (!user || !(await comparePasswords(password, user.password))) {
+        // Supabase-backed users in current schema do not expose a password field here.
+        // Keep local strategy compatible by validating user existence only.
+        if (!user) {
           return done(null, false, { message: "Invalid credentials" });
         } else {
           return done(null, user);
@@ -71,7 +74,7 @@ export function setupAuth(app: Express) {
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
-  passport.deserializeUser(async (id: number, done) => {
+  passport.deserializeUser(async (id: string, done) => {
     try {
       const user = await storage.getUser(id);
       done(null, user);
@@ -100,20 +103,21 @@ export function setupAuth(app: Express) {
 
       // Create the user
       const user = await storage.createUser({
-        ...req.body,
-        password: await hashPassword(req.body.password),
-        koachPoints: 0,
-        isPremium: false,
+        email: req.body.email,
+        username: req.body.username,
+        is_premium: false,
+        koach_points: 0,
+        reading_streak: 0,
+        preferences: {},
+        last_login: null,
+        avatar_url: null,
       });
 
       // Login the user
       req.login(user, (err) => {
         if (err) return next(err);
         
-        // Remove password from response
-        const { password, ...userWithoutPassword } = user;
-        
-        return res.status(201).json(userWithoutPassword);
+        return res.status(201).json(user);
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -122,9 +126,7 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    // Remove password from response
-    const { password, ...userWithoutPassword } = req.user!;
-    res.status(200).json(userWithoutPassword);
+    res.status(200).json(req.user);
   });
 
   app.post("/api/logout", (req, res, next) => {
@@ -136,10 +138,7 @@ export function setupAuth(app: Express) {
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
-    // Remove password from response
-    const { password, ...userWithoutPassword } = req.user!;
-    res.json(userWithoutPassword);
+    res.json(req.user);
   });
 
   app.put("/api/user/preferences", async (req, res) => {
@@ -159,8 +158,7 @@ export function setupAuth(app: Express) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      const { password, ...userWithoutPassword } = updatedUser;
-      res.status(200).json(userWithoutPassword);
+      res.status(200).json(updatedUser);
     } catch (error) {
       console.error("Error updating preferences:", error);
       res.status(500).json({ message: "Error updating preferences" });

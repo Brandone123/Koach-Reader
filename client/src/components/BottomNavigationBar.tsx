@@ -77,8 +77,8 @@ const BottomNavigationBar: React.FC = () => {
       setIsVisible(currentRouteName === "Home");
       
       // Update index based on current route name if we're on a route in our navigation
-      if (ROUTE_TO_INDEX_MAP.hasOwnProperty(currentRouteName)) {
-        setIndex(ROUTE_TO_INDEX_MAP[currentRouteName]);
+      if (currentRouteName in ROUTE_TO_INDEX_MAP) {
+        setIndex((ROUTE_TO_INDEX_MAP as Record<string, number>)[currentRouteName]);
       }
     }
   }, [currentRouteName]);

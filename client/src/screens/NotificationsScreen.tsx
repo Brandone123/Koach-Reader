@@ -1,27 +1,27 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, FlatList, Text, TouchableOpacity } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useState, useCallback } from 'react';
+import { StyleSheet, View, FlatList, Text } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
-import { AppDispatch } from '../store';
-import { 
-  Card, 
-  Title, 
-  Paragraph, 
-  Button, 
-  Divider, 
-  Avatar, 
+import {
+  Card,
+  Title,
+  Paragraph,
+  Avatar,
   IconButton,
   ActivityIndicator,
-  Chip
 } from 'react-native-paper';
-import { 
-  fetchNotifications, 
-  markNotificationAsRead, 
-  selectNotifications, 
+import {
+  fetchNotifications,
+  markNotificationAsRead,
+  selectNotifications,
   selectNotificationsLoading,
-  Notification 
-} from '../redux/slices/notificationsSlice';
+  selectError as selectNotificationsError,
+  Notification,
+} from '../slices/notificationsSlice';
 
 type NotificationsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Notifications'>;
 
@@ -30,24 +30,28 @@ interface NotificationsScreenProps {
 }
 
 const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ navigation }) => {
-  const dispatch = useDispatch<AppDispatch>();
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const notifications = useSelector(selectNotifications);
   const isLoading = useSelector(selectNotificationsLoading);
+  const fetchError = useSelector(selectNotificationsError);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    dispatch(fetchNotifications());
-  }, [dispatch]);
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(fetchNotifications() as any);
+    }, [dispatch])
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await dispatch(fetchNotifications());
+    await dispatch(fetchNotifications() as any);
     setRefreshing(false);
   };
 
   const handleNotificationPress = (notification: Notification) => {
     if (!notification.read) {
-      dispatch(markNotificationAsRead(notification.id as number));
+      dispatch(markNotificationAsRead(notification.id as number) as any);
     }
 
     // Navigate based on notification type
@@ -75,9 +79,9 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ navigation })
         if (notification.data?.bookId) {
           navigation.navigate('MediaViewer', { 
             bookId: typeof notification.data.bookId === 'string' 
-              ? parseInt(notification.data.bookId) 
-              : notification.data.bookId,
-            mediaType: 'pdf'
+              ? notification.data.bookId
+              : String(notification.data.bookId),
+            type: 'pdf'
           });
         } else {
           navigation.navigate('Home');
@@ -136,13 +140,18 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ navigation })
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#6200ee" />
-        <Text style={styles.loadingText}>Loading notifications...</Text>
+        <Text style={styles.loadingText}>{t('notifications.loading')}</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
+      {fetchError ? (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorBannerText}>{fetchError}</Text>
+        </View>
+      ) : null}
       <FlatList
         data={notifications}
         renderItem={renderNotificationItem}
@@ -153,10 +162,8 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ navigation })
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <IconButton icon="bell-off" size={48} style={{ opacity: 0.5 }} />
-            <Text style={styles.emptyText}>No notifications yet</Text>
-            <Text style={styles.emptySubtext}>
-              We'll notify you about important updates and activities
-            </Text>
+            <Text style={styles.emptyText}>{t('notifications.emptyTitle')}</Text>
+            <Text style={styles.emptySubtext}>{t('notifications.emptySubtitle')}</Text>
           </View>
         }
       />
@@ -176,10 +183,11 @@ const styles = StyleSheet.create({
   notificationCard: {
     marginBottom: 12,
     elevation: 2,
+    borderRadius: 8,
   },
   unreadCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#6200ee',
+    // borderLeftWidth: 4,
+    // borderLeftColor: '#6200ee',
   },
   cardContent: {
     flexDirection: 'row',
@@ -238,6 +246,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#888',
     marginTop: 8,
+    textAlign: 'center',
+  },
+  errorBanner: {
+    backgroundColor: '#ffebee',
+    padding: 12,
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 8,
+  },
+  errorBannerText: {
+    color: '#c62828',
+    fontSize: 14,
     textAlign: 'center',
   },
 });

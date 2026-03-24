@@ -11,10 +11,10 @@ import {
   ActivityIndicator
 } from 'react-native-paper';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { createReadingGroup } from '../slices/readingGroupsSlice';
 import { selectUser } from '../slices/authSlice';
-import { AppDispatch } from '../store';
 import { useTranslation } from 'react-i18next';
 
 interface CreateReadingGroupDialogProps {
@@ -28,7 +28,7 @@ const CreateReadingGroupDialog: React.FC<CreateReadingGroupDialogProps> = ({
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const user = useSelector(selectUser);
   
   const [name, setName] = useState('');

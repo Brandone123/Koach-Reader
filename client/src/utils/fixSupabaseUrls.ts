@@ -30,8 +30,6 @@ export const fixAllBookUrls = async (): Promise<{
       };
     }
 
-    console.log(`Found ${books.length} books to check for URL fixes`);
-
     let fixedCount = 0;
     let failedCount = 0;
 
@@ -47,7 +45,6 @@ export const fixAllBookUrls = async (): Promise<{
           if (fixedPdfUrl && fixedPdfUrl !== book.pdf_url) {
             updates.pdf_url = fixedPdfUrl;
             needsUpdate = true;
-            console.log(`Book ${book.id} (${book.title}): PDF URL fixed`);
           }
         }
 
@@ -73,7 +70,6 @@ export const fixAllBookUrls = async (): Promise<{
             failedCount++;
           } else {
             fixedCount++;
-            console.log(`Book ${book.id} updated successfully`);
           }
         }
       } catch (bookError) {
@@ -109,7 +105,7 @@ export const fixBookUrlsInObject = (book: any): any => {
 
   // Fix PDF URL
   if (fixedBook.pdf_url) {
-    const fixedPdfUrl = fixSupabaseStorageUrl(fixedBook.pdf_url, false);
+    const fixedPdfUrl = fixSupabaseStorageUrl(fixedBook.pdf_url);
     if (fixedPdfUrl) {
       fixedBook.pdf_url = fixedPdfUrl;
     }
@@ -117,7 +113,7 @@ export const fixBookUrlsInObject = (book: any): any => {
 
   // Fix cover URL
   if (fixedBook.cover_url) {
-    const fixedCoverUrl = fixSupabaseStorageUrl(fixedBook.cover_url, false);
+    const fixedCoverUrl = fixSupabaseStorageUrl(fixedBook.cover_url);
     if (fixedCoverUrl) {
       fixedBook.cover_url = fixedCoverUrl;
     }
@@ -125,7 +121,7 @@ export const fixBookUrlsInObject = (book: any): any => {
 
   // Fix cover image (legacy field)
   if (fixedBook.cover_image) {
-    const fixedCoverImage = fixSupabaseStorageUrl(fixedBook.cover_image, false);
+    const fixedCoverImage = fixSupabaseStorageUrl(fixedBook.cover_image);
     if (fixedCoverImage) {
       fixedBook.cover_image = fixedCoverImage;
     }
@@ -133,7 +129,7 @@ export const fixBookUrlsInObject = (book: any): any => {
 
   // Fix audio URL if it exists
   if (fixedBook.audio_url) {
-    const fixedAudioUrl = fixSupabaseStorageUrl(fixedBook.audio_url, false);
+    const fixedAudioUrl = fixSupabaseStorageUrl(fixedBook.audio_url);
     if (fixedAudioUrl) {
       fixedBook.audio_url = fixedAudioUrl;
     }
@@ -180,17 +176,8 @@ main().catch(error => {
  * This can be helpful when troubleshooting URL format issues
  */
 export const runUrlFixer = async () => {
-  console.log('Starting URL fix operation...');
-  
   try {
     const result = await fixAllBookUrls();
-    
-    console.log('URL fix operation results:');
-    console.log(result.message);
-    console.log(`Success: ${result.success}`);
-    console.log(`Books fixed: ${result.fixed}`);
-    console.log(`Books failed: ${result.failed}`);
-    
     return result;
   } catch (error) {
     console.error('Error running URL fixer:', error);

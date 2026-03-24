@@ -11,7 +11,8 @@ import {
   Image,
 } from 'react-native';
 import { TextInput, Button } from 'react-native-paper';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { 
   login, 
   register, 
@@ -20,7 +21,6 @@ import {
   selectUser,
   selectHasCompletedOnboarding
 } from '../slices/authSlice';
-import { AppDispatch } from '../store';
 import { colors } from '../utils/theme';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -40,7 +40,7 @@ const AuthScreen: React.FC = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const isLoading = useSelector(selectIsLoading);
   const error = useSelector(selectError);
   const user = useSelector(selectUser);
@@ -48,19 +48,10 @@ const AuthScreen: React.FC = () => {
 
   // Effet pour surveiller les changements d'état
   useEffect(() => {
-    console.log('Auth state changed:', {
-      user,
-      hasCompletedOnboarding,
-      isLoading,
-      error
-    });
-
     if (user) {
       if (!hasCompletedOnboarding) {
-        console.log('Redirecting to Onboarding from AuthScreen');
         navigation.replace('Onboarding');
       } else {
-        console.log('Redirecting to Home from AuthScreen');
         navigation.replace('Home');
       }
     }

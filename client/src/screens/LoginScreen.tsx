@@ -119,16 +119,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
   };
 
-  // Monitorer les changements d'état pour le débogage
-  useEffect(() => {
-    console.log('Auth state updated:', {
-      user,
-      hasCompletedOnboarding: user?.has_completed_onboarding,
-      isLoading,
-      error
-    });
-  }, [user, isLoading, error]);
-
   const handleForgotPassword = () => {
     navigation.navigate('ForgotPassword');
   };
@@ -146,7 +136,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.logoContainer}>
-            <View style={styles.logoWrapper}>
+            <View style={styles.logoContainer}>
               <Image
                 source={require('../../assets/icon.png')}
                 style={styles.logo}
@@ -156,7 +146,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             <Text style={styles.tagline}>{t('home.welcomeBack')}</Text>
           </View>
 
-          <View style={styles.formCard}>
+          <View style={styles.formContainer}>
             <TextInput
               label={t('auth.email')}
               value={email}
@@ -177,7 +167,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               left={<TextInput.Icon icon="email-outline" color="#9317ED" />}
             />
             {emailError ? (
-              <HelperText type="error" visible={!!emailError} style={styles.errorText}>
+              <HelperText type="error" visible={!!emailError} >
                 {emailError}
               </HelperText>
             ) : null}
@@ -208,7 +198,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               }
             />
             {passwordError ? (
-              <HelperText type="error" visible={!!passwordError} style={styles.errorText}>
+              <HelperText type="error" visible={!!passwordError} >
                 {passwordError}
               </HelperText>
             ) : null}
@@ -234,9 +224,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               {t('auth.login')}
             </Button>
             
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <View style={styles.dividerLine} />
+            <View style={[styles.registerContainer, { marginTop: 24, marginBottom: 8 }]}>
+              <View style={{ flex: 1, height: 1, backgroundColor: '#E0E0E0' }} />
+              <Text style={[styles.registerText, { marginHorizontal: 16 }]}>ou</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: '#E0E0E0' }} />
             </View>
             
             <View style={styles.registerContainer}>

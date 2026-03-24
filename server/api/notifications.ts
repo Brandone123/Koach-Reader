@@ -2,8 +2,7 @@ import { Express, Request, Response } from "express";
 import { storage } from "../storage";
 import { asyncHandler } from "../utils/routeHandler";
 
-// Define allowed notification types to include 'reminder'
-type NotificationType = 'achievement' | 'challenge' | 'friend' | 'reading' | 'system' | 'reminder';
+type NotificationType = "achievement" | "challenge" | "system" | "friend_request";
 
 export function setupNotificationsRoutes(app: Express, verifyJWT: any) {
   // Get user notifications
@@ -37,7 +36,7 @@ export function setupNotificationsRoutes(app: Express, verifyJWT: any) {
     
     // Mark each notification as read
     for (const notification of notifications) {
-      if (!notification.isRead) {
+      if (!notification.is_read) {
         await storage.markNotificationAsRead(notification.id);
       }
     }
@@ -54,11 +53,12 @@ export function setupNotificationsRoutes(app: Express, verifyJWT: any) {
     }
     
     const notification = await storage.createNotification({
-      userId: req.user!.id,
-      type: "reminder" as NotificationType,
+      user_id: req.user!.id,
+      type: "system" as NotificationType,
       title: "Reading Reminder",
       message: `Time to continue reading "${bookTitle}"`,
-      relatedId: parseInt(bookId),
+      is_read: false,
+      related_id: parseInt(bookId),
     });
     
     res.status(201).json(notification);

@@ -20,7 +20,8 @@ import {
   Divider,
   FAB,
 } from 'react-native-paper';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
@@ -49,7 +50,7 @@ interface CommunityDetailScreenProps {
 
 const CommunityDetailScreen: React.FC<CommunityDetailScreenProps> = ({ navigation, route }) => {
   const { t } = useTranslation();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const { communityId } = route.params;
   
   const community = useSelector(selectCurrentCommunity);
@@ -132,7 +133,7 @@ const CommunityDetailScreen: React.FC<CommunityDetailScreenProps> = ({ navigatio
     );
   }
 
-  const communityColor = getCommunityColor(community.category);
+  const communityColor = getCommunityColor(community.category ?? '');
 
   return (
     <View style={styles.container}>
@@ -153,7 +154,7 @@ const CommunityDetailScreen: React.FC<CommunityDetailScreenProps> = ({ navigatio
               <View style={styles.communityHeader}>
                 <View style={[styles.communityIcon, { backgroundColor: communityColor }]}>
                   <MaterialCommunityIcons 
-                    name={getCommunityIcon(community.category)} 
+                    name={getCommunityIcon(community.category ?? '')} 
                     size={24} 
                     color="white" 
                   />
@@ -170,7 +171,7 @@ const CommunityDetailScreen: React.FC<CommunityDetailScreenProps> = ({ navigatio
                 <View style={styles.statItem}>
                   <MaterialCommunityIcons name="account-group" size={20} color="white" />
                   <Text style={styles.statText}>
-                    {community.member_count?.[0]?.count || 0} {t('communities.members')}
+                    {(Array.isArray(community.member_count) ? (community.member_count[0] as { count?: number })?.count : community.member_count) ?? 0} {t('communities.members')}
                   </Text>
                 </View>
                 <View style={styles.statItem}>

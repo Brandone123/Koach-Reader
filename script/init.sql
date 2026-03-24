@@ -194,22 +194,9 @@ ALTER TABLE public.challenges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.challenge_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.annotations ENABLE ROW LEVEL SECURITY;
 
--- Create the user profiles view
-CREATE OR REPLACE VIEW public.user_profiles AS
-SELECT 
-  id,
-  username,
-  avatar_url,
-  koach_points,
-  reading_streak,
-  is_premium
-FROM public.users;
-
--- Security barrier ensures better security for the view
-ALTER VIEW public.user_profiles SET (security_barrier = true);
-
--- No need for RLS policy on view, just make it accessible to all
-GRANT SELECT ON public.user_profiles TO PUBLIC;
+-- No public.user_profiles view: Supabase linter flags views that can expose auth
+-- metadata; this app reads profile fields from public.users under RLS only.
+-- See supabase-fix-user-profiles-security.sql to drop the view on existing projects.
 
 -- Create policies for all tables
 -- Users policies
@@ -227,7 +214,8 @@ CREATE POLICY "Books are viewable by everyone" ON public.books
   FOR SELECT USING (true);
 
 CREATE POLICY "Authenticated users can insert books" ON public.books
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+  FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() IS NOT NULL);
 
 -- Reading plans policies
 CREATE POLICY "Users can view own reading plans" ON public.reading_plans
@@ -304,12 +292,15 @@ CREATE POLICY "Users can delete own annotations" ON public.annotations
 
 -- Create functions for triggers
 CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$;
 
 -- Create function to handle new user
 CREATE OR REPLACE FUNCTION public.handle_new_user() 
@@ -456,20 +447,28 @@ CREATE TRIGGER on_auth_user_deleted
 
 -- Function to add koach points
 CREATE OR REPLACE FUNCTION public.add_koach_points(user_id uuid, points_to_add integer)
-RETURNS void AS $$
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   UPDATE public.users
   SET koach_points = COALESCE(koach_points, 0) + points_to_add
   WHERE id = user_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Function to increment book viewers
 CREATE OR REPLACE FUNCTION public.increment_book_viewers(book_id integer)
-RETURNS void AS $$
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   UPDATE public.books
   SET viewers = COALESCE(viewers, 0) + 1
   WHERE id = book_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER; 
+$$; 

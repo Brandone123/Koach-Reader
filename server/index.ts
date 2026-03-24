@@ -29,7 +29,7 @@ app.get("/health", async (req: Request, res: Response) => {
 const server = registerRoutes(app);
 
 // Start server
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 5000;
 server.listen(Number(PORT), () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });

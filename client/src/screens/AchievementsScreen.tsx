@@ -12,7 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { selectUser } from '@/slices/authSlice';
+import { selectUser } from '../slices/authSlice';
 
 const AchievementsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -21,10 +21,10 @@ const AchievementsScreen: React.FC = () => {
 
   const user = useSelector(selectUser);
 
-  const personalRecords = [
-    { id: 1, icon: '🔥', points: 388, title: 'Série record', date: '9 août 2025' },
-    { id: 2, icon: '🏆', points: '#10', title: 'Chez les pros', date: '26 nov. 2024' },
-    { id: 3, icon: '📚', points: 150, title: 'Max lecture', date: '15 oct. 2024' },
+  const personalRecords: { id: number; icon: string; points: number | string; title: string; date: string; unit?: string }[] = [
+    { id: 1, icon: '🔥', points: 388, title: 'Série record', date: '9 août 2025', unit: 'jours' },
+    { id: 2, icon: '🏆', points: '#10', title: 'Chez les pros', date: '26 nov. 2024', unit: 'rang' },
+    { id: 3, icon: '📚', points: 150, title: 'Max lecture', date: '15 oct. 2024', unit: 'pages' },
   ];
 
   // Distinctions liées à la lecture
@@ -291,7 +291,7 @@ const AchievementsScreen: React.FC = () => {
                 
                 {selectedAchievement.type === 'record' && (
                   <Text style={styles.achievementModalRecord}>
-                    {selectedAchievement.points} {selectedAchievement.unit}
+                    {selectedAchievement.points} {selectedAchievement.unit ?? ''}
                   </Text>
                 )}
                 
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: 'center',
   },
-  achievementModalPoints: {
+  achievementModalPointsSmall: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 8,

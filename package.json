@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node ./server/index-new.ts",
+    "dev": "ts-node ./server/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "init-db": "ts-node ./script/init-db.ts",
-    "setup-db": "node ./script/setup-db.js",
-    "start": "node dist/server/index-new.js",
+    "db:push-schema": "ts-node ./script/push-schema.ts",
+    "storage:test": "ts-node ./script/test-storage-access.ts",
+    "storage:cors": "node ./script/configure-supabase-cors.js",
+    "start": "node dist/server/index.js",
     "build": "tsc"
   },
   "keywords": [],

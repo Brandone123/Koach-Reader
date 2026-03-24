@@ -129,12 +129,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     if (isSubmitting) return;
     
     if (validateForm()) {
-      console.log('Starting registration for:', { username, email });
       setIsSubmitting(true);
       try {
         await dispatch(register({ username, email, password })).unwrap();
-        console.log('Registration API call successful');
-        
+
         // Afficher le message de succès
         Toast.show({
           type: 'success',
@@ -150,8 +148,6 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
         console.error('Registration failed:', err);
         setIsSubmitting(false);
       }
-    } else {
-      console.log('Form validation failed');
     }
   };
   
@@ -179,7 +175,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
               <Text style={styles.tagline}>{t('auth.joinCommunity')}</Text>
             </View>
             
-            <View style={styles.formContainer}>
+            <View style={styles.formCard}>
               <TextInput
                 label={t('auth.username')}
                 value={username}

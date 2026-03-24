@@ -19,19 +19,23 @@ export interface ReadingPlan {
   status: 'active' | 'completed' | 'paused';
   created_at: string;
   updated_at: string;
+  /** Enriched from join - total pages from book */
+  total_pages?: number;
+  /** Enriched from join - book details */
+  book?: { title?: string; author?: { name?: string } };
 }
 
 export interface ReadingSession {
   id: number;
   user_id: number;
   book_id: number;
-  reading_plan_id: number;
-  pagesRead: number;
-  minutesSpent: number;
-  sessionDate: string;
-  koachEarned: number;
+  reading_plan_id: number | null;
+  pages_read: number;
+  minutes_spent: number;
+  session_date: string;
+  koach_earned: number;
   notes?: string;
-  createdAt: string;
+  created_at: string;
 }
 
 interface ReadingPlansState {
@@ -81,186 +85,7 @@ const initialState: ReadingPlansState = {
   error: null,
 };
 
-// Mock API functions (to be replaced with real API calls)
-const readingPlansAPI = {
-  getReadingPlans: async (params: {} = {}): Promise<ReadingPlan[]> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simulated reading plans data
-    const plans: { [key: number]: ReadingPlan } = {
-      1: {
-        id: 1,
-        user_id: 1,
-        book_id: 1,
-        start_date: new Date().toISOString(),
-        end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-        current_page: 120,
-        daily_goal: 14,
-        status: 'active',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      2: {
-        id: 2,
-        user_id: 1,
-        book_id: 2,
-        start_date: new Date().toISOString(),
-        end_date: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString(),
-        current_page: 45,
-        daily_goal: 10,
-        status: 'active',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-    };
-    
-    return Object.values(plans);
-  },
-  
-  getReadingPlanById: async (planId: number): Promise<ReadingPlan> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simulated plan data
-    const plans: { [key: number]: ReadingPlan } = {
-      1: {
-        id: 1,
-        user_id: 1,
-        book_id: 1,
-        start_date: new Date().toISOString(),
-        end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-        current_page: 120,
-        daily_goal: 14,
-        status: 'active',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      2: {
-        id: 2,
-        user_id: 1,
-        book_id: 2,
-        start_date: new Date().toISOString(),
-        end_date: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString(),
-        current_page: 45,
-        daily_goal: 10,
-        status: 'active',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-    };
-    
-    const plan = plans[planId];
-    
-    if (!plan) {
-      throw new Error('Reading plan not found');
-    }
-    
-    return plan;
-  },
-  
-  createReadingPlan: async (planData: CreatePlanData): Promise<ReadingPlan> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simulated API response
-    return {
-      id: Math.floor(Math.random() * 1000), // Simulated ID
-      user_id: 1, // Assuming the current user's ID
-      book_id: planData.book_id,
-      start_date: planData.startDate,
-      end_date: planData.endDate,
-      current_page: 0,
-      daily_goal: planData.pagesPerSession,
-      status: 'active',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-  },
-  
-  updateReadingPlan: async (planData: UpdatePlanData): Promise<ReadingPlan> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // For simplicity, we'll return a mock updated plan
-    return {
-      id: planData.id,
-      user_id: 1,
-      book_id: 1,
-      start_date: planData.startDate || new Date().toISOString(),
-      end_date: planData.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      current_page: planData.currentPage || 0,
-      daily_goal: planData.pagesPerSession || 10,
-      status: 'active',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-  },
-  
-  logReadingSession: async (sessionData: LogSessionData): Promise<ReadingSession> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Calculate Koach points (simple formula: 1 point per page)
-    const koachEarned = sessionData.pagesRead;
-    
-    // Simulated API response
-    return {
-      id: Math.floor(Math.random() * 1000), // Simulated ID
-      user_id: 1, // Assuming the current user's ID
-      book_id: sessionData.book_id,
-      reading_plan_id: sessionData.reading_plan_id || null,
-      pagesRead: sessionData.pagesRead,
-      minutesSpent: sessionData.minutesSpent || 0,
-      sessionDate: new Date().toISOString(),
-      koachEarned,
-      notes: sessionData.notes,
-      createdAt: new Date().toISOString(),
-    };
-  },
-  
-  getReadingSessions: async (): Promise<ReadingSession[]> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simulated reading sessions
-    return [
-      {
-        id: 1,
-        user_id: 1,
-        book_id: 1,
-        reading_plan_id: 1,
-        pagesRead: 14,
-        minutesSpent: 30,
-        sessionDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        koachEarned: 14,
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: 2,
-        user_id: 1,
-        book_id: 1,
-        reading_plan_id: 1,
-        pagesRead: 15,
-        minutesSpent: 35,
-        sessionDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        koachEarned: 15,
-        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: 3,
-        user_id: 1,
-        book_id: 2,
-        reading_plan_id: 2,
-        pagesRead: 10,
-        minutesSpent: 25,
-        sessionDate: new Date().toISOString(),
-        koachEarned: 10,
-        createdAt: new Date().toISOString(),
-      },
-    ];
-  },
-};
+// Real API only: use Supabase directly, no local mock data.
 
 // Async thunks
 export const fetchReadingPlans = createAsyncThunk(
@@ -366,10 +191,20 @@ export const updateReadingProgress = createAsyncThunk(
 
 export const fetchReadingSessions = createAsyncThunk(
   'readingPlans/fetchReadingSessions',
-  async (_, { rejectWithValue }) => {
+  async (_, { getState, rejectWithValue }) => {
     try {
-      const sessions = await readingPlansAPI.getReadingSessions();
-      return sessions;
+      const state = getState() as RootState;
+      const user = state.auth.user;
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from('reading_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as ReadingSession[];
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
@@ -380,17 +215,47 @@ export const logReadingSession = createAsyncThunk(
   'readingPlans/logReadingSession',
   async (sessionData: LogSessionData, { rejectWithValue, getState }) => {
     try {
-      const session = await readingPlansAPI.logReadingSession(sessionData);
+      const state = getState() as RootState;
+      const user = state.auth.user;
+      if (!user) {
+        return rejectWithValue('User not authenticated');
+      }
+
+      const koachEarned = sessionData.pagesRead;
+      const sessionPayload = {
+        user_id: user.id,
+        book_id: sessionData.book_id,
+        reading_plan_id: sessionData.reading_plan_id ?? null,
+        pages_read: sessionData.pagesRead,
+        minutes_spent: sessionData.minutesSpent ?? 0,
+        koach_earned: koachEarned,
+        session_date: new Date().toISOString(),
+      };
+
+      const { data: session, error: sessionError } = await supabase
+        .from('reading_sessions')
+        .insert(sessionPayload)
+        .select('*')
+        .single();
+
+      if (sessionError) throw sessionError;
       
       // If this session is part of a reading plan, we'll also need to update the plan's currentPage
       if (sessionData.reading_plan_id) {
-        const state = getState() as RootState;
         const plan = state.readingPlans.plans.find(p => p.id === sessionData.reading_plan_id);
         
         if (plan) {
           const updatedCurrentPage = plan.current_page + sessionData.pagesRead;
-          // In a real application, we would call an API to update the plan
-          // For now, we'll just include this information to be handled in the reducer
+
+          await supabase
+            .from('reading_plans')
+            .update({
+              current_page: updatedCurrentPage,
+              last_read_date: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', sessionData.reading_plan_id);
+
           return { session, planId: sessionData.reading_plan_id, updatedCurrentPage };
         }
       }

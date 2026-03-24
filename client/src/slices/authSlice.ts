@@ -3,10 +3,12 @@ import { RootState } from '../store';
 import { supabase } from '../lib/supabase';
 
 // Types
-interface User {
+export interface User {
   id: string;
   email: string;
   username: string;
+  avatar_url?: string | null;
+  books_completed?: number;
   is_premium: boolean;
   koach_points: number;
   reading_streak: number;
@@ -53,8 +55,6 @@ export const login = createAsyncThunk(
   'auth/login',
   async (credentials: LoginCredentials, { rejectWithValue }) => {
     try {
-      console.log('Starting login process...');
-      
       const { data: { user }, error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password,
@@ -73,8 +73,6 @@ export const login = createAsyncThunk(
         .single();
 
       if (profileError) throw profileError;
-
-      console.log('User profile fetched:', profile);
 
       return profile;
     } catch (error: any) {
@@ -188,7 +186,15 @@ export const updateUserPreferences = createAsyncThunk(
 const authSlice = createSlice({
   name: 'auth',
   initialState,
-  reducers: {},
+  reducers: {
+    setLanguage: (state, action) => {
+      if (!state.user) return;
+      state.user.preferences = {
+        ...(state.user.preferences || {}),
+        language: action.payload,
+      };
+    },
+  },
   extraReducers: (builder) => {
     // Login
     builder
@@ -197,11 +203,9 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(login.fulfilled, (state, action) => {
-        console.log('Login fulfilled with payload:', action.payload);
         state.isLoading = false;
         state.user = action.payload;
         state.error = null;
-        console.log('New state after login:', state);
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
@@ -264,4 +268,6 @@ export const selectError = (state: RootState) => state.auth.error;
 export const selectHasCompletedOnboarding = (state: RootState) => 
   state.auth.user?.has_completed_onboarding ?? false;
 
+export const updatePreferences = updateUserPreferences;
+export const { setLanguage } = authSlice.actions;
 export default authSlice.reducer;

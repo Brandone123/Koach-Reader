@@ -20,7 +20,8 @@ import {
   Divider,
   FAB,
 } from 'react-native-paper';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
@@ -49,7 +50,7 @@ interface GroupDetailScreenProps {
 
 const ReadingGroupDetailScreen: React.FC<GroupDetailScreenProps> = ({ navigation, route }) => {
   const { t } = useTranslation();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const { groupId } = route.params;
   
   const group = useSelector(selectCurrentGroup);
@@ -124,7 +125,7 @@ const ReadingGroupDetailScreen: React.FC<GroupDetailScreenProps> = ({ navigation
                 <View style={styles.statItem}>
                   <MaterialCommunityIcons name="account-group" size={20} color="white" />
                   <Text style={styles.statText}>
-                    {group.member_count?.[0]?.count || 0} {t('groups.members')}
+                    {(Array.isArray(group.member_count) ? (group.member_count[0] as { count?: number })?.count : group.member_count) ?? 0} {t('groups.members')}
                   </Text>
                 </View>
                 {group.current_book && (

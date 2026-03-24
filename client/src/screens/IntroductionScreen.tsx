@@ -104,7 +104,7 @@ const IntroductionScreen: React.FC<IntroductionScreenProps> = ({
   const renderSlide = (slide: IntroSlide, index: number) => (
     <View key={slide.id} style={[styles.slide, { width }]}>
       <LinearGradient
-        colors={slide.gradientColors}
+        colors={slide.gradientColors as [string, string, ...string[]]}
         style={styles.slideGradient}
       >
         {/* Language Selector */}

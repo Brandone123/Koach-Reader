@@ -19,7 +19,7 @@ const BookCard: React.FC<BookCardProps> = ({ book, onPress, style }) => {
         />
         <Card.Content style={styles.content}>
           <Title numberOfLines={2} style={styles.title}>{book.title}</Title>
-          <Paragraph numberOfLines={1} style={styles.author}>{book.author}</Paragraph>
+          <Paragraph numberOfLines={1} style={styles.author}>{typeof book.author === 'object' ? book.author?.name : String(book.author ?? '')}</Paragraph>
           
           <View style={styles.stats}>
             <View style={styles.stat}>

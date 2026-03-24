@@ -11,10 +11,10 @@ import {
   Chip
 } from 'react-native-paper';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { createCommunity } from '../slices/communitiesSlice';
 import { selectUser } from '../slices/authSlice';
-import { AppDispatch } from '../store';
 import { useTranslation } from 'react-i18next';
 
 interface CreateCommunityDialogProps {
@@ -39,7 +39,7 @@ const CreateCommunityDialog: React.FC<CreateCommunityDialogProps> = ({
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const user = useSelector(selectUser);
   
   const [name, setName] = useState('');

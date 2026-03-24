@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, ScrollView, Text, Switch as RNSwitch, Platform } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../../App';
-import { AppDispatch } from '../store';
+import { RootStackParamList } from '../navigation/types';
 import { 
   Card, 
   Title, 
@@ -42,7 +42,7 @@ interface SettingsScreenProps {
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { t } = useTranslation();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const user = useSelector(selectUser);
   
   // Default preferences if user has none
@@ -67,13 +67,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   
   const updatePreference = (path: string, value: string | boolean | number) => {
     // Deep update of nested preferences
-    const newPreferences = { ...preferences };
+    const newPreferences: any = { ...preferences };
     const pathParts = path.split('.');
     
     if (pathParts.length === 1) {
       newPreferences[path] = value;
     } else {
-      let current = newPreferences;
+      let current: any = newPreferences;
       for (let i = 0; i < pathParts.length - 1; i++) {
         current = current[pathParts[i]];
       }
@@ -85,7 +85,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   };
   
   const savePreferences = () => {
-    dispatch(updatePreferences({ preferences }));
+    dispatch(updatePreferences(preferences as any));
     setHasUnsavedChanges(false);
   };
   

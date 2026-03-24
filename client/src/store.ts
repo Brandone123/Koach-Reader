@@ -8,6 +8,7 @@ import freeQuarterlyBooksReducer from './slices/freeQuarterlyBooksSlice';
 import categoriesReducer from './slices/categoriesSlice';
 import readingGroupsReducer from './slices/readingGroupsSlice';
 import communitiesReducer from './slices/communitiesSlice';
+import notificationsReducer from './slices/notificationsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -20,11 +21,8 @@ export const store = configureStore({
     freeQuarterlyBooks: freeQuarterlyBooksReducer,
     readingGroups: readingGroupsReducer,
     communities: communitiesReducer,
+    notifications: notificationsReducer,
   },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
-      serializableCheck: false,
-    }),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

@@ -6,34 +6,30 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  ScrollView,
   Image,
-  Modal
+  Platform,
 } from 'react-native';
-import {
-  Card,
-  Title,
-  Paragraph,
-  Appbar,
-  Button,
-  Avatar,
-  Chip,
-  Searchbar,
-  Divider,
-  Portal,
-  Surface,
-  IconButton,
-  RadioButton
-} from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch } from '../store';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { selectUser } from '../slices/authSlice';
-import { fetchApi } from '../utils/api';
-import { mockFetchApi } from '../utils/mockApi';
-import { LinearGradient } from 'expo-linear-gradient';
-import { fetchLeaderboard, selectLeaderboard, selectIsLoading } from '../slices/koachSlice';
+import {
+  fetchLeaderboard,
+  fetchBookLeaderboard,
+  selectLeaderboard,
+  selectBookLeaderboard,
+  selectLeaderboardLoading,
+  selectBookLeaderboardLoading,
+  type LeaderboardEntry,
+  type BookLeaderboardEntry,
+} from '../slices/koachSlice';
+import { selectBooks } from '../slices/booksSlice';
+import { fetchBooks } from '../slices/booksSlice';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Chip, Menu } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 type LeaderboardScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Leaderboard'>;
 
@@ -41,212 +37,241 @@ interface LeaderboardScreenProps {
   navigation: LeaderboardScreenNavigationProp;
 }
 
+type TabType = 'general' | 'book';
+
 const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ navigation }) => {
-  const dispatch = useDispatch<AppDispatch>();
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const currentUser = useSelector(selectUser);
+  const leaderboard = useSelector(selectLeaderboard);
+  const bookLeaderboard = useSelector(selectBookLeaderboard);
+  const leaderboardLoading = useSelector(selectLeaderboardLoading);
+  const bookLeaderboardLoading = useSelector(selectBookLeaderboardLoading);
+  const books = useSelector(selectBooks);
 
-  // Dummy data pour le livre en cours
-  const currentBook = {
-    title: "L'Étranger",
-    author: "Albert Camus",
-    totalPages: 123,
-    category: "Littérature française",
-    coverUrl: "https://amjodckmmxmpholspskm.supabase.co/storage/v1/object/public/covers/book.jpg"
-  };
-
-  // Dummy data étendu - 20 lecteurs
-  const leaderboardData = [
-    { id: 1, username: "Aminata Diallo", country: "🇸🇳", booksRead: 47, koachPoints: 2850, badge: "Baobab de Sagesse", badgeLevel: "gold", currentPage: 89, readingStreak: 15, isCurrentUser: false },
-    { id: 2, username: "Kwame Asante", country: "🇬🇭", booksRead: 32, koachPoints: 2100, badge: "Griot Numérique", badgeLevel: "silver", currentPage: 76, readingStreak: 12, isCurrentUser: false },
-    { id: 3, username: "Brandone Sape", country: "🇨🇲", booksRead: 28, koachPoints: 1890, badge: "Sage des Mots", badgeLevel: "silver", currentPage: 65, readingStreak: 8, isCurrentUser: true },
-    { id: 4, username: "Omar Benali", country: "🇲🇦", booksRead: 23, koachPoints: 1650, badge: "Gardien des Récits", badgeLevel: "bronze", currentPage: 58, readingStreak: 5, isCurrentUser: false },
-    { id: 5, username: "Aisha Mwangi", country: "🇰🇪", booksRead: 19, koachPoints: 1420, badge: "Explorateur Littéraire", badgeLevel: "bronze", currentPage: 45, readingStreak: 3, isCurrentUser: false },
-    { id: 6, username: "Moussa Traoré", country: "🇧🇫", booksRead: 15, koachPoints: 1200, badge: "Apprenti Lecteur", badgeLevel: "beginner", currentPage: 32, readingStreak: 2, isCurrentUser: false },
-    { id: 7, username: "Khadija Ouali", country: "🇹🇳", booksRead: 21, koachPoints: 1580, badge: "Gardien des Récits", badgeLevel: "bronze", currentPage: 67, readingStreak: 7, isCurrentUser: false },
-    { id: 8, username: "Sekou Touré", country: "🇬🇳", booksRead: 18, koachPoints: 1350, badge: "Explorateur Littéraire", badgeLevel: "bronze", currentPage: 41, readingStreak: 4, isCurrentUser: false },
-    { id: 9, username: "Mariam Kone", country: "🇨🇮", booksRead: 25, koachPoints: 1750, badge: "Sage des Mots", badgeLevel: "silver", currentPage: 72, readingStreak: 9, isCurrentUser: false },
-    { id: 10, username: "Youssef Alami", country: "��", booksRead: 16, koachPoints: 1180, badge: "Apprenti Lecteur", badgeLevel: "beginner", currentPage: 38, readingStreak: 3, isCurrentUser: false },
-    { id: 11, username: "Awa Diop", country: "🇸🇳", booksRead: 22, koachPoints: 1620, badge: "Gardien des Récits", badgeLevel: "bronze", currentPage: 55, readingStreak: 6, isCurrentUser: false },
-    { id: 12, username: "Ibrahim Sow", country: "🇲🇷", booksRead: 14, koachPoints: 1050, badge: "Apprenti Lecteur", badgeLevel: "beginner", currentPage: 29, readingStreak: 2, isCurrentUser: false },
-    { id: 13, username: "Zara Okafor", country: "🇳🇬", booksRead: 20, koachPoints: 1480, badge: "Explorateur Littéraire", badgeLevel: "bronze", currentPage: 48, readingStreak: 5, isCurrentUser: false },
-    { id: 14, username: "Adama Sanogo", country: "🇲🇱", booksRead: 17, koachPoints: 1280, badge: "Apprenti Lecteur", badgeLevel: "beginner", currentPage: 35, readingStreak: 4, isCurrentUser: false },
-    { id: 15, username: "Leila Mansouri", country: "🇪🇬", booksRead: 24, koachPoints: 1720, badge: "Sage des Mots", badgeLevel: "silver", currentPage: 69, readingStreak: 8, isCurrentUser: false },
-    { id: 16, username: "Kofi Mensah", country: "🇬🇭", booksRead: 13, koachPoints: 980, badge: "Apprenti Lecteur", badgeLevel: "beginner", currentPage: 26, readingStreak: 1, isCurrentUser: false },
-    { id: 17, username: "Amina Bello", country: "🇳🇪", booksRead: 19, koachPoints: 1410, badge: "Explorateur Littéraire", badgeLevel: "bronze", currentPage: 44, readingStreak: 3, isCurrentUser: false },
-    { id: 18, username: "Mamadou Ba", country: "🇸🇳", booksRead: 12, koachPoints: 890, badge: "Apprenti Lecteur", badgeLevel: "beginner", currentPage: 23, readingStreak: 2, isCurrentUser: false },
-    { id: 19, username: "Fatoumata Camara", country: "��", booksRead: 16, koachPoints: 1150, badge: "Apprenti Lecteur", badgeLevel: "beginner", currentPage: 31, readingStreak: 3, isCurrentUser: false },
-    { id: 20, username: "Abdou Ndiaye", country: "🇸🇳", booksRead: 11, koachPoints: 820, badge: "Apprenti Lecteur", badgeLevel: "beginner", currentPage: 19, readingStreak: 1, isCurrentUser: false }
-  ];
+  const [activeTab, setActiveTab] = useState<TabType>('general');
+  const [selectedBookId, setSelectedBookId] = useState<number | null>(null);
+  const [bookMenuVisible, setBookMenuVisible] = useState(false);
 
   useEffect(() => {
-    navigation.setOptions({
-      headerShown: false,
-    });
+    navigation.setOptions({ headerShown: false });
+    dispatch(fetchLeaderboard() as any);
+    dispatch(fetchBooks() as any);
   }, [navigation]);
 
-  const getBadgeColor = (level) => {
-    switch(level) {
-      case 'gold': return '#FFD700';
-      case 'silver': return '#C0C0C0';
-      case 'bronze': return '#CD7F32';
-      case 'beginner': return '#4CAF50';
-      default: return '#9E9E9E';
+  useEffect(() => {
+    if (activeTab === 'book' && selectedBookId) {
+      dispatch(fetchBookLeaderboard(selectedBookId) as any);
     }
+  }, [activeTab, selectedBookId]);
+
+  const selectedBook = books.find((b) => b.id === selectedBookId);
+  const displayBookTitle = selectedBook?.title ?? t('leaderboard.selectBook', 'Sélectionner un livre');
+
+  const getRankStyle = (rank: number) => {
+    if (rank === 1) return { color: '#FFD700', fontSize: 18 };
+    if (rank === 2) return { color: '#C0C0C0', fontSize: 17 };
+    if (rank === 3) return { color: '#CD7F32', fontSize: 16 };
+    return {};
   };
 
-  const getBadgeIcon = (level) => {
-    switch(level) {
-      case 'gold': return 'crown';
-      case 'silver': return 'medal';
-      case 'bronze': return 'trophy-variant';
-      case 'beginner': return 'book-open';
-      default: return 'book';
-    }
-  };
-
-  const getRankIcon = (index) => {
-    switch(index) {
-      case 0: return 'trophy';
-      case 1: return 'medal';
-      case 2: return 'trophy-variant';
-      default: return null;
-    }
-  };
-
-  const renderLeaderboardItem = ({ item, index }) => {
-    const progressPercentage = (item.currentPage / currentBook.totalPages) * 100;
-    const isTopThree = index < 3;
-
+  const renderGeneralItem = ({ item, index }: { item: LeaderboardEntry; index: number }) => {
+    const isCurrentUser = String(item.userId) === String(currentUser?.id);
     return (
-      <View style={[
-        styles.leaderboardItem,
-        item.isCurrentUser && styles.currentUserItem,
-        isTopThree && styles.topThreeItem
-      ]}>
-        {/* Rang */}
-        <View style={styles.rankContainer}>
-          {isTopThree ? (
-            <View style={[styles.rankBadge, { backgroundColor: getBadgeColor(index === 0 ? 'gold' : index === 1 ? 'silver' : 'bronze') }]}>
-              <Icon 
-                name={getRankIcon(index)} 
-                size={16} 
-                color="#FFFFFF" 
-              />
-            </View>
-          ) : (
-            <Text style={styles.rankText}>{index + 1}</Text>
-          )}
+      <View style={[styles.card, isCurrentUser && styles.currentUserCard]}>
+        <View style={[styles.rankBadge, item.rank <= 3 && styles.topRankBadge]}>
+          <Text style={[styles.rankText, getRankStyle(item.rank)]}>{item.rank}</Text>
         </View>
-
-        {/* Avatar + Drapeau */}
-        <View style={styles.avatarSection}>
-          <View style={[styles.userAvatar, { backgroundColor: getBadgeColor(item.badgeLevel) }]}>
-            <Text style={styles.avatarText}>
-              {item.username.split(' ').map(n => n[0]).join('')}
-            </Text>
+        {item.avatarUrl ? (
+          <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+        ) : (
+          <View style={[styles.avatar, styles.avatarPlaceholder]}>
+            <Text style={styles.avatarText}>{item.username.charAt(0).toUpperCase()}</Text>
           </View>
-          <Text style={styles.countryFlag}>{item.country}</Text>
-        </View>
-
-        {/* Infos principales */}
-        <View style={styles.mainInfo}>
-          {/* Ligne 1: Nom + Points */}
-          <View style={styles.topRow}>
-            <View style={styles.nameContainer}>
-              <Text style={[styles.username, item.isCurrentUser && styles.currentUserText]} numberOfLines={1}>
-                {item.username}
-              </Text>
-              {item.isCurrentUser && (
-                <View style={styles.youBadge}>
-                  <Text style={styles.youText}>Vous</Text>
-                </View>
-              )}
+        )}
+        <View style={styles.cardContent}>
+          <Text style={styles.username} numberOfLines={1}>
+            {item.username}
+            {isCurrentUser && (
+              <Text style={styles.youBadge}> {t('leaderboard.you', '(vous)')}</Text>
+            )}
+          </Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statChip}>
+              <Icon name="star" size={14} color="#8A2BE2" />
+              <Text style={styles.statText}>{item.points} pts</Text>
             </View>
-            <View style={styles.pointsSection}>
-              <Text style={styles.koachPoints}>{item.koachPoints.toLocaleString()}</Text>
-              <Text style={styles.koachLabel}>KP</Text>
-            </View>
-          </View>
-          
-          {/* Ligne 2: Badge + Stats */}
-          <View style={styles.bottomRow}>
-            <View style={styles.badgeContainer}>
-              <Icon 
-                name={getBadgeIcon(item.badgeLevel)} 
-                size={14} 
-                color={getBadgeColor(item.badgeLevel)} 
-              />
-              <Text style={styles.badgeText} numberOfLines={1}>{item.badge}</Text>
-            </View>
-            <View style={styles.statsContainer}>
-              <Text style={styles.statText}>{item.booksRead} livres</Text>
-              <Text style={styles.statDivider}>•</Text>
-              <Text style={styles.statText}>{item.readingStreak}j 🔥</Text>
-            </View>
-          </View>
-          
-          {/* Ligne 3: Progression */}
-          <View style={styles.progressRow}>
-            <View style={styles.progressBarBackground}>
-              <View 
-                style={[
-                  styles.progressBarFill, 
-                  { 
-                    width: `${progressPercentage}%`,
-                    backgroundColor: getBadgeColor(item.badgeLevel)
-                  }
-                ]} 
-              />
-            </View>
-            <Text style={styles.progressText}>
-              {item.currentPage}/{currentBook.totalPages}
-            </Text>
+            {(item.booksCompleted ?? 0) > 0 && (
+              <View style={styles.statChip}>
+                <Icon name="book-open-variant" size={14} color="#2196F3" />
+                <Text style={styles.statText}>{item.booksCompleted}</Text>
+              </View>
+            )}
+            {(item.badgesCount ?? 0) > 0 && (
+              <View style={styles.statChip}>
+                <Icon name="medal" size={14} color="#FF9800" />
+                <Text style={styles.statText}>{item.badgesCount}</Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
     );
   };
 
-  return (
-    <View style={styles.container}>
-      {/* Header compact */}
-      <View style={styles.headerSection}>
-        <View style={styles.headerTop}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Icon name="arrow-left" size={22} color="#333" />
-          </TouchableOpacity>
-          
-          <View style={styles.headerContent}>
-            <Text style={styles.title}>Classement</Text>
-            <Text style={styles.subtitle}>{leaderboardData.length} lecteurs actifs</Text>
-          </View>
+  const renderBookItem = ({ item }: { item: BookLeaderboardEntry }) => {
+    const isCurrentUser = String(item.userId) === String(currentUser?.id);
+    const progressPct = selectedBook?.total_pages
+      ? Math.round((item.currentPage / selectedBook.total_pages) * 100)
+      : 0;
+    return (
+      <View style={[styles.card, isCurrentUser && styles.currentUserCard]}>
+        <View style={[styles.rankBadge, item.rank <= 3 && styles.topRankBadge]}>
+          <Text style={[styles.rankText, getRankStyle(item.rank)]}>{item.rank}</Text>
         </View>
-
-        {/* Book info compact */}
-        <View style={styles.bookCard}>
-          <Image 
-            source={{ uri: currentBook.coverUrl }}
-            style={styles.bookCover}
-          />
-          <View style={styles.bookInfo}>
-            <Text style={styles.bookTitle} numberOfLines={1}>{currentBook.title}</Text>
-            <Text style={styles.bookAuthor}>par {currentBook.author}</Text>
-            <Text style={styles.bookPages}>{currentBook.totalPages} pages • {currentBook.category}</Text>
+        {item.avatarUrl ? (
+          <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+        ) : (
+          <View style={[styles.avatar, styles.avatarPlaceholder]}>
+            <Text style={styles.avatarText}>{item.username.charAt(0).toUpperCase()}</Text>
+          </View>
+        )}
+        <View style={styles.cardContent}>
+          <Text style={styles.username} numberOfLines={1}>
+            {item.username}
+            {isCurrentUser && (
+              <Text style={styles.youBadge}> {t('leaderboard.you', '(vous)')}</Text>
+            )}
+          </Text>
+          <View style={styles.progressRow}>
+            {item.isCompleted ? (
+              <Chip icon="check-circle" compact style={styles.completedChip}>
+                {t('leaderboard.completed', 'Terminé')}
+              </Chip>
+            ) : (
+              <>
+                <Text style={styles.pageText}>
+                  {item.currentPage} / {selectedBook?.total_pages ?? '?'} {t('leaderboard.pages', 'pages')}
+                </Text>
+                <View style={styles.progressBar}>
+                  <View style={[styles.progressFill, { width: `${Math.min(progressPct, 100)}%` }]} />
+                </View>
+              </>
+            )}
           </View>
         </View>
       </View>
+    );
+  };
 
-      {/* Liste du classement */}
-      <FlatList
-        data={leaderboardData}
-        renderItem={renderLeaderboardItem}
-        keyExtractor={item => item.id.toString()}
-        contentContainerStyle={styles.leaderboardList}
-        showsVerticalScrollIndicator={false}
-      />
+  const showLoading = activeTab === 'general' ? leaderboardLoading : bookLeaderboardLoading;
+  const emptyMessage =
+    activeTab === 'general'
+      ? t('leaderboard.noData', 'Aucun classement pour le moment.')
+      : t('leaderboard.noReaders', 'Aucun lecteur pour ce livre.');
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Icon name="arrow-left" size={24} color="#1a1a2e" />
+        </TouchableOpacity>
+        <Text style={styles.title}>{t('leaderboard.title', 'Classement')}</Text>
+        <View style={{ width: 24 }} />
+      </View>
+
+      <View style={styles.tabs}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'general' && styles.tabActive]}
+          onPress={() => setActiveTab('general')}
+        >
+          <Icon name="trophy" size={20} color={activeTab === 'general' ? '#fff' : '#666'} />
+          <Text style={[styles.tabText, activeTab === 'general' && styles.tabTextActive]}>
+            {t('leaderboard.general', 'Général')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'book' && styles.tabActive]}
+          onPress={() => setActiveTab('book')}
+        >
+          <Icon name="book" size={20} color={activeTab === 'book' ? '#fff' : '#666'} />
+          <Text style={[styles.tabText, activeTab === 'book' && styles.tabTextActive]}>
+            {t('leaderboard.byBook', 'Par livre')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {activeTab === 'book' && (
+        <View style={styles.bookSelector}>
+          <Menu
+            visible={bookMenuVisible}
+            onDismiss={() => setBookMenuVisible(false)}
+            anchor={
+              <TouchableOpacity
+                style={styles.bookSelectorBtn}
+                onPress={() => setBookMenuVisible(true)}
+              >
+                <Icon name="book-open-page-variant" size={20} color="#8A2BE2" />
+                <Text style={styles.bookSelectorText} numberOfLines={1}>
+                  {displayBookTitle}
+                </Text>
+                <Icon name="menu-down" size={20} color="#666" />
+              </TouchableOpacity>
+            }
+          >
+            <ScrollView style={{ maxHeight: 300 }}>
+              {books.length === 0 ? (
+                <Text style={styles.menuEmpty}>{t('leaderboard.noBooks', 'Aucun livre disponible')}</Text>
+              ) : (
+                books.map((b) => (
+                  <Menu.Item
+                    key={b.id}
+                    onPress={() => {
+                      setSelectedBookId(b.id);
+                      setBookMenuVisible(false);
+                    }}
+                    title={b.title}
+                    titleStyle={selectedBookId === b.id ? styles.menuItemSelected : undefined}
+                  />
+                ))
+              )}
+            </ScrollView>
+          </Menu>
+        </View>
+      )}
+
+      {showLoading ? (
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color="#8A2BE2" />
+        </View>
+      ) : activeTab === 'book' && !selectedBookId ? (
+        <View style={styles.empty}>
+          <Icon name="book-outline" size={64} color="#ccc" />
+          <Text style={styles.emptyText}>{t('leaderboard.selectBookHint', 'Sélectionnez un livre pour voir le classement')}</Text>
+        </View>
+      ) : (activeTab === 'general' && leaderboard.length === 0) ||
+        (activeTab === 'book' && bookLeaderboard.length === 0) ? (
+        <View style={styles.empty}>
+          <Icon name="trophy-outline" size={64} color="#ccc" />
+          <Text style={styles.emptyText}>{emptyMessage}</Text>
+        </View>
+      ) : activeTab === 'general' ? (
+        <FlatList<LeaderboardEntry>
+          data={leaderboard}
+          renderItem={renderGeneralItem}
+          keyExtractor={(item) => String(item.userId)}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : (
+        <FlatList<BookLeaderboardEntry>
+          data={bookLeaderboard}
+          renderItem={renderBookItem}
+          keyExtractor={(item) => String(item.userId)}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </View>
   );
 };
@@ -254,293 +279,201 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ navigation }) => 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#f8f9fa',
   },
-  
-  // Header compact
-  headerSection: {
-    backgroundColor: '#FFFFFF',
-    paddingTop: 50,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  headerTop: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 14,
+    paddingTop: Platform.OS === 'ios' ? 50 : 40,
+    paddingBottom: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
-  backButton: {
-    padding: 6,
-    marginRight: 10,
-    borderRadius: 6,
-    backgroundColor: '#F8F9FA',
-  },
-  headerContent: {
-    flex: 1,
+  backBtn: {
+    marginRight: 12,
+    padding: 4,
   },
   title: {
     fontSize: 22,
-    fontWeight: '800',
-    color: '#333333',
-    marginBottom: 2,
-  },
-  subtitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#9317ED',
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-
-  // Book card compact avec icônes
-  bookCard: {
-    flexDirection: 'row',
-    backgroundColor: '#9317ED',
-    marginHorizontal: 16,
-    padding: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  bookCover: {
-    width: 42,
-    height: 58,
-    borderRadius: 4,
-    marginRight: 10,
-  },
-  bookInfo: {
-    flex: 1,
-  },
-  bookTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
-  },
-  bookTitle: {
-    fontSize: 14,
     fontWeight: '700',
-    color: '#ffffffff',
-    marginLeft: 4,
+    color: '#1a1a2e',
+  },
+  tabs: {
+    flexDirection: 'row',
+    padding: 12,
+    gap: 8,
+    backgroundColor: '#fff',
+  },
+  tab: {
     flex: 1,
-  },
-  bookAuthor: {
-    fontSize: 11,
-    color: '#ffffffff',
-    marginBottom: 4,
-  },
-  bookMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  bookPages: {
-    fontSize: 10,
-    color: '#ffffffff',
-    marginLeft: 2,
-  },
-  bookDivider: {
-    fontSize: 10,
-    color: '#999999',
-    marginHorizontal: 4,
-  },
-  bookCategory: {
-    fontSize: 10,
-    color: '#666666',
-    marginLeft: 2,
-    flex: 1,
-  },
-
-  // Leaderboard optimisé - pas de débordement
-  leaderboardList: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 100,
-  },
-  leaderboardItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    marginBottom: 6,
-    backgroundColor: '#ffffffff',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  currentUserItem: {
-    backgroundColor: 'rgba(147, 23, 237, 0.03)',
-    borderColor: '#9317ED',
-    borderWidth: 1.5,
-  },
-  topThreeItem: {
-    backgroundColor: '#FAFBFC',
-  },
-
-  // Rang compact
-  rankContainer: {
-    width: 26,
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  rankBadge: {
-    width: 24,
-    height: 24,
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
     borderRadius: 12,
+    backgroundColor: '#f0f0f0',
+  },
+  tabActive: {
+    backgroundColor: '#8A2BE2',
+  },
+  tabText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#666',
+  },
+  tabTextActive: {
+    color: '#fff',
+  },
+  bookSelector: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    backgroundColor: '#fff',
+  },
+  bookSelectorBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 14,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  bookSelectorText: {
+    flex: 1,
+    fontSize: 15,
+    color: '#333',
+  },
+  menuEmpty: {
+    padding: 16,
+    color: '#999',
+  },
+  menuItemSelected: {
+    fontWeight: '700',
+    color: '#8A2BE2',
+  },
+  loading: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  rankText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#666666',
-  },
-
-  // Avatar section réduite
-  avatarSection: {
+  empty: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
-    width: 36,
+    padding: 32,
   },
-  userAvatar: {
+  emptyText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#888',
+    textAlign: 'center',
+  },
+  list: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    marginBottom: 10,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6 },
+      android: { elevation: 3 },
+    }),
+  },
+  currentUserCard: {
+    borderWidth: 2,
+    borderColor: '#8A2BE2',
+    backgroundColor: '#faf5ff',
+  },
+  rankBadge: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    justifyContent: 'center',
+    backgroundColor: '#f0f0f0',
     alignItems: 'center',
-    marginBottom: 2,
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  topRankBadge: {
+    backgroundColor: '#fff5e6',
+  },
+  rankText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#333',
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 12,
+  },
+  avatarPlaceholder: {
+    backgroundColor: '#8A2BE2',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatarText: {
-    color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '700',
+    color: '#fff',
   },
-  countryFlag: {
-    fontSize: 12,
-  },
-
-  // Main info - contrôle strict du débordement
-  mainInfo: {
+  cardContent: {
     flex: 1,
-    minWidth: 0, // Important pour éviter le débordement
-  },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 3,
-  },
-  nameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 6,
-    minWidth: 0, // Important
   },
   username: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#333333',
-    marginRight: 4,
-    flex: 1,
-    minWidth: 0, // Important
-  },
-  currentUserText: {
-    color: '#9317ED',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a2e',
   },
   youBadge: {
-    backgroundColor: '#9317ED',
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 4,
-  },
-  youText: {
-    color: '#FFFFFF',
-    fontSize: 8,
-    fontWeight: '700',
-  },
-  pointsSection: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    minWidth: 60,
-  },
-  koachPoints: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#333333',
-    marginRight: 1,
-  },
-  koachLabel: {
-    fontSize: 10,
-    color: '#9317ED',
-    fontWeight: '700',
-  },
-
-  bottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  badgeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 6,
-    minWidth: 0, // Important
-  },
-  badgeText: {
-    fontSize: 11,
-    color: '#666666',
-    marginLeft: 3,
-    fontWeight: '600',
-    flex: 1,
-    minWidth: 0, // Important
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minWidth: 80,
-  },
-  statText: {
-    fontSize: 10,
-    color: '#666666',
+    fontSize: 13,
+    color: '#8A2BE2',
     fontWeight: '500',
   },
-  statDivider: {
-    fontSize: 10,
-    color: '#999999',
-    marginHorizontal: 4,
+  statsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 6,
+    gap: 8,
   },
-
-  progressRow: {
+  statChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
   },
-  progressBarBackground: {
-    flex: 1,
-    height: 3,
-    backgroundColor: '#E8E8E8',
-    borderRadius: 1.5,
-    marginRight: 6,
+  statText: {
+    fontSize: 13,
+    color: '#666',
   },
-  progressBarFill: {
-    height: 3,
-    borderRadius: 1.5,
+  progressRow: {
+    marginTop: 6,
   },
-  progressText: {
-    fontSize: 9,
-    color: '#666666',
-    fontWeight: '600',
-    width: 35,
-    textAlign: 'right',
+  pageText: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 4,
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: '#e8e8e8',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#8A2BE2',
+  },
+  completedChip: {
+    alignSelf: 'flex-start',
   },
 });
 

@@ -17,7 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { setOnboardingCompleted, updateUserPreferences } from '../slices/authSlice';
 import { useTranslation } from 'react-i18next';
 import { AppDispatch } from '../store';
@@ -69,7 +69,7 @@ const ChipSelectionGroup = ({
 
 const OnboardingScreen = () => {
   const navigation = useNavigation<OnboardingNavigationProp>();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);

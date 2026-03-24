@@ -25,7 +25,8 @@ import {
   useTheme,
   FAB
 } from 'react-native-paper';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import {
   fetchBooks,
   selectBooks,
@@ -54,7 +55,6 @@ import {
 } from '../slices/freeQuarterlyBooksSlice';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
-import { AppDispatch } from '../store';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from "expo-linear-gradient";
@@ -121,7 +121,7 @@ const ReadingGroupCard = ({ group, navigation }: { group: ReadingGroup; navigati
           <Text style={styles.groupName}>{group.name}</Text>
           <Text style={styles.groupDescription}>{group.description}</Text>
           <View style={styles.groupMemberBadge}>
-            <Text style={styles.groupMemberText}>{group.member_count} membres</Text>
+            <Text style={styles.groupMemberText}>{(Array.isArray(group.member_count) ? (group.member_count[0] as { count?: number })?.count : group.member_count) ?? 0} membres</Text>
           </View>
         </View>
       </LinearGradient>
@@ -209,7 +209,7 @@ const CommunityCard = ({ community, navigation }: { community: Community; naviga
           <View style={styles.communityFooter}>
             <View style={styles.memberInfo}>
               <MaterialCommunityIcons name="account-group" size={14} color="rgba(255,255,255,0.9)" />
-              <Text style={styles.communityMembers}>{community.member_count.toLocaleString()}</Text>
+              <Text style={styles.communityMembers}>{(community.member_count ?? 0).toLocaleString()}</Text>
             </View>
             <View style={[styles.joinIndicator, { backgroundColor: getCommunityColor(community.name) }]}>
               <MaterialCommunityIcons name="plus" size={12} color="white" />
@@ -283,7 +283,7 @@ const CategorySection = ({ category, books, navigation }: {
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const user = useSelector(selectUser) as ExtendedUser;
 
   // Books and categories state
@@ -481,7 +481,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             <Text style={styles.groupName}>{group.name}</Text>
             <Text style={styles.groupDescription}>{group.description}</Text>
             <View style={styles.groupMemberBadge}>
-              <Text style={styles.groupMemberText}>{group.member_count || 0} membres</Text>
+              <Text style={styles.groupMemberText}>{(Array.isArray(group.member_count) ? (group.member_count[0] as { count?: number })?.count : group.member_count) ?? 0} membres</Text>
             </View>
           </View>
         </LinearGradient>
@@ -543,7 +543,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             <View style={styles.communityFooter}>
               <View style={styles.memberInfo}>
                 <MaterialCommunityIcons name="account-group" size={14} color="rgba(255,255,255,0.9)" />
-                <Text style={styles.communityMembers}>{(community.member_count || 0).toLocaleString()}</Text>
+                <Text style={styles.communityMembers}>{((Array.isArray(community.member_count) ? (community.member_count[0] as { count?: number })?.count : community.member_count) ?? 0).toLocaleString()}</Text>
               </View>
               <View style={[styles.joinIndicator, { backgroundColor: getCommunityColor(community.category) }]}>
                 <MaterialCommunityIcons name="plus" size={12} color="white" />

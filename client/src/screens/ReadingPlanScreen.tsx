@@ -28,7 +28,8 @@ import {
   ActivityIndicator,
   List
 } from 'react-native-paper';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { 
   fetchBooks,
   selectBooks,
@@ -50,10 +51,11 @@ import { selectUser } from '../slices/authSlice';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
-import { AppDispatch, RootState } from '../store';
+import { RootState } from '../store';
 import { useTranslation } from 'react-i18next';
 import DatePickerField from '../components/DatePickerField';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { toCreateReadingPlanPayload, toLogReadingSessionPayload } from '../utils/readingPlanMappers';
 
 type ReadingPlanScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ReadingPlan'>;
 type ReadingPlanScreenRouteProp = RouteProp<RootStackParamList, 'ReadingPlan'>;
@@ -75,7 +77,7 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
   const params = (route.params as ReadingPlanRouteParams) || {};
   const planId = params.planId;
   const bookId = params.bookId;
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   
   const user = useSelector((state: RootState) => selectUser(state));
   const books = useSelector((state: RootState) => selectBooks(state));
@@ -103,7 +105,6 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
   const selectedBook = useMemo(() => {
     if (!selectedBookId) return null;
     const foundBook = books.find(book => book.id.toString() === selectedBookId);
-    console.log('[ReadingPlanScreen] selectedBookId:', selectedBookId, 'foundBook:', foundBook);
     return foundBook;
   }, [selectedBookId, books]);
   
@@ -303,19 +304,16 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
     }
 
     // Préparer les données selon le format attendu par l'API
-    const planData = {
+    const planData = toCreateReadingPlanPayload({
       userId: user.id,
       bookId: parseInt(selectedBookId),
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       dailyGoal: parseInt(pagesPerSession),
       notes: notes.trim() || undefined,
-      // Stocker la fréquence dans les notes pour l'instant
-      // car le champ frequency n'existe pas dans l'API
-      frequency: frequency
-    };
+    });
     
-    dispatch(createReadingPlan(planData))
+    dispatch(createReadingPlan(planData) as any)
       .unwrap()
       .then(() => {
         Alert.alert('Success', t('readingPlan.planCreated'));
@@ -337,12 +335,12 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
       return;
     }
     
-    dispatch(logReadingSession({
+    dispatch(logReadingSession(toLogReadingSessionPayload({
       bookId: parseInt(selectedBookId),
       readingPlanId: parseInt(planId),
       pagesRead: parseInt(pagesRead),
       minutesSpent: minutesSpent.trim() ? parseInt(minutesSpent) : undefined,
-    }))
+    })) as any)
       .unwrap()
       .then(() => {
         Alert.alert('Success', t('readingSession.sessionLogged'));
@@ -351,20 +349,21 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
         setMinutesSpent('');
         
         // Refresh plan data
-        dispatch(fetchReadingPlans());
-        dispatch(fetchReadingSessions());
+        dispatch(fetchReadingPlans() as any);
+        dispatch(fetchReadingSessions() as any);
       })
-      .catch(error => {
-        Alert.alert('Error', error.message || t('common.errorText'));
+      .catch((error: unknown) => {
+        Alert.alert('Error', (error as Error).message || t('common.errorText'));
       });
   };
   
   const renderPlanDetails = () => {
     if (!plan) return null;
     
-    const progress = plan.current_page / plan.total_pages;
+    const totalPages = plan.total_pages ?? 0;
+    const progress = totalPages > 0 ? plan.current_page / totalPages : 0;
     const progressPercent = Math.round(progress * 100);
-    const remainingPages = plan.total_pages - plan.current_page;
+    const remainingPages = totalPages - plan.current_page;
     
     return (
       <View>
@@ -377,14 +376,14 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
                 <Paragraph style={styles.bookDetails}>
                   {plan.book.title} {t('common.by')} {plan.book.author?.name || t('common.unknownAuthor')}
                 </Paragraph>
-                <Chip style={styles.bookPageCount}>{plan.total_pages} {t('common.pages')}</Chip>
+                <Chip style={styles.bookPageCount}>{totalPages} {t('common.pages')}</Chip>
               </View>
             )}
             
             <View style={styles.progressContainer}>
               <View style={styles.progressTextContainer}>
                 <Text style={styles.progressText}>
-                  {plan.current_page} {t('common.of')} {plan.total_pages} {t('common.pages')}
+                  {plan.current_page} {t('common.of')} {totalPages} {t('common.pages')}
                 </Text>
                 <Text style={styles.progressPercent}>
                   {progressPercent}% {t('common.complete')}
@@ -433,7 +432,7 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
               </Button>
               <Button 
                 mode="outlined" 
-                onPress={() => navigation.navigate('ReadingPlan', { planId: plan.id, isEdit: true })}
+                onPress={() => navigation.navigate('ReadingPlan', { planId: String(plan.id), bookId: String(plan.book_id), isEdit: true })}
                 style={styles.actionButton}
               >
                 {t('common.edit')}
@@ -461,10 +460,10 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
                 {sessions.map(session => (
                   <DataTable.Row key={session.id}>
                     <DataTable.Cell>
-                      {new Date(session.createdAt).toLocaleDateString()}
+                      {new Date(session.created_at).toLocaleDateString()}
                     </DataTable.Cell>
-                    <DataTable.Cell numeric>{session.pagesRead}</DataTable.Cell>
-                    <DataTable.Cell numeric>{session.minutesSpent}</DataTable.Cell>
+                    <DataTable.Cell numeric>{session.pages_read}</DataTable.Cell>
+                    <DataTable.Cell numeric>{session.minutes_spent}</DataTable.Cell>
                   </DataTable.Row>
                 ))}
               </DataTable>
@@ -588,14 +587,14 @@ const ReadingPlanScreen: React.FC<ReadingPlanScreenProps> = ({ route, navigation
                       <DatePickerField
                         label={t('readingPlan.startDate')}
                         value={startDate}
-                        onChange={setStartDate}
+                        onChange={(d) => d && setStartDate(d)}
                       />
                     </View>
                     <View style={styles.dateField}>
                       <DatePickerField
                         label={t('readingPlan.endDate')}
                         value={endDate}
-                        onChange={setEndDate}
+                        onChange={(d) => d && setEndDate(d)}
                       />
                     </View>
                   </View>

@@ -52,7 +52,7 @@ npx expo start
     - `/components` - Reusable UI components
     - `/hooks` - Custom React hooks
     - `/navigation` - Navigation configuration
-    - `/redux` - Redux store setup
+    - `/store.ts` - Redux store setup
     - `/screens` - Application screens
     - `/slices` - Redux slices
     - `/utils` - Utility functions

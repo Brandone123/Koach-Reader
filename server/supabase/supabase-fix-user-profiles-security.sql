@@ -1,0 +1,46 @@
+-- =============================================================================
+-- Supabase Database Linter: "Exposed Auth Users" (user_profiles)
+-- =============================================================================
+-- Problem:
+--   A view in `public` named like user_profiles that reads from auth.users — or
+--   granted to PUBLIC/anon — is flagged because PostgREST exposes `public` to
+--   API roles and can leak auth metadata.
+--
+-- Fix for this project:
+--   - Do not expose a redundant profile view: the app uses `public.users` with RLS.
+--   - Drop `public.user_profiles` if it exists (including legacy defs joining auth.users).
+--
+-- Run this in: Supabase Dashboard → SQL Editor → Run
+-- =============================================================================
+
+-- If you ever created a materialized view with this name, run first:
+-- DROP MATERIALIZED VIEW IF EXISTS public.user_profiles;
+DROP VIEW IF EXISTS public.user_profiles;
+
+-- Revoke any leftover grants (no-op if view is gone)
+-- REVOKE ALL ON TABLE public.user_profiles FROM PUBLIC;
+-- REVOKE ALL ON TABLE public.user_profiles FROM anon;
+-- REVOKE ALL ON TABLE public.user_profiles FROM authenticated;
+
+-- -----------------------------------------------------------------------------
+-- Optional — only if you truly need a VIEW for SQL/reporting (not required for
+-- the Koach Reader app). All of the following must be true:
+--   1) Source ONLY `public.users`, never `auth.users`.
+--   2) PostgreSQL 15+ on Supabase: use SECURITY INVOKER so RLS on `users` applies.
+--   3) Never GRANT to PUBLIC; prefer authenticated only (or no grant — use service_role).
+--
+-- CREATE OR REPLACE VIEW public.user_profiles
+-- WITH (security_invoker = true) AS
+-- SELECT
+--   id,
+--   username,
+--   avatar_url,
+--   koach_points,
+--   reading_streak,
+--   is_premium
+-- FROM public.users;
+--
+-- REVOKE ALL ON public.user_profiles FROM PUBLIC;
+-- REVOKE ALL ON public.user_profiles FROM anon;
+-- GRANT SELECT ON public.user_profiles TO authenticated;
+-- -----------------------------------------------------------------------------

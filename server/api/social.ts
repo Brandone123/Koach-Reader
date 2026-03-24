@@ -2,6 +2,26 @@ import { Express, Request, Response } from "express";
 import { storage } from "../storage";
 import { InsertChallenge } from "../../shared/schema";
 import { asyncHandler } from "../utils/routeHandler";
+import { supabase } from "../utils/db";
+
+function toChallengeDto(challenge: any) {
+  return {
+    id: challenge.id,
+    title: challenge.title,
+    description: challenge.description,
+    creatorId: challenge.created_by,
+    startDate: challenge.start_date,
+    endDate: challenge.end_date,
+    goal: challenge.goal,
+    goalType: challenge.goal_type,
+    isPrivate: challenge.is_private,
+    participantCount: challenge.participant_count || 0,
+    myProgress: challenge.my_progress ?? 0,
+    status: challenge.status || "active",
+    createdAt: challenge.created_at,
+    updatedAt: challenge.updated_at,
+  };
+}
 
 export function setupSocialRoutes(app: Express, verifyJWT: any) {
   // -------------------- Friends endpoints --------------------
@@ -30,7 +50,7 @@ export function setupSocialRoutes(app: Express, verifyJWT: any) {
       return res.status(400).json({ message: "Friend ID is required" });
     }
     
-    const targetId = parseInt(friendId);
+    const targetId = String(friendId);
     
     // Check if target user exists
     const targetUser = await storage.getUser(targetId);
@@ -50,8 +70,8 @@ export function setupSocialRoutes(app: Express, verifyJWT: any) {
 
   // Accept or decline a friend request
   app.put("/api/friend-requests/:id", verifyJWT, asyncHandler(async (req: Request, res: Response) => {
-    const friendId = parseInt(req.params.id);
-    if (isNaN(friendId)) {
+    const friendId = String(req.params.id);
+    if (!friendId) {
       return res.status(400).json({ message: "Invalid friend ID" });
     }
     
@@ -76,8 +96,15 @@ export function setupSocialRoutes(app: Express, verifyJWT: any) {
   app.get("/api/challenges", verifyJWT, asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.id;
     const challenges = await storage.getChallenges(userId);
-    
-    res.status(200).json(challenges);
+    res.status(200).json((challenges || []).map(toChallengeDto));
+  }));
+
+  // Get current user's challenges (compat endpoint for frontend)
+  app.get("/api/user/challenges", verifyJWT, asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const challenges = await storage.getChallenges(userId);
+    const mine = (challenges || []).filter((c: any) => String(c.created_by) === String(userId));
+    res.status(200).json(mine.map(toChallengeDto));
   }));
 
   // Get a specific challenge
@@ -95,21 +122,24 @@ export function setupSocialRoutes(app: Express, verifyJWT: any) {
     
     // TODO: Get participants details
     
-    res.status(200).json(challenge);
+    res.status(200).json(toChallengeDto(challenge));
   }));
 
   // Create a new challenge
   app.post("/api/challenges", verifyJWT, asyncHandler(async (req: Request, res: Response) => {
-    const { name, description, startDate, endDate, target, targetType, isPrivate } = req.body;
+    const { name, title, description, startDate, endDate, target, goal, targetType, goalType, isPrivate } = req.body;
+    const normalizedTitle = title || name;
+    const normalizedGoal = goal ?? target;
+    const normalizedGoalType = goalType || targetType;
     
     // Validate required fields
-    if (!name || !description || !startDate || !endDate || !target || !targetType) {
+    if (!normalizedTitle || !description || !startDate || !endDate || !normalizedGoal || !normalizedGoalType) {
       return res.status(400).json({ message: "Missing required fields" });
     }
     
     // Validate target type
-    if (!["koach", "books", "pages"].includes(targetType)) {
-      return res.status(400).json({ message: "Target type must be 'koach', 'books', or 'pages'" });
+    if (!["koach", "books", "pages", "minutes"].includes(normalizedGoalType)) {
+      return res.status(400).json({ message: "Goal type must be 'koach', 'books', 'pages' or 'minutes'" });
     }
     
     // Calculate dates
@@ -121,19 +151,19 @@ export function setupSocialRoutes(app: Express, verifyJWT: any) {
     }
     
     const newChallenge: InsertChallenge = {
-      name,
+      title: normalizedTitle,
       description,
-      creatorId: req.user!.id,
-      startDate: start,
-      endDate: end,
-      target: parseInt(target),
-      targetType,
-      isPrivate: isPrivate || false,
+      created_by: req.user!.id,
+      start_date: start.toISOString(),
+      end_date: end.toISOString(),
+      goal: parseInt(String(normalizedGoal)),
+      goal_type: normalizedGoalType,
+      is_private: isPrivate || false,
     };
     
     const challenge = await storage.createChallenge(newChallenge);
     
-    res.status(201).json(challenge);
+    res.status(201).json(toChallengeDto(challenge));
   }));
 
   // Join a challenge
@@ -150,7 +180,7 @@ export function setupSocialRoutes(app: Express, verifyJWT: any) {
     }
     
     // Check if challenge is private
-    if (challenge.isPrivate && challenge.creatorId !== req.user!.id) {
+    if (challenge.is_private && challenge.created_by !== req.user!.id) {
       // TODO: Check if user was invited
       return res.status(403).json({ message: "This challenge is private" });
     }
@@ -165,8 +195,7 @@ export function setupSocialRoutes(app: Express, verifyJWT: any) {
     res.status(200).json({ message: "Challenge joined successfully" });
   }));
 
-  // Update challenge progress
-  app.put("/api/challenges/:id/progress", verifyJWT, asyncHandler(async (req: Request, res: Response) => {
+  const updateProgressHandler = asyncHandler(async (req: Request, res: Response) => {
     const challengeId = parseInt(req.params.id);
     if (isNaN(challengeId)) {
       return res.status(400).json({ message: "Invalid challenge ID" });
@@ -191,12 +220,56 @@ export function setupSocialRoutes(app: Express, verifyJWT: any) {
     
     // Check if challenge is complete
     const challenge = await storage.getChallenge(challengeId);
-    const isComplete = challenge && parseInt(progress) >= challenge.target;
+    const isComplete = challenge && parseInt(progress) >= challenge.goal;
     
     res.status(200).json({ 
       message: "Challenge progress updated",
       isComplete: isComplete || false
     });
+  });
+
+  // Update challenge progress (support both PUT and POST)
+  app.put("/api/challenges/:id/progress", verifyJWT, updateProgressHandler);
+  app.post("/api/challenges/:id/progress", verifyJWT, updateProgressHandler);
+
+  // Get challenge participants
+  app.get("/api/challenges/:id/participants", verifyJWT, asyncHandler(async (req: Request, res: Response) => {
+    const challengeId = parseInt(req.params.id);
+    if (isNaN(challengeId)) {
+      return res.status(400).json({ message: "Invalid challenge ID" });
+    }
+
+    const { data, error } = await supabase
+      .from("challenge_participants")
+      .select("id, user_id, current_progress, status, created_at, users(username)")
+      .eq("challenge_id", challengeId)
+      .order("current_progress", { ascending: false });
+
+    if (error) {
+      return res.status(500).json({ message: "Failed to fetch participants" });
+    }
+
+    const participants = (data || []).map((p: any) => ({
+      id: p.id,
+      userId: p.user_id,
+      username: p.users?.username || "user",
+      progress: p.current_progress || 0,
+      progressPercentage: 0,
+      status: p.status || "active",
+      joinedAt: p.created_at,
+    }));
+
+    res.status(200).json(participants);
+  }));
+
+  // Get challenge comments (no dedicated table yet -> return empty array)
+  app.get("/api/challenges/:id/comments", verifyJWT, asyncHandler(async (_req: Request, res: Response) => {
+    res.status(200).json([]);
+  }));
+
+  // Add challenge comment (no dedicated table yet)
+  app.post("/api/challenges/:id/comments", verifyJWT, asyncHandler(async (_req: Request, res: Response) => {
+    res.status(501).json({ message: "Challenge comments not implemented in database yet" });
   }));
 
   // Search users

@@ -22,13 +22,9 @@ const AppOnboardingScreen: React.FC<AppOnboardingScreenProps> = ({ onComplete })
 
   const checkOnboardingStatus = async () => {
     const langSelected = await isLanguageSelected();
-    console.log('🌐 Language selected:', langSelected);
-    
     if (!langSelected) {
-      console.log('📱 Showing language selection');
       setCurrentStep('language');
     } else {
-      console.log('👋 Showing welcome onboarding');
       setCurrentStep('welcome');
     }
   };

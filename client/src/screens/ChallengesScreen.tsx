@@ -5,44 +5,49 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   ScrollView,
   Alert,
-  Platform
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
-  Card,
   Title,
-  Paragraph,
   Button,
   Avatar,
-  Chip,
-  ProgressBar,
   FAB,
   Modal,
   Portal,
   TextInput,
   Divider,
-  RadioButton,
   Menu,
-  List,
-  Checkbox,
   IconButton,
   HelperText,
   Switch as PaperSwitch,
-  Dialog
+  Dialog,
 } from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch } from '../store';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { selectUser } from '../slices/authSlice';
-import { fetchApi } from '../utils/api';
-import { mockFetchApi } from '../utils/mockApi';
+import {
+  loadChallenges,
+  joinChallenge as joinChallengeThunk,
+  createChallenge as createChallengeThunk,
+  selectUserChallenges,
+  selectDiscoverChallenges,
+  selectChallengesListLoading,
+  selectChallengesLoading,
+  type Challenge,
+  type CreateChallengeInput,
+} from '../slices/challengesSlice';
+import { fetchBooks, selectBooks } from '../slices/booksSlice';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Challenge } from '../slices/challengesSlice';
-import { Book } from '../slices/booksSlice';
+import type { Book } from '../slices/booksSlice';
 
 type ChallengesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Challenges'>;
 
@@ -50,20 +55,24 @@ interface ChallengesScreenProps {
   navigation: ChallengesScreenNavigationProp;
 }
 
-interface Category {
-  id: string;
-  name: string;
+function bookAuthorLabel(book: Book): string {
+  const a = book.author as any;
+  if (typeof a === 'string') return a;
+  if (a && typeof a === 'object' && a.name) return a.name;
+  return '';
 }
 
 const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
   const { t } = useTranslation();
-  const dispatch = useDispatch<AppDispatch>();
+  const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
   const user = useSelector(selectUser);
-  
-  const [challenges, setChallenges] = useState<Challenge[]>([]);
-  const [myChallenges, setMyChallenges] = useState<Challenge[]>([]);
-  const [publicChallenges, setPublicChallenges] = useState<Challenge[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const myChallenges = useSelector(selectUserChallenges);
+  const publicChallenges = useSelector(selectDiscoverChallenges);
+  const listLoading = useSelector(selectChallengesListLoading);
+  const actionLoading = useSelector(selectChallengesLoading);
+  const books = useSelector(selectBooks);
+
   const [activeTab, setActiveTab] = useState<'my' | 'public'>('my');
   const [modalVisible, setModalVisible] = useState(false);
   
@@ -79,8 +88,6 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
   // New states for enhanced dialog
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [bookMenuVisible, setBookMenuVisible] = useState(false);
-  const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [formErrors, setFormErrors] = useState({
@@ -90,75 +97,13 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
     endDate: ''
   });
   
-  // API data
-  const [books, setBooks] = useState<Book[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  
   useEffect(() => {
-    fetchChallenges();
-    fetchBooks();
-    fetchCategories();
-  }, []);
-  
-  const fetchBooks = async () => {
-    try {
-      // Use the mockApi to fetch books
-      const mockData = await mockFetchApi('/api/books');
-      setBooks(mockData);
-    } catch (error) {
-      console.error('Failed to fetch books:', error);
-    }
-  };
-  
-  const fetchCategories = async () => {
-    try {
-      // Use the mockApi to fetch categories
-      const mockData = await mockFetchApi('/api/categories');
-      setCategories(mockData);
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
-    }
-  };
-  
-  const fetchChallenges = async () => {
-    setIsLoading(true);
-    try {
-      // Use the mock API directly
-        const mockData = await mockFetchApi('/api/challenges');
-        handleChallengesData(mockData);
-    } catch (error) {
-      console.error('Failed to fetch challenges:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const handleChallengesData = (data: Challenge[]) => {
-    setChallenges(data);
-    
-    // Only filter for user's challenges if user is logged in
-    if (user) {
-    // Filter for user's challenges
-    const userChallenges = data.filter(challenge => 
-        challenge.creatorId === user.id || challenge.status === 'active'
-    );
-    setMyChallenges(userChallenges);
-    
-    // Filter for public challenges user is not part of
-    const otherChallenges = data.filter(challenge => 
-      !challenge.isPrivate && 
-        challenge.creatorId !== user.id && 
-      challenge.status !== 'active'
-    );
-    setPublicChallenges(otherChallenges);
-    } else {
-      // If no user is logged in, show all public challenges
-      const publicChallenges = data.filter(challenge => !challenge.isPrivate);
-      setPublicChallenges(publicChallenges);
-      setMyChallenges([]);
-    }
-  };
-  
+    dispatch(loadChallenges() as any);
+    dispatch(fetchBooks() as any);
+  }, [dispatch, user?.id]);
+
+  const refreshChallenges = () => dispatch(loadChallenges() as any);
+
   const createChallenge = async () => {
     // Reset form errors
     const errors = {
@@ -196,82 +141,52 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
       errors.endDate = t('validation.endDateMustBeAfterStart');
       hasError = true;
     }
+
+    if (goalType === 'books' && !selectedBook) {
+      Alert.alert(t('common.errorGeneric'), t('challenges.selectBookForBooksGoal', 'Choisissez un livre pour un objectif « livres ».'));
+      hasError = true;
+    }
     
     if (hasError) {
       setFormErrors(errors);
       return;
     }
     
-    const newChallenge = {
-      title: challengeTitle,
-      description: challengeDescription,
-      creatorId: user?.id || 0,
-      creatorName: user?.username || '',
-      startDate: startDate.toISOString().split('T')[0], // Just the date portion in YYYY-MM-DD format
-      endDate: endDate.toISOString().split('T')[0], // Just the date portion in YYYY-MM-DD format
+    const payload: CreateChallengeInput = {
+      title: challengeTitle.trim(),
+      description: challengeDescription.trim() || undefined,
       goal: Number(goalValue),
       goalType,
-      bookId: selectedBook ? selectedBook.id : undefined,
-      bookTitle: selectedBook?.title,
-      categoryId: selectedCategory ? Number(selectedCategory.id) : undefined,
-      categoryName: selectedCategory?.name,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
       isPrivate,
-      participantCount: 1, // Creator is first participant
+      bookId: goalType === 'books' && selectedBook ? selectedBook.id : undefined,
     };
     
-    setIsLoading(true);
     try {
-      // Use mock API directly
-        const mockResponse = await mockFetchApi('/api/challenges', {
-          method: 'POST',
-          body: newChallenge
-        });
-        
-        // Update challenge lists
-      const updatedChallenges = [...challenges, mockResponse as Challenge];
-        handleChallengesData(updatedChallenges);
-        
-        // Reset form and close modal
-        resetForm();
-        setModalVisible(false);
-        
+      await dispatch(createChallengeThunk(payload) as any).unwrap();
+      resetForm();
+      setModalVisible(false);
+      refreshChallenges();
       Alert.alert(t('common.success'), t('challenges.createdSuccess'));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create challenge:', error);
-      Alert.alert(t('common.errorGeneric'), t('challenges.createError'));
-    } finally {
-      setIsLoading(false);
+      Alert.alert(t('common.errorGeneric'), error?.message || t('challenges.createError'));
     }
   };
   
   const joinChallenge = async (challengeId: number) => {
-    setIsLoading(true);
+    if (!user) {
+      Alert.alert(t('common.errorGeneric'), t('auth.loginRequired'));
+      return;
+    }
     try {
-      // Use the mock API directly
-        await mockFetchApi(`/api/challenges/${challengeId}/join`, {
-          method: 'POST'
-        });
-        
-        // Update the challenge in our lists
-      const updatedChallenges = challenges.map(challenge => {
-        if (challenge.id === challengeId) {
-          return {
-            ...challenge,
-            status: 'active' as const,
-            myProgress: 0
-          };
-        }
-        return challenge;
-      });
-      
-        handleChallengesData(updatedChallenges);
-        
-        Alert.alert('Success', 'You have joined the challenge!');
-    } catch (error) {
+      await dispatch(joinChallengeThunk(challengeId) as any).unwrap();
+      refreshChallenges();
+      Alert.alert(t('common.success'), t('challenges.joinedSuccess', 'Vous avez rejoint le défi !'));
+    } catch (error: any) {
       console.error('Failed to join challenge:', error);
-        Alert.alert('Error', 'Failed to join challenge');
-    } finally {
-      setIsLoading(false);
+      Alert.alert(t('common.errorGeneric'), error?.message || t('challenges.joinError', 'Impossible de rejoindre'));
     }
   };
   
@@ -284,7 +199,6 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
     setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)); // Default to 7 days from now
     setIsPrivate(false);
     setSelectedBook(null);
-    setSelectedCategory(null);
     setFormErrors({
       title: '',
       goal: '',
@@ -298,14 +212,18 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
   };
   
   const calculateProgress = (challenge: Challenge) => {
-    return challenge.myProgress ? (challenge.myProgress / challenge.goal) * 100 : 0;
+    const g = challenge.goal || 1;
+    const p = challenge.myProgress ?? 0;
+    return Math.min(100, (p / g) * 100);
   };
   
-  const getGoalTypeLabel = (type: 'pages' | 'books' | 'minutes') => {
+  const getGoalTypeLabel = (type: Challenge['goalType']) => {
     switch (type) {
       case 'pages': return t('challenges.pages');
       case 'books': return t('challenges.books');
       case 'minutes': return t('challenges.minutes');
+      case 'koach': return t('common.points', 'Koach');
+      default: return type;
     }
   };
   
@@ -355,103 +273,132 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
   };
   
   const renderChallengeItem = ({ item }: { item: Challenge }) => {
-    const isCreator = user ? item.creatorId === user.id : false;
+    const isCreator = user ? String(item.creatorId) === String(user.id) : false;
     const progress = calculateProgress(item);
-    const isActive = item.status === 'active' || isCreator;
-    
-    // Convert string dates from API to Date objects
-    const startDate = new Date(item.startDate);
-    const endDate = new Date(item.endDate);
-    
+    const onMyTab = activeTab === 'my';
+    const endD = new Date(item.endDate);
+
     return (
-      <Card 
-        style={[
-          styles.challengeCard, 
-          isCreator && styles.creatorCard,
-          item.status === 'completed' && styles.completedCard
-        ]}
-        onPress={() => navigation.navigate('ChallengeDetail', { challengeId: String(item.id) })}
-      >
-        <Card.Content>
-          <View style={styles.cardHeader}>
-            <Title style={styles.challengeTitle}>{item.title}</Title>
-            {isCreator && (
-              <Chip icon="crown" style={styles.creatorChip}>{t('challenges.creator')}</Chip>
+      <View style={styles.challengeCardWrap}>
+        <Pressable
+          onPress={() => navigation.navigate('ChallengeDetail', { challengeId: String(item.id) })}
+          style={({ pressed }) => [
+            styles.challengeCard,
+            pressed && styles.challengeCardPressed,
+            isCreator && styles.creatorCard,
+            item.status === 'completed' && styles.completedCard,
+          ]}
+        >
+          <View style={styles.cardAccent} />
+          <View style={styles.cardInner}>
+            <View style={styles.cardTopRow}>
+              <View style={styles.cardTitleBlock}>
+                <Text style={styles.challengeTitle} numberOfLines={2}>
+                  {item.title}
+                </Text>
+                <View style={styles.cardMetaRow}>
+                  {item.isPrivate ? (
+                    <View style={styles.metaPill}>
+                      <Icon name="lock-outline" size={12} color="#6B21A8" />
+                      <Text style={styles.metaPillText}>{t('challenges.private')}</Text>
+                    </View>
+                  ) : (
+                    <View style={[styles.metaPill, styles.metaPillPublic]}>
+                      <Icon name="earth" size={12} color="#0369A1" />
+                      <Text style={[styles.metaPillText, styles.metaPillTextPublic]}>
+                        {t('challenges.detail.public')}
+                      </Text>
+                    </View>
+                  )}
+                  {isCreator && (
+                    <View style={styles.metaPill}>
+                      <Icon name="crown-outline" size={12} color="#B45309" />
+                      <Text style={styles.metaPillText}>{t('challenges.creator')}</Text>
+                    </View>
+                  )}
+                  {item.status === 'completed' && (
+                    <View style={[styles.metaPill, styles.metaPillDone]}>
+                      <Icon name="check-decagram" size={12} color="#15803D" />
+                      <Text style={[styles.metaPillText, styles.metaPillTextDone]}>
+                        {t('challenges.completed')}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+              <Icon name="chevron-right" size={22} color="#C4B5D4" />
+            </View>
+
+            {!!item.description?.trim() && (
+              <Text style={styles.challengeDescription} numberOfLines={2}>
+                {item.description}
+              </Text>
             )}
-            {item.status === 'completed' && (
-              <Chip icon="check-circle" style={styles.completedChip}>{t('challenges.completed')}</Chip>
+
+            <View style={styles.statsGrid}>
+              <View style={styles.statCell}>
+                <Text style={styles.statCellLabel}>{t('challenges.goal')}</Text>
+                <Text style={styles.statCellValue}>
+                  {item.goal} <Text style={styles.statCellUnit}>{getGoalTypeLabel(item.goalType)}</Text>
+                </Text>
+              </View>
+              <View style={styles.statCell}>
+                <Text style={styles.statCellLabel}>{t('challenges.participants')}</Text>
+                <Text style={styles.statCellValue}>{item.participantCount}</Text>
+              </View>
+              <View style={styles.statCellWide}>
+                <Text style={styles.statCellLabel}>{t('challenges.endDate')}</Text>
+                <Text style={styles.statCellValueSmall}>{formatDate(endD)}</Text>
+              </View>
+            </View>
+            {activeTab === 'public' && user && (
+              <Pressable
+                onPress={() => joinChallenge(item.id)}
+                style={({ pressed }) => [styles.joinCta, pressed && styles.joinCtaPressed]}
+              >
+                <Text style={styles.joinCtaText}>{t('challenges.joinChallenge')}</Text>
+                <Icon name="arrow-right" size={18} color="#fff" />
+              </Pressable>
+            )}
+
+            {onMyTab && user && (
+              <View style={styles.progressBlock}>
+                <View style={styles.progressHeader}>
+                  <Text style={styles.progressLabel}>{t('challenges.progress')}</Text>
+                  <Text style={styles.progressFraction}>
+                    {item.myProgress ?? 0} / {item.goal}
+                  </Text>
+                </View>
+                <View style={styles.progressTrack}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: `${Math.min(100, progress)}%` },
+                      progress >= 100 && styles.progressFillComplete,
+                    ]}
+                  />
+                </View>
+              </View>
             )}
           </View>
-          
-          <Paragraph style={styles.challengeDescription}>{item.description}</Paragraph>
-          
-          <View style={styles.challengeDetails}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>{t('challenges.goal')}:</Text>
-              <Text style={styles.detailValue}>
-                {item.goal} {getGoalTypeLabel(item.goalType)}
-              </Text>
-            </View>
-            
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>{t('challenges.startDate')}:</Text>
-              <Text style={styles.detailValue}>{formatDate(startDate)}</Text>
-            </View>
-            
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>{t('challenges.endDate')}:</Text>
-              <Text style={styles.detailValue}>{formatDate(endDate)}</Text>
-            </View>
-            
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>{t('challenges.participants')}:</Text>
-              <Text style={styles.detailValue}>{item.participantCount}</Text>
-            </View>
-          </View>
-          
-          {isActive && (
-            <View style={styles.progressContainer}>
-              <Text style={styles.progressText}>
-                {t('challenges.progress')}: {item.myProgress || 0} / {item.goal} ({Math.round(progress)}%)
-              </Text>
-              <ProgressBar 
-                progress={progress / 100} 
-                color={progress >= 100 ? '#4CAF50' : '#6200ee'} 
-                style={styles.progressBar} 
-              />
-            </View>
-          )}
-          
-          {activeTab === 'public' && !isActive && (
-            <Button 
-              mode="contained" 
-              onPress={() => joinChallenge(item.id)}
-              style={styles.joinButton}
-            >
-              {t('challenges.joinChallenge')}
-            </Button>
-          )}
-        </Card.Content>
-      </Card>
+        </Pressable>
+      </View>
     );
   };
   
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <Avatar.Icon size={80} icon="trophy" style={styles.emptyIcon} />
-      <Text style={styles.emptyText}>
-        {activeTab === 'my' 
-          ? t('challenges.noMyChallenges')
-          : t('challenges.noPublicChallenges')}
+      <View style={styles.emptyIllustration}>
+        <Icon name="trophy-award" size={48} color="#7C3AED" />
+      </View>
+      <Text style={styles.emptyTitle}>
+        {activeTab === 'my' ? t('challenges.noMyChallenges') : t('challenges.noPublicChallenges')}
       </Text>
       {activeTab === 'my' && (
-        <Button 
-          mode="contained" 
-          onPress={() => setModalVisible(true)}
-          style={styles.createButtonEmpty}
-        >
-          {t('challenges.createChallenge')}
-        </Button>
+        <Pressable onPress={() => setModalVisible(true)} style={styles.emptyCta}>
+          <Text style={styles.emptyCtaText}>{t('challenges.createChallenge')}</Text>
+          <Icon name="plus" size={20} color="#fff" />
+        </Pressable>
       )}
     </View>
   );
@@ -464,21 +411,25 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
           onDismiss={() => setModalVisible(false)}
           contentContainerStyle={styles.modalContainer}
         >
-        <View style={styles.modalHeaderContainer}>
+        <LinearGradient colors={['#4C1D95', '#6D28D9']} style={styles.modalHeaderContainer}>
           <View style={styles.modalHeader}>
-            <Title style={styles.modalTitle}>{t('challenges.createNewChallenge')}</Title>
-            <IconButton 
-              icon="close" 
-              size={24} 
+            <View style={styles.modalHeaderSide} />
+            <View style={styles.modalHeaderTitles}>
+              <Text style={styles.modalKicker}>{t('challenges.title')}</Text>
+              <Title style={styles.modalTitle}>{t('challenges.createNewChallenge')}</Title>
+            </View>
+            <IconButton
+              icon="close"
+              size={22}
               onPress={() => {
                 resetForm();
                 setModalVisible(false);
               }}
-              style={styles.closeButton}
+              style={styles.modalCloseRight}
               iconColor="white"
             />
           </View>
-        </View>
+        </LinearGradient>
         
           <ScrollView style={styles.modalScrollView}>
           {/* <Divider style={styles.divider} /> */}
@@ -494,7 +445,7 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
           {!!formErrors.title && <HelperText type="error">{formErrors.title}</HelperText>}
             
             <TextInput
-            label={t('challenges.description')}
+            label={`${t('challenges.description')} (${t('common.optional', 'optionnel')})`}
               value={challengeDescription}
               onChangeText={setChallengeDescription}
               multiline
@@ -505,26 +456,30 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
             
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionLabel}>{t('challenges.challengeGoal')}</Text>
-            <View style={styles.goalTypeContainer}>
-              <RadioButton.Group 
-                onValueChange={value => setGoalType(value as 'pages' | 'books' | 'minutes')} 
-                value={goalType}
-              >
-                <View style={styles.radioOption}>
-                  <RadioButton value="pages" />
-                  <Text>{t('challenges.pages')}</Text>
-                </View>
-                
-                <View style={styles.radioOption}>
-                  <RadioButton value="books" />
-                  <Text>{t('challenges.books')}</Text>
-                </View>
-                
-                <View style={styles.radioOption}>
-                  <RadioButton value="minutes" />
-                  <Text>{t('challenges.minutes')}</Text>
-                </View>
-              </RadioButton.Group>
+            <View style={styles.goalChipsRow}>
+              {(
+                [
+                  { key: 'pages' as const, icon: 'book-open-page-variant' },
+                  { key: 'books' as const, icon: 'bookshelf' },
+                  { key: 'minutes' as const, icon: 'clock-outline' },
+                ]
+              ).map(({ key, icon }) => (
+                <TouchableOpacity
+                  key={key}
+                  activeOpacity={0.85}
+                  style={[styles.goalChip, goalType === key && styles.goalChipActive]}
+                  onPress={() => setGoalType(key)}
+                >
+                  <Icon
+                    name={icon}
+                    size={18}
+                    color={goalType === key ? '#fff' : '#6B21A8'}
+                  />
+                  <Text style={[styles.goalChipText, goalType === key && styles.goalChipTextActive]}>
+                    {getGoalTypeLabel(key)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
             
             <TextInput
@@ -561,7 +516,8 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
               {!!formErrors.startDate && <HelperText type="error">{formErrors.startDate}</HelperText>}
               
               <Portal>
-                <Dialog visible={showStartDatePicker} onDismiss={() => setShowStartDatePicker(false)}>
+                <Dialog visible={showStartDatePicker} onDismiss={() => setShowStartDatePicker(false)}
+                  style={styles.datePicker}>
                   <Dialog.Title>{t('challenges.selectStartDate')}</Dialog.Title>
                   <Dialog.Content>
                     <View style={styles.datePickerContent}>
@@ -786,82 +742,46 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
           </View>
           
           <Divider style={styles.divider} />
-          
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionLabel}>{t('challenges.specificBook')}</Text>
-            <Menu
-              visible={bookMenuVisible}
-              onDismiss={() => setBookMenuVisible(false)}
-              anchor={
-                <TouchableOpacity 
-                  style={styles.selectMenuButton}
-                  onPress={() => setBookMenuVisible(true)}
-                >
-                  <Text style={styles.selectMenuText}>
-                    {selectedBook ? selectedBook.title : t('challenges.selectBook')}
-                  </Text>
-                  <IconButton icon="menu-down" size={24} />
-                </TouchableOpacity>
-              }
-            >
-              <Menu.Item 
-                onPress={() => {
-                  setSelectedBook(null);
-                  setBookMenuVisible(false);
-                }} 
-                title={t('challenges.noSpecificBook')} 
-              />
-              <Divider />
-              {books.map(book => (
+
+          {goalType === 'books' && (
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionLabel}>{t('challenges.specificBook')}</Text>
+              <Menu
+                visible={bookMenuVisible}
+                onDismiss={() => setBookMenuVisible(false)}
+                anchor={
+                  <TouchableOpacity 
+                    style={styles.selectMenuButton}
+                    onPress={() => setBookMenuVisible(true)}
+                  >
+                    <Text style={styles.selectMenuText}>
+                      {selectedBook ? selectedBook.title : t('challenges.selectBook')}
+                    </Text>
+                    <IconButton icon="menu-down" size={24} />
+                  </TouchableOpacity>
+                }
+              >
                 <Menu.Item 
-                  key={book.id}
                   onPress={() => {
-                    setSelectedBook(book);
+                    setSelectedBook(null);
                     setBookMenuVisible(false);
                   }} 
-                  title={`${book.title} (${book.author})`} 
+                  title={t('challenges.noSpecificBook')} 
                 />
-              ))}
-            </Menu>
-          </View>
-          
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionLabel}>{t('challenges.category')}</Text>
-            <Menu
-              visible={categoryMenuVisible}
-              onDismiss={() => setCategoryMenuVisible(false)}
-              anchor={
-                <TouchableOpacity 
-                  style={styles.selectMenuButton}
-                  onPress={() => setCategoryMenuVisible(true)}
-                >
-                  <Text style={styles.selectMenuText}>
-                    {selectedCategory ? selectedCategory.name : t('challenges.selectCategory')}
-                  </Text>
-                  <IconButton icon="menu-down" size={24} />
-                </TouchableOpacity>
-              }
-            >
-              <Menu.Item 
-                onPress={() => {
-                  setSelectedCategory(null);
-                  setCategoryMenuVisible(false);
-                }} 
-                title={t('challenges.anyCategory')} 
-              />
-              <Divider />
-              {categories.map(category => (
-                <Menu.Item 
-                  key={category.id}
-                  onPress={() => {
-                    setSelectedCategory(category);
-                    setCategoryMenuVisible(false);
-                  }} 
-                  title={category.name} 
-                />
-              ))}
-            </Menu>
-          </View>
+                <Divider />
+                {books.map(book => (
+                  <Menu.Item 
+                    key={book.id}
+                    onPress={() => {
+                      setSelectedBook(book);
+                      setBookMenuVisible(false);
+                    }} 
+                    title={`${book.title}${bookAuthorLabel(book) ? ` (${bookAuthorLabel(book)})` : ''}`} 
+                  />
+                ))}
+              </Menu>
+            </View>
+          )}
           
           <Divider style={styles.divider} />
             
@@ -882,8 +802,8 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
                 mode="contained" 
                 onPress={createChallenge}
             style={styles.createButton}
-                loading={isLoading}
-                disabled={isLoading}
+                loading={actionLoading}
+                disabled={actionLoading}
               >
             {t('common.create')}
               </Button>
@@ -894,38 +814,55 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
   
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#9317ED', '#5E0D93']}
-        style={styles.header}
-      >
+      <LinearGradient colors={['#1E1033', '#4C1D95', '#6D28D9']} style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <View style={styles.headerContent}>
-          <Text style={styles.subtitle}>{t('challenges.subtitle')}</Text>
-          
-          <View style={styles.tabsContainer}>
+          <View style={styles.headerToolbar}>
+            <IconButton
+              icon="arrow-left"
+              size={22}
+              iconColor="#fff"
+              onPress={() => navigation.goBack()}
+              style={styles.headerIconBtn}
+            />
+            <Text style={styles.heroTitle} numberOfLines={2}>{t('challenges.title')}</Text>
+          </View>
+          <Text style={styles.heroSubtitle}>{t('challenges.subtitle')}</Text>
+          <View style={styles.segmentWrap}>
             <TouchableOpacity
-              style={[styles.tab, activeTab === 'my' && styles.activeTab]}
+              style={[styles.segmentItem, activeTab === 'my' && styles.segmentItemActive]}
               onPress={() => setActiveTab('my')}
+              activeOpacity={0.9}
             >
-              <Text style={[styles.tabText, activeTab === 'my' && styles.activeTabText]}>
+              <Icon
+                name="account-star-outline"
+                size={18}
+                color={activeTab === 'my' ? '#5B21B6' : 'rgba(255,255,255,0.75)'}
+              />
+              <Text style={[styles.segmentText, activeTab === 'my' && styles.segmentTextActive]}>
                 {t('challenges.myChallenges')}
               </Text>
             </TouchableOpacity>
-            
             <TouchableOpacity
-              style={[styles.tab, activeTab === 'public' && styles.activeTab]}
+              style={[styles.segmentItem, activeTab === 'public' && styles.segmentItemActive]}
               onPress={() => setActiveTab('public')}
+              activeOpacity={0.9}
             >
-              <Text style={[styles.tabText, activeTab === 'public' && styles.activeTabText]}>
-                {t('challenges.publicChallenges')}
+              <Icon
+                name="compass-outline"
+                size={18}
+                color={activeTab === 'public' ? '#5B21B6' : 'rgba(255,255,255,0.75)'}
+              />
+              <Text style={[styles.segmentText, activeTab === 'public' && styles.segmentTextActive]}>
+                {t('challenges.discoverTab')}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
       </LinearGradient>
       
-      {isLoading ? (
+      {listLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6200ee" />
+          <ActivityIndicator size="large" color="#8A2BE2" />
           <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
       ) : (
@@ -954,8 +891,9 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
       
       {activeTab === 'my' && (
         <FAB
-          style={styles.fab}
+          style={[styles.fab, { bottom: 24 + insets.bottom }]}
           icon="plus"
+          color="#fff"
           onPress={() => setModalVisible(true)}
           label={t('challenges.newChallenge')}
         />
@@ -967,50 +905,82 @@ const ChallengesScreen: React.FC<ChallengesScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F4F2F8',
   },
   header: {
-    height: 115,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#1E1033',
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.25,
+        shadowRadius: 20,
+      },
+      android: { elevation: 10 },
+    }),
   },
   headerContent: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 15,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingHorizontal: 15,
   },
-  title: {
-    color: 'white',
-    fontSize: 24,
-    fontWeight: 'bold',
+  headerIconBtn: {
+    margin: 0,
   },
-  subtitle: {
-    color: 'white',
-    fontSize: 20,
-    marginBottom: 10,
-    fontWeight: 'bold',
-  },
-  tabsContainer: {
+  headerToolbar: {
     flexDirection: 'row',
-    marginTop: 8,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    borderBottomWidth: 3,
-    borderBottomColor: 'transparent',
   },
-  activeTab: {
-    borderBottomColor: 'white',
+  heroTitle: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.5,
   },
-  tabText: {
-    color: 'rgba(255, 255, 255, 0.8)',
+  heroSubtitle: {
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: 15,
+    marginTop: 6,
+    lineHeight: 21,
     fontWeight: '500',
   },
-  activeTabText: {
-    color: 'white',
-    fontWeight: 'bold',
+  segmentWrap: {
+    flexDirection: 'row',
+    marginTop: 20,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderRadius: 16,
+    padding: 4,
+  },
+  segmentItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  segmentItemActive: {
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      android: { elevation: 2 },
+    }),
+  },
+  segmentText: {
+    color: 'rgba(255,255,255,0.88)',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  segmentTextActive: {
+    color: '#5B21B6',
+    fontWeight: '700',
   },
   loadingContainer: {
     flex: 1,
@@ -1019,142 +989,313 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
-    color: '#666',
+    fontSize: 15,
+    color: '#6B6578',
+    fontWeight: '500',
   },
   challengesList: {
-    padding: 16,
+    padding: 20,
+    paddingBottom: 100,
+  },
+  challengeCardWrap: {
+    marginBottom: 16,
   },
   challengeCard: {
-    marginBottom: 16,
-    borderRadius: 12,
-    elevation: 3,
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(26, 22, 37, 0.06)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#1E1033',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.08,
+        shadowRadius: 16,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  challengeCardPressed: {
+    opacity: 0.92,
+    transform: [{ scale: 0.992 }],
   },
   creatorCard: {
-    borderLeftWidth: 3,
-    borderLeftColor: '#ffd700',
+    borderColor: 'rgba(234, 179, 8, 0.35)',
   },
   completedCard: {
-    borderLeftWidth: 3,
-    borderLeftColor: '#4CAF50',
+    borderColor: 'rgba(34, 197, 94, 0.35)',
   },
-  cardHeader: {
+  cardAccent: {
+    width: 5,
+    // backgroundColor: '#7C3AED',
+  },
+  cardInner: {
+    flex: 1,
+    padding: 16,
+  },
+  cardTopRow: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
+    gap: 8,
+  },
+  cardTitleBlock: {
+    flex: 1,
   },
   challengeTitle: {
-    flex: 1,
     fontSize: 18,
-    marginBottom: 8,
+    fontWeight: '700',
+    color: '#1A1625',
+    letterSpacing: -0.3,
+    lineHeight: 24,
   },
-  creatorChip: {
-    backgroundColor: '#FFF8E1',
-    marginLeft: 8,
+  cardMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 10,
   },
-  completedChip: {
-    backgroundColor: '#E8F5E9',
-    marginLeft: 8,
+  metaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: '#EDE9FE',
+  },
+  metaPillPublic: {
+    backgroundColor: '#E0F2FE',
+  },
+  metaPillTextPublic: {
+    color: '#0369A1',
+  },
+  metaPillDone: {
+    backgroundColor: '#DCFCE7',
+  },
+  metaPillTextDone: {
+    color: '#15803D',
+  },
+  metaPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#5B21B6',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   challengeDescription: {
-    marginBottom: 16,
-    color: '#555',
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6B6578',
+    lineHeight: 20,
   },
-  challengeDetails: {
-    marginBottom: 16,
-  },
-  detailRow: {
+  statsGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 16,
+    gap: 10,
+  },
+  statCell: {
+    flex: 1,
+    minWidth: '28%',
+    backgroundColor: '#F8F6FC',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  statCellWide: {
+    flexGrow: 1,
+    minWidth: '100%',
+    backgroundColor: '#F8F6FC',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  statCellLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#9CA3AF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
     marginBottom: 4,
   },
-  detailLabel: {
-    width: 100,
-    fontWeight: 'bold',
-    color: '#666',
+  statCellValue: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#1A1625',
   },
-  detailValue: {
-    flex: 1,
-    color: '#333',
+  statCellValueSmall: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1625',
   },
-  progressContainer: {
+  statCellUnit: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B6578',
+  },
+  progressBlock: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(26, 22, 37, 0.06)',
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 8,
   },
-  progressText: {
-    marginBottom: 4,
-    fontSize: 14,
-    color: '#555',
+  progressLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#9CA3AF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  progressBar: {
+  progressFraction: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#5B21B6',
+  },
+  progressTrack: {
     height: 8,
-    borderRadius: 4,
+    borderRadius: 999,
+    backgroundColor: '#EDE9FE',
+    overflow: 'hidden',
   },
-  joinButton: {
-    marginTop: 8,
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: '#7C3AED',
+  },
+  progressFillComplete: {
+    backgroundColor: '#22C55E',
+  },
+  joinCta: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#5B21B6',
+    paddingVertical: 14,
+    borderRadius: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#5B21B6',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  joinCtaPressed: {
+    opacity: 0.9,
+  },
+  joinCtaText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: 32,
   },
-  emptyIcon: {
-    backgroundColor: '#9317ED',
-    opacity: 0.8,
-    marginBottom: 16,
+  emptyIllustration: {
+    width: 100,
+    height: 100,
+    borderRadius: 36,
+    backgroundColor: '#EDE9FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
   },
-  emptyText: {
+  emptyTitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#6B6578',
     textAlign: 'center',
+    lineHeight: 24,
     marginBottom: 24,
+    fontWeight: '500',
+    maxWidth: 280,
   },
-  createButtonEmpty: {
-    marginTop: 8,
+  emptyCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#6D28D9',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 999,
+  },
+  emptyCtaText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
   },
   fab: {
     position: 'absolute',
-    margin: 16,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#9317ED',
+    right: 20,
+    backgroundColor: '#5B21B6',
+    borderRadius: 18,
   },
   modalContainer: {
-    backgroundColor: 'white',
-    margin: 16,
-    borderRadius: 16,
-    maxHeight: '90%',
+    backgroundColor: '#fff',
+    margin: 14,
+    borderRadius: 24,
+    maxHeight: '92%',
     padding: 0,
     overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.2,
+        shadowRadius: 24,
+      },
+      android: { elevation: 12 },
+    }),
   },
   modalHeaderContainer: {
-    backgroundColor: '#9317ED',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    width: '100%'
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    position: 'relative',
+    paddingHorizontal: 8,
+  },
+  modalHeaderSide: {
+    width: 48,
+  },
+  modalHeaderTitles: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  modalKicker: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
   modalTitle: {
     textAlign: 'center',
     fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
+    fontWeight: '700',
+    color: '#fff',
+    marginTop: 4,
   },
-  closeButton: {
-    position: 'absolute',
-    left: 8,
-    top: 12,
+  modalCloseRight: {
+    margin: 0,
+    width: 48,
   },
   modalScrollView: {
     maxHeight: '100%',
@@ -1162,42 +1303,68 @@ const styles = StyleSheet.create({
   divider: {
     marginVertical: 12,
     height: 1,
-    backgroundColor: '#ddd',
+    backgroundColor: 'rgba(26, 22, 37, 0.08)',
   },
   input: {
     marginHorizontal: 16,
-    marginBottom: 16,
-    backgroundColor: 'white',
+    marginBottom: 12,
+    backgroundColor: '#fff',
   },
   sectionContainer: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
   },
   dateContainer: {
-    marginHorizontal: 16,
-    marginBottom: 16,
+    marginHorizontal: 13,
+    marginBottom: 13,
   },
   dateField: {
-    marginBottom: 16,
+    marginBottom: 13,
   },
   dateLabel: {
-    fontSize: 14,
-    color: '#555',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#9CA3AF',
     marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   sectionLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 12,
+    fontWeight: '800',
     marginBottom: 12,
-    color: '#333',
+    color: '#1A1625',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
-  goalTypeContainer: {
-    marginBottom: 16,
-    paddingHorizontal: 16,
+  goalChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 8,
   },
-  radioOption: {
+  goalChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 4,
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#DDD6FE',
+    backgroundColor: '#FAF5FF',
+  },
+  goalChipActive: {
+    backgroundColor: '#6D28D9',
+    borderColor: '#6D28D9',
+  },
+  goalChipText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#5B21B6',
+  },
+  goalChipTextActive: {
+    color: '#fff',
   },
   switchContainer: {
     flexDirection: 'row',
@@ -1207,53 +1374,55 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   switchLabel: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1A1625',
+    flex: 1,
+    marginRight: 12,
   },
   privateHint: {
     fontSize: 12,
-    color: '#666',
-    fontStyle: 'italic',
-    marginTop: 4,
+    color: '#6B6578',
+    lineHeight: 18,
+    marginTop: 0,
     marginBottom: 16,
     paddingHorizontal: 16,
   },
   createButton: {
     margin: 16,
-    paddingVertical: 8,
-    backgroundColor: '#9317ED',
+    marginTop: 8,
+    paddingVertical: 6,
+    borderRadius: 14,
+    backgroundColor: '#5B21B6',
   },
   dateButton: {
-    marginHorizontal: 16,
+    marginHorizontal: 0,
     marginBottom: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  errorText: {
-    color: '#B00020',
+    borderRadius: 12,
+    borderColor: 'rgba(26, 22, 37, 0.12)',
   },
   selectMenuButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
+    borderColor: 'rgba(26, 22, 37, 0.1)',
+    borderRadius: 14,
     marginHorizontal: 16,
-    paddingLeft: 12,
+    paddingLeft: 14,
+    backgroundColor: '#FAFAFA',
   },
   selectMenuText: {
-    fontSize: 16,
-    color: '#333',
-    paddingVertical: 12,
-  },
-  dialogTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
+    fontSize: 15,
+    color: '#1A1625',
+    paddingVertical: 14,
+    fontWeight: '500',
   },
   datePickerContent: {
-    padding: 12,
+    padding: 1,
+  },
+  datePicker: {
+    borderRadius: 5,
   },
   datePickerHeader: {
     flexDirection: 'row',
@@ -1270,7 +1439,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 5,
   },
   dayHeader: {
     width: '14.28%',
@@ -1297,7 +1466,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   selectedDay: {
-    backgroundColor: '#9317ED',
+    backgroundColor: '#6D28D9',
     borderRadius: 50,
   },
   selectedDayText: {

@@ -58,21 +58,17 @@ export const setIntroCompleted = async (): Promise<void> => {
   }
 };
 
-// Ajoutez cette fonction pour déboguer
 export const resetOnboarding = async (): Promise<void> => {
   try {
     await AsyncStorage.multiRemove([FIRST_LAUNCH_KEY, LANGUAGE_SELECTED_KEY, INTRO_COMPLETED_KEY]);
-    console.log('🔄 Onboarding reset');
   } catch (error) {
     console.error('Error resetting onboarding:', error);
   }
 };
 
-// Ajoutez cette fonction temporaire
 export const clearAllStorage = async (): Promise<void> => {
   try {
     await AsyncStorage.clear();
-    console.log('🧹 Storage cleared');
   } catch (error) {
     console.error('Error clearing storage:', error);
   }

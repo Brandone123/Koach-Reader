@@ -18,11 +18,11 @@ import {
 } from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { AppDispatch } from '../store';
 import { selectUser } from '../slices/authSlice';
 import { fetchApi } from '../utils/api';
-import { mockFetchApi } from '../utils/mockApi';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { black } from 'react-native-paper/lib/typescript/styles/themes/v2/colors';
@@ -54,7 +54,7 @@ interface ReadingStats {
 }
 
 const StatsScreen: React.FC<StatsScreenProps> = ({ navigation }) => {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const user = useSelector(selectUser);
   const { t } = useTranslation();
   
@@ -69,17 +69,10 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ navigation }) => {
   const fetchReadingStats = async () => {
     setIsLoading(true);
     try {
-      // Try to fetch from real API first
       const data = await fetchApi(`/api/stats?range=${timeRange}`);
       setStats(data);
     } catch (error) {
-      try {
-        // Fall back to mock API
-        const mockData = await mockFetchApi(`/api/stats?range=${timeRange}`);
-        setStats(mockData);
-      } catch (mockError) {
-        console.error('Failed to fetch reading stats:', mockError);
-      }
+      console.error('Failed to fetch reading stats:', error);
     } finally {
       setIsLoading(false);
     }

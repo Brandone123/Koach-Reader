@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { Text, RadioButton, Title } from 'react-native-paper';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { setLanguage, selectUser } from '../slices/authSlice';
 
 // Liste des langues disponibles
@@ -19,7 +20,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   onSelect,
   showTitle = true,
 }) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const user = useSelector(selectUser);
   const [selectedLanguage, setSelectedLanguage] = useState<string>(
     user?.preferences?.language || 'en'

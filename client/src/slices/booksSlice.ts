@@ -121,8 +121,8 @@ const booksSlice = createSlice({
       if (action.payload === null) {
         state.filteredBooks = state.books;
       } else {
-        state.filteredBooks = state.books.filter(book => 
-          book.categories.includes(action.payload)
+        state.filteredBooks = state.books.filter(book =>
+          (book.categories ?? []).some((c: { id: string }) => String(c.id) === String(action.payload))
         );
       }
     },

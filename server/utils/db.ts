@@ -20,3 +20,9 @@ export const pool = new Pool({
 
 // Export pour la compatibilité avec le code existant
 export const db = supabase;
+
+// Health-check helper used by server/index.ts
+export async function checkDb(): Promise<boolean> {
+  const { error } = await supabase.from("users").select("id").limit(1);
+  return !error;
+}

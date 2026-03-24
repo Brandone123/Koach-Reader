@@ -32,7 +32,8 @@ import {
 } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { fetchBooks } from '../slices/booksSlice';
 import { AppDispatch } from '../store';
 import { useTranslation } from 'react-i18next';
@@ -94,7 +95,6 @@ const FilePreview = ({ fileUrl, fileType }: { fileUrl: string | null, fileType: 
           defaultSource={fallbackImage}
           onLoadStart={() => setIsLoading(true)}
           onLoad={() => {
-            console.log('Image loaded successfully');
             setIsLoading(false);
             setHasError(false);
           }}
@@ -147,7 +147,7 @@ const AddBookScreen: React.FC<AddBookScreenProps> = ({ navigation, route }) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const user = useSelector(selectUser);
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const { bookId } = route.params || {};
   const isEditMode = !!bookId;
   
@@ -208,8 +208,6 @@ const AddBookScreen: React.FC<AddBookScreenProps> = ({ navigation, route }) => {
   // Function to ensure storage buckets exist
   const ensureBucketsExist = async () => {
     try {
-      console.log('Checking if storage buckets exist...');
-      
       // Get list of buckets
       const { data: buckets, error } = await supabase.storage.listBuckets();
       
@@ -220,7 +218,6 @@ const AddBookScreen: React.FC<AddBookScreenProps> = ({ navigation, route }) => {
       
       // Check and create books bucket if needed
       if (!buckets.some(b => b.name === BUCKET_BOOKS)) {
-        console.log(`Creating ${BUCKET_BOOKS} bucket...`);
         const { error: createError } = await supabase.storage.createBucket(BUCKET_BOOKS, {
           public: true
         });
@@ -232,7 +229,6 @@ const AddBookScreen: React.FC<AddBookScreenProps> = ({ navigation, route }) => {
       
       // Check and create covers bucket if needed
       if (!buckets.some(b => b.name === BUCKET_COVERS)) {
-        console.log(`Creating ${BUCKET_COVERS} bucket...`);
         const { error: createError } = await supabase.storage.createBucket(BUCKET_COVERS, {
           public: true
         });
@@ -241,8 +237,6 @@ const AddBookScreen: React.FC<AddBookScreenProps> = ({ navigation, route }) => {
           console.error(`Error creating ${BUCKET_COVERS} bucket:`, createError);
         }
       }
-      
-      console.log('Storage buckets verification completed');
     } catch (err) {
       console.error('Error in bucket configuration:', err);
     }
@@ -372,7 +366,6 @@ const AddBookScreen: React.FC<AddBookScreenProps> = ({ navigation, route }) => {
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const selectedImage = result.assets[0];
-        console.log('Selected image:', selectedImage);
 
         setIsUploadingCover(true);
 
@@ -406,7 +399,6 @@ const AddBookScreen: React.FC<AddBookScreenProps> = ({ navigation, route }) => {
 
       if (result.assets && result.assets.length > 0) {
         const selectedFile = result.assets[0];
-        console.log('Selected PDF:', selectedFile);
 
         if (!selectedFile.mimeType || !ALLOWED_BOOK_TYPES.includes(selectedFile.mimeType)) {
           Alert.alert(t('common.error'), t('addBook.invalidBookType'));

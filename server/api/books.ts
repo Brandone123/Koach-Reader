@@ -2,6 +2,7 @@ import { Express, Request, Response } from "express";
 import { storage } from "../storage";
 import { InsertBook } from "../../shared/schema";
 import { asyncHandler } from "../utils/routeHandler";
+import { supabase } from "../utils/db";
 
 // Define interfaces for better type safety
 interface BookComment {
@@ -52,8 +53,8 @@ export function setupBooksRoutes(app: Express, verifyJWT: any) {
       return res.status(404).json({ message: "Book not found" });
     }
     
-    // Get comments (mock for now until API is implemented)
-    const comments: BookComment[] = []; // Empty comments array with proper type
+    // Comments endpoint/table not wired yet; keep contract stable with empty array
+    const comments: BookComment[] = [];
     
     res.status(200).json({ ...book, comments });
   }));
@@ -79,13 +80,13 @@ export function setupBooksRoutes(app: Express, verifyJWT: any) {
       title,
       author,
       description,
-      pageCount,
+      page_count: pageCount,
       category,
       language: language || "en",
-      isPublic: isPublic !== undefined ? isPublic : true,
-      uploadedById: req.user!.id,
-      fileUrl,
-      audioUrl,
+      is_public: isPublic !== undefined ? isPublic : true,
+      uploaded_by: String(req.user!.id),
+      cover_url: fileUrl || "",
+      isbn: audioUrl || null,
     };
     
     const book = await storage.createBook(newBook);
@@ -107,7 +108,7 @@ export function setupBooksRoutes(app: Express, verifyJWT: any) {
     }
     
     // Check if user is the uploader
-    if (book.uploadedById !== req.user!.id) {
+    if (book.uploaded_by !== String(req.user!.id)) {
       return res.status(403).json({ message: "Not authorized to update this book" });
     }
     
@@ -140,7 +141,7 @@ export function setupBooksRoutes(app: Express, verifyJWT: any) {
     
     // Award Koach points (20 points for commenting)
     await storage.updateUser(req.user!.id, {
-      koachPoints: req.user!.koachPoints + 20,
+      koach_points: req.user!.koach_points + 20,
     });
     
     res.status(201).json({ 
@@ -151,26 +152,22 @@ export function setupBooksRoutes(app: Express, verifyJWT: any) {
 
   // Get book categories
   app.get("/api/categories", asyncHandler(async (req: Request, res: Response) => {
-    // Temporary list of categories (in production this would come from the database)
-    const categories = [
-      { id: 1, name: "Fiction", description: "Fictional stories and novels" },
-      { id: 2, name: "Non-Fiction", description: "Based on facts and real events" },
-      { id: 3, name: "Self-Help", description: "Personal development and improvement" },
-      { id: 4, name: "Fantasy", description: "Magical worlds and mythical creatures" },
-      { id: 5, name: "Science Fiction", description: "Future technology and space exploration" },
-      { id: 6, name: "Romance", description: "Love stories and relationships" },
-      { id: 7, name: "Mystery", description: "Crime solving and suspense" },
-      { id: 8, name: "Biography", description: "Life stories of real people" },
-      { id: 9, name: "History", description: "Events and periods from the past" },
-      { id: 10, name: "Science", description: "Scientific research and discoveries" },
-      { id: 11, name: "Religion", description: "Religious texts and spiritual guidance" },
-      { id: 12, name: "Children", description: "Books for young readers" },
-      { id: 13, name: "Young Adult", description: "For teenage readers" },
-      { id: 14, name: "Business", description: "Entrepreneurship and management" },
-      { id: 15, name: "Health", description: "Wellness and medical information" },
-      { id: 16, name: "Poetry", description: "Poems and verse" },
-    ];
-    
+    const { data, error } = await supabase
+      .from("books")
+      .select("category")
+      .not("category", "is", null);
+
+    if (error) {
+      return res.status(500).json({ message: "Failed to fetch categories" });
+    }
+
+    const unique = Array.from(new Set((data || []).map((row: any) => row.category).filter(Boolean)));
+    const categories = unique.map((name, index) => ({
+      id: index + 1,
+      name,
+      description: "",
+    }));
+
     res.status(200).json(categories);
   }));
 }

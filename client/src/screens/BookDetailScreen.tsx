@@ -34,7 +34,8 @@ import {
   Menu,
   FAB
 } from 'react-native-paper';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { selectBooks, selectBooksLoading } from '../slices/booksSlice';
 import { selectUser } from '../slices/authSlice';
 import { 
@@ -45,7 +46,7 @@ import {
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation/AppNavigator';
-import { AppDispatch, RootState } from '../store';
+import { RootState } from '../store';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -53,6 +54,7 @@ import type { Author } from '../types/author';
 import { supabase } from '../lib/supabase';
 import { fixBookUrlsInObject } from '../utils/fixSupabaseUrls';
 import { useNavigation } from '@react-navigation/native';
+import { toCreateReadingPlanPayload } from '../utils/readingPlanMappers';
 
 // Header constants and sizes for better positioning
 const { width, height } = Dimensions.get('window');
@@ -116,19 +118,19 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const { bookId } = route.params;
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   
   const books = useSelector(selectBooks);
   const book = books.find(b => b.id === parseInt(bookId)) as Book;
   const user = useSelector(selectUser) as ExtendedUser;
   const isLoading = useSelector(selectBooksLoading);
-  const readingPlan = useSelector((state) => selectBookReadingPlan(state, parseInt(bookId)));
+  const readingPlan = useSelector((state: RootState) => selectBookReadingPlan(state, parseInt(bookId)));
   
   // Tous les hooks useState doivent être définis au début du composant
   const [refreshing, setRefreshing] = useState(false);
-  // const [createPlanVisible, setCreatePlanVisible] = useState(false);
-  // const [dailyGoal, setDailyGoal] = useState('');
-  // const [planNotes, setPlanNotes] = useState('');
+  const [createPlanVisible, setCreatePlanVisible] = useState(false);
+  const [dailyGoal, setDailyGoal] = useState('');
+  const [planNotes, setPlanNotes] = useState('');
   const [selectedTab, setSelectedTab] = useState<'about' | 'outline' | 'notes'>('about');
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -319,8 +321,8 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
       if (!bookId) return;
       
       try {
-        await supabase.rpc('increment_book_viewers', {
-          book_id: parseInt(bookId)
+        await supabase.rpc('register_book_view', {
+          p_book_id: parseInt(bookId, 10),
         });
       } catch (error) {
         console.error('Error incrementing viewers:', error);
@@ -602,14 +604,14 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
     const daysToComplete = Math.ceil(book.total_pages / goal);
     const endDate = new Date(Date.now() + daysToComplete * 24 * 60 * 60 * 1000).toISOString();
 
-    dispatch(createReadingPlan({
+    dispatch(createReadingPlan(toCreateReadingPlanPayload({
       userId: user.id,
       bookId: parseInt(bookId),
       startDate,
       endDate,
       dailyGoal: goal,
       notes: planNotes
-    }));
+    })) as any);
 
     setCreatePlanVisible(false);
     setDailyGoal('');
@@ -634,7 +636,7 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
         },
         {
           text: t('readingPlan.createPlan'),
-          onPress: () => navigation.navigate('ReadingPlan', { bookId: book.id }),
+          onPress: () => navigation.navigate('ReadingPlan', { bookId: book.id.toString() }),
         },
       ]
     );
@@ -683,8 +685,6 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
       if (fixedUrl) {
         // If we want to update the database with the fixed URL
         if (fixedUrl !== book.pdf_url) {
-          console.log('PDF URL fixed:', fixedUrl);
-          // Optionally update the database
           supabase
             .from('books')
             .update({ pdf_url: fixedUrl })
@@ -692,8 +692,6 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
             .then(({ error }) => {
               if (error) {
                 console.error('Error updating PDF URL:', error);
-              } else {
-                console.log('PDF URL updated in database');
               }
             });
         }
@@ -723,7 +721,6 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
   const handleDownload = async () => {
     if (book?.pdf_url) {
       try {
-        console.log('Downloading PDF from URL:', book.pdf_url);
         setSnackbarMessage(t('book.downloadStarted'));
         setSnackbarVisible(true);
         
@@ -740,7 +737,6 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
         setSnackbarVisible(true);
       }
     } else {
-      console.log('PDF URL not available for download');
       setSnackbarMessage(t('book.pdfNotAvailable'));
       setSnackbarVisible(true);
     }
@@ -756,21 +752,18 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
       
       // Vérifier si pdf_url est un chemin local
       if (bookData.pdf_url && bookData.pdf_url.startsWith('file://')) {
-        console.log('PDF URL est un chemin local, marquage pour correction:', bookData.pdf_url);
         updates.pdf_url = null;
         needsUpdate = true;
       }
       
       // Vérifier si cover_url est un chemin local
       if (bookData.cover_url && bookData.cover_url.startsWith('file://')) {
-        console.log('Cover URL est un chemin local, marquage pour correction:', bookData.cover_url);
         updates.cover_url = null;
         needsUpdate = true;
       }
       
       // Mettre à jour la base de données si nécessaire
       if (needsUpdate) {
-        console.log('Mise à jour des URLs locales pour le livre:', bookId);
         const { error } = await supabase
           .from('books')
           .update(updates)
@@ -779,8 +772,6 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
         if (error) {
           console.error('Erreur lors de la correction des URLs:', error);
         } else {
-          console.log('URLs corrigées avec succès');
-          // Mettre à jour les données du livre
           return { ...bookData, ...updates };
         }
       }
@@ -1054,7 +1045,7 @@ const BookDetailScreen: React.FC<BookDetailScreenProps> = ({ navigation, route }
                       </Text>
                       <TouchableOpacity 
                         style={styles.viewAuthorButton}
-                        onPress={() => navigation.navigate('Profile', { authorId: author.id })}
+                        onPress={() => navigation.navigate('AuthorProfile', { authorId: author.id })}
                       >
                         <Text style={styles.viewAuthorText}>{t('book.viewAuthor')}</Text>
                       </TouchableOpacity>

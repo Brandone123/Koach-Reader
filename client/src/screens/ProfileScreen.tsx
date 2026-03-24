@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,18 +8,31 @@ import {
   Dimensions,
   StatusBar,
   Modal,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Avatar, Menu } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { selectUser, logout } from '../slices/authSlice';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { supabase } from '../lib/supabase';
 
 const { width } = Dimensions.get('window');
+
+type EmbeddedUser = { username?: string | null; avatar_url?: string | null };
+
+function pickEmbeddedUser(raw: EmbeddedUser | EmbeddedUser[] | null | undefined): EmbeddedUser {
+  if (!raw) return {};
+  if (Array.isArray(raw)) return raw[0] || {};
+  return raw;
+}
 
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 
@@ -29,10 +42,17 @@ interface Props {
 
 const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const { t } = useTranslation();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const user = useSelector(selectUser);
   const [menuVisible, setMenuVisible] = useState(false);
   const [selectedAchievement, setSelectedAchievement] = useState<any>(null);
+  const [incomingRequests, setIncomingRequests] = useState<
+    { id: number; requesterId: string; username: string; avatar: string }[]
+  >([]);
+  const [outgoingRequests, setOutgoingRequests] = useState<
+    { id: number; targetId: string; username: string; avatar: string; status: string }[]
+  >([]);
+  const [friendsLoading, setFriendsLoading] = useState(false);
 
   // Mock data - à remplacer par de vraies données
   const stats = {
@@ -56,6 +76,107 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       headerShown: false,
     });
   }, [navigation]);
+
+  const loadFriendRequests = useCallback(async () => {
+    if (!user?.id) return;
+    setFriendsLoading(true);
+    try {
+      const { data: inc, error: e1 } = await supabase
+        .from('friends')
+        .select('id, user_id, users!friends_user_id_fkey(username, avatar_url)')
+        .eq('friend_id', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      const { data: out, error: e2 } = await supabase
+        .from('friends')
+        .select('id, friend_id, status, users!friends_friend_id_fkey(username, avatar_url)')
+        .eq('user_id', user.id)
+        .in('status', ['pending', 'accepted', 'declined'])
+        .order('updated_at', { ascending: false })
+        .limit(20);
+
+      if (e1) throw e1;
+      if (e2) throw e2;
+
+      setIncomingRequests(
+        (inc || []).map((row: any) => {
+          const u = pickEmbeddedUser(row.users);
+          const name = u.username || t('addFriends.contactNoName');
+          return {
+            id: row.id,
+            requesterId: row.user_id,
+            username: name,
+            avatar:
+              u.avatar_url ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`,
+          };
+        })
+      );
+
+      setOutgoingRequests(
+        (out || []).map((row: any) => {
+          const u = pickEmbeddedUser(row.users);
+          const name = u.username || t('addFriends.contactNoName');
+          return {
+            id: row.id,
+            targetId: row.friend_id,
+            username: name,
+            avatar:
+              u.avatar_url ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`,
+            status: row.status,
+          };
+        })
+      );
+    } catch (e) {
+      console.error(e);
+      Alert.alert(t('common.errorText'), t('profile.friendsLoadError'));
+    } finally {
+      setFriendsLoading(false);
+    }
+  }, [user?.id, t]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadFriendRequests();
+    }, [loadFriendRequests])
+  );
+
+  const outgoingStatusLabel = (status: string) => {
+    if (status === 'pending') return t('profile.requestPending');
+    if (status === 'accepted') return t('profile.requestAccepted');
+    if (status === 'declined') return t('profile.requestDeclined');
+    return status;
+  };
+
+  const handleAcceptRequest = async (friendshipId: number) => {
+    if (!user?.id) return;
+    const { error } = await supabase
+      .from('friends')
+      .update({ status: 'accepted' })
+      .eq('id', friendshipId)
+      .eq('friend_id', user.id);
+    if (error) {
+      Alert.alert(t('common.errorText'), error.message);
+      return;
+    }
+    loadFriendRequests();
+  };
+
+  const handleDeclineRequest = async (friendshipId: number) => {
+    if (!user?.id) return;
+    const { error } = await supabase
+      .from('friends')
+      .update({ status: 'declined' })
+      .eq('id', friendshipId)
+      .eq('friend_id', user.id);
+    if (error) {
+      Alert.alert(t('common.errorText'), error.message);
+      return;
+    }
+    loadFriendRequests();
+  };
 
   const handleSettings = () => {
     setMenuVisible(false);
@@ -295,6 +416,55 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('profile.incomingFriendRequests')}</Text>
+          {friendsLoading ? (
+            <ActivityIndicator color="#8A2BE2" style={{ marginVertical: 16 }} />
+          ) : incomingRequests.length === 0 ? (
+            <Text style={styles.friendEmpty}>{t('profile.noIncomingRequests')}</Text>
+          ) : (
+            incomingRequests.map((req) => (
+              <View key={req.id} style={styles.friendRow}>
+                <Avatar.Image size={44} source={{ uri: req.avatar }} />
+                <View style={styles.friendRowText}>
+                  <Text style={styles.friendRowName}>{req.username}</Text>
+                </View>
+                <View style={styles.friendRowActions}>
+                  <TouchableOpacity
+                    style={[styles.friendActionBtn, styles.friendAcceptBtn]}
+                    onPress={() => handleAcceptRequest(req.id)}
+                  >
+                    <Text style={styles.friendActionBtnText}>{t('profile.acceptRequest')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.friendActionBtn, styles.friendDeclineBtn]}
+                    onPress={() => handleDeclineRequest(req.id)}
+                  >
+                    <Text style={styles.friendDeclineBtnText}>{t('profile.declineRequest')}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          )}
+
+          <Text style={[styles.sectionTitle, { marginTop: 20 }]}>
+            {t('profile.outgoingFriendRequests')}
+          </Text>
+          {friendsLoading ? null : outgoingRequests.length === 0 ? (
+            <Text style={styles.friendEmpty}>{t('profile.noOutgoingRequests')}</Text>
+          ) : (
+            outgoingRequests.map((req) => (
+              <View key={req.id} style={styles.friendRow}>
+                <Avatar.Image size={44} source={{ uri: req.avatar }} />
+                <View style={styles.friendRowText}>
+                  <Text style={styles.friendRowName}>{req.username}</Text>
+                  <Text style={styles.friendRowStatus}>{outgoingStatusLabel(req.status)}</Text>
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+
         {/* Section Activité récente */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('common.loading')}</Text>
@@ -328,6 +498,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </View>
         </View>
+
+        
       </ScrollView>
 
       {/* Modal pour les succès */}
@@ -767,6 +939,64 @@ const styles = StyleSheet.create({
   distinctionProgress: {
     fontSize: 9,
     color: '#999',
+  },
+  friendEmpty: {
+    color: '#888',
+    fontSize: 14,
+    marginVertical: 8,
+  },
+  friendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  friendRowText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  friendRowName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  friendRowStatus: {
+    fontSize: 13,
+    color: '#8A2BE2',
+    marginTop: 4,
+  },
+  friendRowActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  friendActionBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  friendAcceptBtn: {
+    backgroundColor: '#8A2BE2',
+  },
+  friendDeclineBtn: {
+    backgroundColor: '#f0f0f0',
+    marginLeft: 8,
+  },
+  friendActionBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  friendDeclineBtnText: {
+    color: '#666',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
 

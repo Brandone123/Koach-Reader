@@ -8,29 +8,34 @@ import {
   TouchableOpacity,
   Alert,
   FlatList,
-  Share
+  Share,
+  Platform,
 } from 'react-native';
-import {
-  Card,
-  Title,
-  Paragraph,
-  Button,
-  Avatar,
-  Chip,
-  ProgressBar,
-  Divider,
-  TextInput,
-  IconButton,
-  List
-} from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
+import { Card, Button, Avatar, TextInput, IconButton } from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../App';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch } from '../store';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { selectUser } from '../slices/authSlice';
-import { fetchApi } from '../utils/api';
-import { mockFetchApi } from '../utils/mockApi';
+import {
+  fetchChallengeById,
+  fetchChallengeParticipants,
+  fetchChallengeComments,
+  updateChallengeProgress,
+  joinChallenge,
+  clearCurrentChallenge,
+  selectCurrentChallenge,
+  selectChallengeParticipants,
+  selectChallengeComments,
+  selectChallengesDetailLoading,
+  selectChallengesLoading,
+  type ChallengeParticipant,
+  type ChallengeComment,
+} from '../slices/challengesSlice';
 import { LinearGradient } from 'expo-linear-gradient';
 
 type ChallengeDetailScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ChallengeDetail'>;
@@ -41,303 +46,89 @@ export interface ChallengeDetailScreenProps {
   route: ChallengeDetailScreenRouteProp;
 }
 
-interface Challenge {
-  id: number;
-  title: string;
-  description: string;
-  creatorId: number;
-  creatorName: string;
-  startDate: string;
-  endDate: string;
-  goal: number;
-  goalType: 'pages' | 'books' | 'minutes';
-  bookId?: number;
-  bookTitle?: string;
-  categoryId?: number;
-  categoryName?: string;
-  isPrivate: boolean;
-  participantCount: number;
-  myProgress?: number;
-  status?: 'active' | 'completed' | 'abandoned';
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Participant {
-  id: number;
-  userId: number;
-  username: string;
-  progress: number;
-  progressPercentage: number;
-  status: 'active' | 'completed' | 'abandoned';
-  joinedAt: string;
-}
-
-interface Comment {
-  id: number;
-  userId: number;
-  username: string;
-  challengeId: number;
-  content: string;
-  createdAt: string;
-}
-
 const ChallengeDetailScreen = ({ navigation, route }: ChallengeDetailScreenProps) => {
-  const dispatch = useDispatch<AppDispatch>();
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
   const user = useSelector(selectUser);
   const { challengeId } = route.params;
-  
-  const [challenge, setChallenge] = useState<Challenge | null>(null);
-  const [participants, setParticipants] = useState<Participant[]>([]);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const idNum = parseInt(String(challengeId), 10);
+
+  const challenge = useSelector(selectCurrentChallenge);
+  const participants = useSelector(selectChallengeParticipants);
+  const comments = useSelector(selectChallengeComments);
+  const detailLoading = useSelector(selectChallengesDetailLoading);
+  const actionLoading = useSelector(selectChallengesLoading);
+
   const [progressUpdateMode, setProgressUpdateMode] = useState(false);
   const [newProgress, setNewProgress] = useState('');
   const [newComment, setNewComment] = useState('');
   const [activeTab, setActiveTab] = useState<'details' | 'participants' | 'comments'>('details');
   const [isShareLoading, setIsShareLoading] = useState(false);
-  
+
   useEffect(() => {
-    fetchChallengeDetails();
-  }, [challengeId]);
-  
-  const fetchChallengeDetails = async () => {
-    setIsLoading(true);
-    
-    try {
-      // Try real API first
-      const data = await fetchApi(`/api/challenges/${challengeId}`);
-      setChallenge(data);
-      
-      const participantsData = await fetchApi(`/api/challenges/${challengeId}/participants`);
-      setParticipants(participantsData);
-      
-      const commentsData = await fetchApi(`/api/challenges/${challengeId}/comments`);
-      setComments(commentsData);
-    } catch (error) {
+    if (!idNum || isNaN(idNum)) return;
+    dispatch(fetchChallengeById(idNum) as any);
+    dispatch(fetchChallengeParticipants(idNum) as any);
+    dispatch(fetchChallengeComments(idNum) as any);
+    return () => {
+      dispatch(clearCurrentChallenge());
+    };
+  }, [challengeId, dispatch, idNum]);
+
+  /** Anciens défis : créateur sans ligne participant — insertion pour cohérence progression */
+  useEffect(() => {
+    if (!challenge || !user || detailLoading || !idNum) return;
+    if (String(challenge.creatorId) !== String(user.id)) return;
+    const hasRow = participants.some((p) => String(p.userId) === String(user.id));
+    if (hasRow) return;
+    let cancelled = false;
+    (async () => {
       try {
-        // Fall back to mock data
-        const mockData = await mockFetchApi(`/api/challenges/${challengeId}`);
-        
-        // Create mock challenge with more detail
-        const mockChallenge: Challenge = {
-          id: challengeId,
-          title: "30-Day Reading Challenge",
-          description: "Read every day for 30 days and track your progress!",
-          creatorId: 2,
-          creatorName: "bookworm42",
-          startDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-          endDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-          goal: 500,
-          goalType: "pages",
-          isPrivate: false,
-          participantCount: 8,
-          myProgress: 220,
-          status: "active",
-          createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-          updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-        };
-        
-        setChallenge(mockChallenge);
-        
-        // Mock participants
-        const mockParticipants: Participant[] = [
-          {
-            id: 1,
-            userId: 1,
-            username: "demo",
-            progress: 220,
-            progressPercentage: 44,
-            status: "active",
-            joinedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
-          },
-          {
-            id: 2,
-            userId: 2,
-            username: "bookworm42",
-            progress: 350,
-            progressPercentage: 70,
-            status: "active",
-            joinedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
-          },
-          {
-            id: 3,
-            userId: 3,
-            username: "readaholic",
-            progress: 500,
-            progressPercentage: 100,
-            status: "completed",
-            joinedAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString()
-          },
-          {
-            id: 4,
-            userId: 4,
-            username: "bibliophile",
-            progress: 320,
-            progressPercentage: 64,
-            status: "active",
-            joinedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
-          },
-          {
-            id: 5,
-            userId: 5,
-            username: "kindlemaster",
-            progress: 180,
-            progressPercentage: 36,
-            status: "active",
-            joinedAt: new Date(Date.now() - 11 * 24 * 60 * 60 * 1000).toISOString()
-          },
-        ];
-        
-        setParticipants(mockParticipants);
-        
-        // Mock comments
-        const mockComments: Comment[] = [
-          {
-            id: 1,
-            userId: 2,
-            username: "bookworm42",
-            challengeId: challengeId,
-            content: "Let's all try to read daily and support each other!",
-            createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
-          },
-          {
-            id: 2,
-            userId: 3,
-            username: "readaholic",
-            challengeId: challengeId,
-            content: "Just finished! It was a great challenge, thanks for organizing!",
-            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-          },
-          {
-            id: 3,
-            userId: 5,
-            username: "kindlemaster",
-            challengeId: challengeId,
-            content: "I'm finding it harder than expected, but I'm not giving up!",
-            createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
-          }
-        ];
-        
-        setComments(mockComments);
-      } catch (mockError) {
-        console.error('Failed to fetch challenge details:', mockError);
-        Alert.alert('Error', 'Failed to load challenge details');
+        await dispatch(joinChallenge(idNum) as any).unwrap();
+        if (!cancelled) {
+          await dispatch(fetchChallengeById(idNum) as any);
+          await dispatch(fetchChallengeParticipants(idNum) as any);
+        }
+      } catch {
+        /* ignore */
       }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    challenge?.id,
+    user?.id,
+    detailLoading,
+    participants.length,
+    dispatch,
+    idNum,
+    challenge?.creatorId,
+    participants.some((p) => String(p.userId) === String(user?.id)),
+  ]);
+
   const updateProgress = async () => {
     if (!newProgress || isNaN(Number(newProgress)) || Number(newProgress) < 0) {
-      Alert.alert('Error', 'Please enter a valid progress value');
+      Alert.alert(t('common.error', 'Error'), t('challenges.detail.invalidProgress'));
       return;
     }
-    
     if (!challenge) return;
-    
     const progress = Number(newProgress);
-    
-    setIsLoading(true);
     try {
-      // Try real API first
-      await fetchApi(`/api/challenges/${challengeId}/progress`, {
-        method: 'POST',
-        body: { progress }
-      });
-      
-      // Update local state
-      setChallenge(prev => prev ? { ...prev, myProgress: progress } : null);
-      setParticipants(prev => 
-        prev.map(p => p.userId === user?.id 
-          ? { 
-              ...p, 
-              progress, 
-              progressPercentage: Math.min(100, Math.round((progress / (challenge?.goal || 1)) * 100)),
-              status: progress >= (challenge?.goal || 0) ? 'completed' : 'active'
-            } 
-          : p
-        )
-      );
-      
+      await dispatch(
+        updateChallengeProgress({ challengeId: idNum, progress }) as any
+      ).unwrap();
       setProgressUpdateMode(false);
       setNewProgress('');
-      
-      Alert.alert('Success', 'Progress updated successfully!');
-    } catch (error) {
-      try {
-        // Fall back to mock API
-        // Update local state
-        const updatedProgress = progress;
-        const progressPercentage = Math.min(100, Math.round((progress / (challenge?.goal || 1)) * 100));
-        const newStatus = progress >= (challenge?.goal || 0) ? 'completed' : 'active';
-        
-        setChallenge(prev => prev ? { ...prev, myProgress: updatedProgress, status: newStatus } : null);
-        
-        setParticipants(prev => 
-          prev.map(p => p.userId === user?.id 
-            ? { ...p, progress: updatedProgress, progressPercentage, status: newStatus } 
-            : p
-          )
-        );
-        
-        setProgressUpdateMode(false);
-        setNewProgress('');
-        
-        Alert.alert('Success', 'Progress updated successfully!');
-      } catch (mockError) {
-        console.error('Failed to update progress:', mockError);
-        Alert.alert('Error', 'Failed to update progress');
-      }
-    } finally {
-      setIsLoading(false);
+      Alert.alert(t('common.success'), t('challenges.detail.progressSaved'));
+    } catch (error: any) {
+      Alert.alert(t('common.error', 'Error'), error?.message || t('challenges.detail.joinFailed'));
     }
   };
-  
+
   const addComment = async () => {
-    if (!newComment.trim()) {
-      Alert.alert('Error', 'Please enter a comment');
-      return;
-    }
-    
-    if (!user) {
-      Alert.alert('Error', 'You must be logged in to add a comment');
-      return;
-    }
-    
-    setIsLoading(true);
-    try {
-      // Try real API first
-      const response = await fetchApi(`/api/challenges/${challengeId}/comments`, {
-        method: 'POST',
-        body: { content: newComment }
-      });
-      
-      // Add new comment to the list
-      setComments(prev => [response, ...prev]);
-      setNewComment('');
-    } catch (error) {
-      try {
-        // Fall back to mock API
-        const mockComment: Comment = {
-          id: comments.length + 1,
-          userId: user.id,
-          username: user.username || 'Anonymous',
-          challengeId,
-          content: newComment,
-          createdAt: new Date().toISOString()
-        };
-        
-        setComments(prev => [mockComment, ...prev]);
-        setNewComment('');
-      } catch (mockError) {
-        console.error('Failed to add comment:', mockError);
-        Alert.alert('Error', 'Failed to add comment');
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    Alert.alert(t('common.comingSoon', 'Coming soon'), t('challenges.detail.commentsDisabled'));
   };
   
   const formatDate = (dateString: string) => {
@@ -364,26 +155,30 @@ const ChallengeDetailScreen = ({ navigation, route }: ChallengeDetailScreenProps
   
   const getTimeRemaining = () => {
     if (!challenge) return null;
-    
     const endDate = new Date(challenge.endDate);
     const now = new Date();
-    
-    // Challenge has ended
     if (now > endDate) {
-      return 'Challenge ended';
+      return t('challenges.detail.ended');
     }
-    
     const diffTime = Math.abs(endDate.getTime() - now.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return `${diffDays} days remaining`;
+    return diffDays === 1
+      ? t('challenges.detail.daysLeft_one', { n: diffDays })
+      : t('challenges.detail.daysLeft', { n: diffDays });
   };
   
-  const getGoalTypeLabel = (type: 'pages' | 'books' | 'minutes') => {
+  const getGoalTypeLabel = (type: string) => {
     switch (type) {
-      case 'pages': return 'pages';
-      case 'books': return 'books';
-      case 'minutes': return 'minutes of reading';
+      case 'pages':
+        return t('challenges.pages');
+      case 'books':
+        return t('challenges.books');
+      case 'minutes':
+        return t('challenges.minutes');
+      case 'koach':
+        return t('common.points');
+      default:
+        return type;
     }
   };
   
@@ -394,7 +189,7 @@ const ChallengeDetailScreen = ({ navigation, route }: ChallengeDetailScreenProps
     const sortedParticipants = [...participants].sort((a, b) => b.progress - a.progress);
     
     // Find user's rank
-    const userIndex = sortedParticipants.findIndex(p => p.userId === user.id);
+    const userIndex = sortedParticipants.findIndex(p => String(p.userId) === String(user.id));
     
     if (userIndex === -1) return null;
     
@@ -410,74 +205,68 @@ const ChallengeDetailScreen = ({ navigation, route }: ChallengeDetailScreenProps
     try {
       const message = `Join me in the "${challenge.title}" reading challenge on Koach! Goal: ${challenge.goal} ${getGoalTypeLabel(challenge.goalType)}. ${getTimeRemaining()}!`;
       
-      const result = await Share.share({
+      await Share.share({
         message,
         title: `Koach Reading Challenge: ${challenge.title}`,
       });
-      
-      if (result.action === Share.sharedAction) {
-        if (result.activityType) {
-          console.log(`Shared via ${result.activityType}`);
-        } else {
-          console.log('Shared successfully');
-        }
-      } else if (result.action === Share.dismissedAction) {
-        console.log('Share dismissed');
-      }
     } catch (error) {
       console.error('Error sharing:', error);
-      Alert.alert('Share Error', 'There was a problem sharing this challenge');
+      Alert.alert(t('common.errorGeneric'), t('challenges.detail.shareError'));
     } finally {
       setIsShareLoading(false);
     }
   };
   
-  const renderParticipant = ({ item, index }: { item: Participant, index: number }) => {
-    const isCurrentUser = item.userId === user?.id;
-    
+  const renderParticipant = ({ item, index }: { item: ChallengeParticipant; index: number }) => {
+    const isCurrentUser = String(item.userId) === String(user?.id);
+    const goal = challenge?.goal || 1;
+    const pct = Math.min(100, Math.round((item.progress / goal) * 100));
+
     return (
-      <Card style={[styles.participantCard, isCurrentUser && styles.currentUserCard]}>
-        <Card.Content style={styles.participantContent}>
-          <View style={styles.participantRank}>
-            <Avatar.Text 
-              size={40} 
-              label={(index + 1).toString()} 
-              style={[
-                styles.rankAvatar,
-                index === 0 ? styles.firstRankAvatar : 
-                index === 1 ? styles.secondRankAvatar : 
-                index === 2 ? styles.thirdRankAvatar : styles.otherRankAvatar
-              ]} 
-            />
-          </View>
-          
-          <View style={styles.participantInfo}>
-            <Text style={[styles.participantName, isCurrentUser && styles.currentUserText]}>
-              {item.username} {isCurrentUser && '(You)'}
+      <View style={[styles.participantRow, isCurrentUser && styles.participantRowHighlight]}>
+        <Avatar.Text
+          size={44}
+          label={(index + 1).toString()}
+          style={[
+            styles.rankAvatar,
+            index === 0
+              ? styles.firstRankAvatar
+              : index === 1
+                ? styles.secondRankAvatar
+                : index === 2
+                  ? styles.thirdRankAvatar
+                  : styles.otherRankAvatar,
+          ]}
+        />
+        <View style={styles.participantBody}>
+          <View style={styles.participantTop}>
+            <Text style={[styles.participantName, isCurrentUser && styles.currentUserText]} numberOfLines={1}>
+              {item.username}
+              {isCurrentUser && (
+                <Text style={styles.youSuffix}> · {t('challenges.detail.you')}</Text>
+              )}
             </Text>
-            
-            <View style={styles.progressInfo}>
-              <Text style={styles.progressValue}>
-                {item.progress} / {challenge?.goal} {challenge?.goalType}
-              </Text>
-              <ProgressBar 
-                progress={item.progressPercentage / 100} 
-                color={item.status === 'completed' ? '#4CAF50' : '#6200ee'} 
-                style={styles.progressBar} 
-              />
-            </View>
-            
-            {item.status === 'completed' && (
-              <Chip icon="trophy" style={styles.completedChip}>Completed</Chip>
-            )}
+            <Text style={styles.participantScore}>
+              {item.progress}/{goal}
+            </Text>
           </View>
-        </Card.Content>
-      </Card>
+          <View style={styles.participantTrack}>
+            <View style={[styles.participantTrackFill, { width: `${pct}%` }]} />
+          </View>
+          <Text style={styles.participantUnit}>{getGoalTypeLabel(challenge?.goalType || 'pages')}</Text>
+          {item.status === 'completed' && (
+            <View style={styles.doneBadge}>
+              <Icon name="check-decagram" size={14} color="#15803D" />
+              <Text style={styles.doneBadgeText}>{t('leaderboard.completed')}</Text>
+            </View>
+          )}
+        </View>
+      </View>
     );
   };
   
-  const renderComment = ({ item }: { item: Comment }) => {
-    const isCurrentUser = user ? item.userId === user.id : false;
+  const renderComment = ({ item }: { item: ChallengeComment }) => {
+    const isCurrentUser = user ? String(item.userId) === String(user.id) : false;
     
     return (
       <Card style={[styles.commentCard, isCurrentUser && styles.currentUserCommentCard]}>
@@ -495,240 +284,278 @@ const ChallengeDetailScreen = ({ navigation, route }: ChallengeDetailScreenProps
     );
   };
   
-  if (isLoading && !challenge) {
+  if (detailLoading && !challenge) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6200ee" />
-        <Text style={styles.loadingText}>Loading challenge details...</Text>
+      <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
+        <ActivityIndicator size="large" color="#6D28D9" />
+        <Text style={styles.loadingText}>{t('challenges.detail.loading')}</Text>
       </View>
     );
   }
-  
+
   if (!challenge) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Challenge not found or an error occurred.</Text>
-        <Button 
-          mode="contained" 
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          Go Back
+      <View style={[styles.errorContainer, { paddingTop: insets.top }]}>
+        <Icon name="alert-circle-outline" size={56} color="#C4B5D4" />
+        <Text style={styles.errorText}>{t('challenges.detail.notFound')}</Text>
+        <Button mode="contained" onPress={() => navigation.goBack()} style={styles.backButton} buttonColor="#5B21B6">
+          {t('common.goBack')}
         </Button>
       </View>
     );
   }
+
+  const isParticipant =
+    !!user &&
+    (String(challenge.creatorId) === String(user.id) ||
+      participants.some((p) => String(p.userId) === String(user.id)));
+  const myParticipantRow = participants.find((p) => String(p.userId) === String(user?.id));
+  const userCompleted = myParticipantRow?.status === 'completed';
+  const myProgressDisplay =
+    myParticipantRow != null ? myParticipantRow.progress : challenge.myProgress ?? 0;
   
   return (
     <View style={styles.container}>
-       <LinearGradient
-        colors={['#9317ED', '#5E0D93']}
-        style={styles.header}
+      <LinearGradient
+        colors={['#1E1033', '#4C1D95', '#6D28D9']}
+        style={[styles.header, { paddingTop: insets.top + 8 }]}
       >
-        <View style={styles.titleContainer}>
-          <Title style={styles.title}>{challenge.title}</Title>
+        <View style={styles.headerToolbar}>
           <IconButton
-            icon="share"
+            icon="arrow-left"
             size={22}
+            iconColor="#fff"
+            onPress={() => navigation.goBack()}
+            style={styles.headerIconBtn}
+          />
+          <Text style={styles.heroTitle} numberOfLines={2}>
+            {challenge.title.length > 20 ? challenge.title.substring(0, 20) + '...' : challenge.title}
+          </Text>
+
+          <IconButton
+            icon="share-variant"
+            size={22}
+            iconColor="#fff"
             onPress={shareChallenge}
             disabled={isShareLoading}
             loading={isShareLoading}
-            style={styles.shareButton}
+            style={styles.headerIconBtn}
           />
         </View>
-      
-        <View style={styles.tabsContainer}>
+       
+        <View style={styles.visibilityRow}>
+          <View style={[styles.visPill, challenge.isPrivate ? styles.visPillPrivate : styles.visPillPublic]}>
+            <Icon name={challenge.isPrivate ? 'lock-outline' : 'earth'} size={14} color={challenge.isPrivate ? '#6B21A8' : '#0369A1'} />
+            <Text style={[styles.visPillText, challenge.isPrivate ? styles.visPillTextPrivate : styles.visPillTextPublic]}>
+              {challenge.isPrivate ? t('challenges.private') : t('challenges.detail.public')}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.segmentWrap}>
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'details' && styles.activeTab]}
+            style={[styles.segmentItem, activeTab === 'details' && styles.segmentItemActive]}
             onPress={() => setActiveTab('details')}
+            activeOpacity={0.9}
           >
-            <Text style={[styles.tabText, activeTab === 'details' && styles.activeTabText]}>
-              Details
+            <Icon name="text-box-outline" size={17} color={activeTab === 'details' ? '#5B21B6' : 'rgba(255,255,255,0.75)'} />
+            <Text style={[styles.segmentText, activeTab === 'details' && styles.segmentTextActive]}>
+              {t('challenges.detail.overview')}
             </Text>
           </TouchableOpacity>
-          
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'participants' && styles.activeTab]}
+            style={[styles.segmentItem, activeTab === 'participants' && styles.segmentItemActive]}
             onPress={() => setActiveTab('participants')}
+            activeOpacity={0.9}
           >
-            <Text style={[styles.tabText, activeTab === 'participants' && styles.activeTabText]}>
-              Leaderboard
+            <Icon name="podium" size={17} color={activeTab === 'participants' ? '#5B21B6' : 'rgba(255,255,255,0.75)'} />
+            <Text style={[styles.segmentText, activeTab === 'participants' && styles.segmentTextActive]}>
+              {t('challenges.detail.rankings')}
             </Text>
           </TouchableOpacity>
-          
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'comments' && styles.activeTab]}
+            style={[styles.segmentItem, activeTab === 'comments' && styles.segmentItemActive]}
             onPress={() => setActiveTab('comments')}
+            activeOpacity={0.9}
           >
-            <Text style={[styles.tabText, activeTab === 'comments' && styles.activeTabText]}>
-              Discussion
+            <Icon name="forum-outline" size={17} color={activeTab === 'comments' ? '#5B21B6' : 'rgba(255,255,255,0.75)'} />
+            <Text style={[styles.segmentText, activeTab === 'comments' && styles.segmentTextActive]}>
+              {t('challenges.detail.discussion')}
             </Text>
           </TouchableOpacity>
         </View>
       </LinearGradient>
       
       {activeTab === 'details' && (
-        <ScrollView style={styles.scrollView}>
-          <Card style={styles.detailsCard}>
-            <Card.Content>
-            <View style={styles.statsContainer}>
-              
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{participants.length}</Text>
-                <Text style={styles.statLabel}>Participants</Text>
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.detailsSurface}>
+            <View style={styles.statsRow}>
+              <View style={styles.statPill}>
+                <Icon name="account-group-outline" size={18} color="#7C3AED" />
+                <Text style={styles.statPillValue}>{participants.length}</Text>
+                <Text style={styles.statPillLabel}>{t('challenges.detail.players')}</Text>
               </View>
-              
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{challenge.goalType === 'pages' ? challenge.goal : challenge.goal}</Text>
-                <Text style={styles.statLabel}>{getGoalTypeLabel(challenge.goalType)}</Text>
+              <View style={styles.statPill}>
+                <Icon name="target" size={18} color="#7C3AED" />
+                <Text style={styles.statPillValue}>{challenge.goal}</Text>
+                <Text style={styles.statPillLabel}>{t('challenges.detail.target')}</Text>
               </View>
-              
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{getTimeRemaining()}</Text>
-                <Text style={styles.statLabel}>Time</Text>
+              <View style={styles.statPillWide}>
+                <Icon name="clock-outline" size={18} color="#7C3AED" />
+                <Text style={styles.statPillValueSmall} numberOfLines={2}>
+                  {getTimeRemaining()}
+                </Text>
+                <Text style={styles.statPillLabel}>{t('challenges.detail.timeline')}</Text>
               </View>
             </View>
 
+            {!!challenge.description?.trim() && (
               <Text style={styles.description}>{challenge.description}</Text>
-              
-              <Divider style={styles.divider} />
-              
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Created by:</Text>
-                <Text style={styles.detailValue}>{challenge.creatorName}</Text>
+            )}
+
+            <View style={styles.metaList}>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaKey}>{t('challenges.detail.createdBy')}</Text>
+                <Text style={styles.metaVal} numberOfLines={1}>
+                  {challenge.creatorUsername ||
+                    (String(challenge.creatorId) === String(user?.id) ? t('challenges.detail.you') : '—')}
+                </Text>
               </View>
-              
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Start Date:</Text>
-                <Text style={styles.detailValue}>{formatDate(challenge.startDate)}</Text>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaKey}>{t('challenges.startDate')}</Text>
+                <Text style={styles.metaVal}>{formatDate(challenge.startDate)}</Text>
               </View>
-              
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>End Date:</Text>
-                <Text style={styles.detailValue}>{formatDate(challenge.endDate)}</Text>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaKey}>{t('challenges.endDate')}</Text>
+                <Text style={styles.metaVal}>{formatDate(challenge.endDate)}</Text>
               </View>
-              
-              {challenge.bookTitle && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Book:</Text>
-                  <Text style={styles.detailValue}>{challenge.bookTitle}</Text>
+              {challenge.bookTitle ? (
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaKey}>{t('challenges.detail.book')}</Text>
+                  <Text style={styles.metaVal}>{challenge.bookTitle}</Text>
                 </View>
-              )}
-              
-              {challenge.categoryName && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Category:</Text>
-                  <Text style={styles.detailValue}>{challenge.categoryName}</Text>
+              ) : null}
+            </View>
+
+            <Text style={styles.sectionHeading}>{t('challenges.detail.yourProgress')}</Text>
+
+            {isParticipant && !userCompleted ? (
+              <View style={styles.progressSection}>
+                <View style={styles.progressHead}>
+                  <Text style={styles.progressFraction}>
+                    {myProgressDisplay} / {challenge.goal}{' '}
+                    <Text style={styles.progressUnit}>{getGoalTypeLabel(challenge.goalType)}</Text>
+                  </Text>
+                  <Text style={styles.progressPct}>
+                    {Math.round((myProgressDisplay / (challenge.goal || 1)) * 100)}%
+                  </Text>
                 </View>
-              )}
-              
-              <Divider style={styles.divider} />
-              
-              <Text style={styles.yourProgressLabel}>Your Progress</Text>
-              
-              {challenge.status === 'active' ? (
-                <View>
-                  <View style={styles.progressContainer}>
-                    <Text style={styles.progressText}>
-                      {challenge.myProgress || 0} / {challenge.goal} {getGoalTypeLabel(challenge.goalType)}
-                      {" "}
-                      ({Math.round(((challenge.myProgress || 0) / challenge.goal) * 100)}%)
-                    </Text>
-                    <ProgressBar 
-                      progress={(challenge.myProgress || 0) / challenge.goal} 
-                      color={(challenge.myProgress || 0) >= challenge.goal ? '#4CAF50' : '#6200ee'} 
-                      style={styles.progressBar} 
-                    />
-                  </View>
-                  
-                  {getUserRank() !== null && (
-                    <View style={styles.rankInfo}>
-                      <Text style={styles.rankText}>
-                        Your Rank: {getUserRank()} of {participants.length}
-                      </Text>
-                    </View>
-                  )}
-                  
-                  {progressUpdateMode ? (
-                    <View style={styles.updateProgressContainer}>
-                      <TextInput
-                        label={`Your progress (${getGoalTypeLabel(challenge.goalType)})`}
-                        value={newProgress}
-                        onChangeText={setNewProgress}
-                        keyboardType="numeric"
-                        style={styles.progressInput}
-                      />
-                      
-                      <View style={styles.updateButtons}>
-                        <Button 
-                          mode="outlined" 
-                          onPress={() => {
-                            setProgressUpdateMode(false);
-                            setNewProgress('');
-                          }}
-                          style={[styles.updateButton, { marginRight: 8 }]}
-                        >
-                          Cancel
-                        </Button>
-                        
-                        <Button 
-                          mode="contained" 
-                          onPress={updateProgress}
-                          style={styles.updateButton}
-                          loading={isLoading}
-                          disabled={isLoading}
-                        >
-                          Update
-                        </Button>
-                      </View>
-                    </View>
-                  ) : (
-                    <Button 
-                      mode="contained" 
-                      onPress={() => {
-                        setProgressUpdateMode(true);
-                        setNewProgress(challenge.myProgress?.toString() || '0');
-                      }}
-                      icon="pencil"
-                      style={styles.updateProgressButton}
-                    >
-                      Update Progress
-                    </Button>
-                  )}
-                </View>
-              ) : challenge.status === 'completed' ? (
-                <View style={styles.completedContainer}>
-                  <Avatar.Icon 
-                    size={60} 
-                    icon="trophy" 
-                    style={styles.completedIcon} 
+                <View style={styles.progressTrackMain}>
+                  <View
+                    style={[
+                      styles.progressTrackFill,
+                      { width: `${Math.min(100, (myProgressDisplay / (challenge.goal || 1)) * 100)}%` },
+                    ]}
                   />
-                  <Text style={styles.completedText}>
-                    Congratulations! You've completed this challenge!
-                  </Text>
-                  <Text style={styles.completedSubtext}>
-                    Final progress: {challenge.myProgress} / {challenge.goal} {getGoalTypeLabel(challenge.goalType)}
-                  </Text>
                 </View>
-              ) : (
-                <View style={styles.notJoinedContainer}>
-                  <Text style={styles.notJoinedText}>
-                    You're not participating in this challenge yet.
+                {getUserRank() !== null && (
+                  <Text style={styles.rankLine}>
+                    {t('challenges.detail.rankLine', { rank: getUserRank(), total: participants.length })}
                   </Text>
-                  <Button 
-                    mode="contained" 
+                )}
+                {progressUpdateMode ? (
+                  <View style={styles.editBlock}>
+                    <TextInput
+                      label={t('challenges.detail.progressLabel', {
+                        unit: getGoalTypeLabel(challenge.goalType),
+                      })}
+                      value={newProgress}
+                      onChangeText={setNewProgress}
+                      keyboardType="numeric"
+                      mode="outlined"
+                      style={styles.progressInput}
+                    />
+                    <View style={styles.updateButtons}>
+                      <Button
+                        mode="outlined"
+                        onPress={() => {
+                          setProgressUpdateMode(false);
+                          setNewProgress('');
+                        }}
+                        style={styles.updateButton}
+                        textColor="#5B21B6"
+                      >
+                        {t('challenges.detail.cancel')}
+                      </Button>
+                      <Button
+                        mode="contained"
+                        onPress={updateProgress}
+                        style={styles.updateButton}
+                        loading={actionLoading}
+                        disabled={actionLoading}
+                        buttonColor="#5B21B6"
+                      >
+                        {t('challenges.detail.save')}
+                      </Button>
+                    </View>
+                  </View>
+                ) : (
+                  <Button
+                    mode="contained"
                     onPress={() => {
-                      // Join challenge function would be called here
-                      Alert.alert('Join Challenge', 'This would join the challenge in a real implementation');
+                      setProgressUpdateMode(true);
+                      setNewProgress(String(myProgressDisplay));
                     }}
-                    style={styles.joinButton}
+                    icon="pencil"
+                    style={styles.primaryBtn}
+                    buttonColor="#5B21B6"
                   >
-                    Join Challenge
+                    {t('challenges.detail.updateProgress')}
                   </Button>
+                )}
+              </View>
+            ) : isParticipant && userCompleted ? (
+              <View style={styles.winCard}>
+                <View style={styles.winIconWrap}>
+                  <Icon name="trophy-variant" size={36} color="#CA8A04" />
                 </View>
-              )}
-            </Card.Content>
-          </Card>
+                <Text style={styles.winTitle}>{t('challenges.detail.completedTitle')}</Text>
+                <Text style={styles.winSub}>{t('challenges.detail.completedBody')}</Text>
+                <Text style={styles.winStats}>
+                  {myProgressDisplay} / {challenge.goal} {getGoalTypeLabel(challenge.goalType)}
+                </Text>
+              </View>
+            ) : !user ? (
+              <View style={styles.ctaCard}>
+                <Text style={styles.ctaText}>{t('challenges.detail.signInJoin')}</Text>
+              </View>
+            ) : (
+              <View style={styles.ctaCard}>
+                <Text style={styles.ctaText}>
+                  {challenge.isPrivate ? t('challenges.detail.privateOnlyInvite') : t('challenges.detail.joinHint')}
+                </Text>
+                {!challenge.isPrivate && (
+                  <Button
+                    mode="contained"
+                    onPress={async () => {
+                      try {
+                        await dispatch(joinChallenge(idNum) as any).unwrap();
+                        await dispatch(fetchChallengeById(idNum) as any);
+                        await dispatch(fetchChallengeParticipants(idNum) as any);
+                        Alert.alert(t('common.success'), t('challenges.joinedSuccess'));
+                      } catch (e: any) {
+                        Alert.alert(t('common.error'), e?.message || t('challenges.detail.joinFailed'));
+                      }
+                    }}
+                    style={styles.primaryBtn}
+                    buttonColor="#5B21B6"
+                  >
+                    {t('challenges.joinChallenge')}
+                  </Button>
+                )}
+              </View>
+            )}
+          </View>
         </ScrollView>
       )}
       
@@ -738,62 +565,62 @@ const ChallengeDetailScreen = ({ navigation, route }: ChallengeDetailScreenProps
             <FlatList
               data={[...participants].sort((a, b) => b.progress - a.progress)}
               renderItem={renderParticipant}
-              keyExtractor={item => item.id.toString()}
+              keyExtractor={(item) => item.id.toString()}
               contentContainerStyle={styles.participantsList}
+              showsVerticalScrollIndicator={false}
             />
           ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No participants in this challenge yet.</Text>
+            <View style={styles.emptyState}>
+              <Icon name="account-group-outline" size={48} color="#C4B5D4" />
+              <Text style={styles.emptyTitle}>{t('challenges.detail.noParticipants')}</Text>
             </View>
           )}
         </View>
       )}
-      
+
       {activeTab === 'comments' && (
         <View style={styles.commentsContainer}>
-          <Card style={styles.commentInputCard}>
-            <Card.Content>
-              {user ? (
-                <>
-                  <TextInput
-                    label="Add a comment"
-                    value={newComment}
-                    onChangeText={setNewComment}
-                    multiline
-                    numberOfLines={2}
-                    style={styles.commentInput}
-                  />
-                  
-                  <Button 
-                    mode="contained" 
-                    onPress={addComment}
-                    style={styles.addCommentButton}
-                    disabled={!newComment.trim() || isLoading}
-                    loading={isLoading}
-                    icon="send"
-                  >
-                    Post
-                  </Button>
-                </>
-              ) : (
-                <View style={styles.loginPromptContainer}>
-                  <Text style={styles.loginPromptText}>You must be logged in to add comments</Text>
-                  {/* Add a login button if needed */}
-                </View>
-              )}
-            </Card.Content>
-          </Card>
-          
+          <View style={styles.commentComposer}>
+            {user ? (
+              <>
+                <TextInput
+                  label={t('challenges.detail.addComment')}
+                  value={newComment}
+                  onChangeText={setNewComment}
+                  multiline
+                  numberOfLines={2}
+                  mode="outlined"
+                  style={styles.commentInput}
+                />
+                <Button
+                  mode="contained"
+                  onPress={addComment}
+                  style={styles.addCommentButton}
+                  disabled={!newComment.trim() || actionLoading}
+                  loading={actionLoading}
+                  icon="send"
+                  buttonColor="#5B21B6"
+                >
+                  {t('challenges.detail.post')}
+                </Button>
+              </>
+            ) : (
+              <Text style={styles.loginPromptText}>{t('challenges.detail.loginForComments')}</Text>
+            )}
+          </View>
+
           {comments.length > 0 ? (
             <FlatList
               data={comments}
               renderItem={renderComment}
-              keyExtractor={item => item.id.toString()}
+              keyExtractor={(item) => item.id.toString()}
               contentContainerStyle={styles.commentsList}
+              showsVerticalScrollIndicator={false}
             />
           ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No comments yet. Be the first to start the discussion!</Text>
+            <View style={styles.emptyState}>
+              <Icon name="forum-outline" size={48} color="#C4B5D4" />
+              <Text style={styles.emptyTitle}>{t('challenges.detail.noComments')}</Text>
             </View>
           )}
         </View>
@@ -805,286 +632,451 @@ const ChallengeDetailScreen = ({ navigation, route }: ChallengeDetailScreenProps
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F4F2F8',
   },
   header: {
-    // backgroundColor: '#9317ED',
-    padding: 24,
-    paddingTop: 0,
-    paddingBottom: 0,
-
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    width: '100%'
+    paddingHorizontal: 5,
+    paddingBottom: 18,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#1E1033',
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.22,
+        shadowRadius: 20,
+      },
+      android: { elevation: 10 },
+    }),
   },
-  titleContainer: {
+  headerToolbar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 2,
   },
-  title: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: 'bold',
-    flex: 1,
-  },
-  shareButton: {
+  headerIconBtn: {
     margin: 0,
-    backgroundColor: 'white'
   },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 16,
-  },
-  statItem: {
-    alignItems: 'center',
-    marginBottom: 5,
-    borderRadius: 4,
-    padding: 5,
-    marginLeft: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(209, 208, 208, 0.8)',
-  },
-  statValue: {
-    color: '#9317ED',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  statLabel: {
-    color: 'black',
-    fontSize: 15,
+  heroTitle: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    lineHeight: 30,
     marginTop: 4,
-    fontWeight: 'bold',
+    paddingHorizontal: 10,
   },
-  tabsContainer: {
+  visibilityRow: {
     flexDirection: 'row',
-    marginTop: 8,
+    marginTop: 12,
+    paddingHorizontal: 16,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
+  visPill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 3,
-    borderBottomColor: 'transparent',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
   },
-  activeTab: {
-    borderBottomColor: 'white',
+  visPillPrivate: {
+    backgroundColor: 'rgba(255,255,255,0.9)',
   },
-  tabText: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '500',
+  visPillPublic: {
+    backgroundColor: 'rgba(224,242,254,0.95)',
   },
-  activeTabText: {
-    color: 'white',
-    fontWeight: 'bold',
+  visPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  visPillTextPrivate: {
+    color: '#5B21B6',
+  },
+  visPillTextPublic: {
+    color: '#0369A1',
+  },
+  segmentWrap: {
+    flexDirection: 'row',
+    marginTop: 18,
+    marginHorizontal: 12,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderRadius: 16,
+    padding: 4,
+  },
+  segmentItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 4,
+  },
+  segmentItemActive: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+      },
+      android: { elevation: 2 },
+    }),
+  },
+  segmentText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.85)',
+    textAlign: 'center',
+  },
+  segmentTextActive: {
+    color: '#5B21B6',
+    fontWeight: '700',
   },
   scrollView: {
     flex: 1,
   },
-  detailsCard: {
-    margin: 16,
-    borderRadius: 12,
-    elevation: 3,
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  detailsSurface: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(26, 22, 37, 0.06)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#1E1033',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.06,
+        shadowRadius: 20,
+      },
+      android: { elevation: 3 },
+    }),
+  },
+  statsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  statPill: {
+    flex: 1,
+    minWidth: '28%',
+    backgroundColor: '#F8F6FC',
+    borderRadius: 16,
+    padding: 14,
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  statPillWide: {
+    flexGrow: 1,
+    minWidth: '100%',
+    backgroundColor: '#F8F6FC',
+    borderRadius: 16,
+    padding: 14,
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  statPillValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1A1625',
+  },
+  statPillValueSmall: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1625',
+    lineHeight: 20,
+  },
+  statPillLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#9CA3AF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   description: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#333',
-    marginBottom: 16,
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#6B6578',
+    marginTop: 18,
   },
-  divider: {
-    marginVertical: 16,
+  metaList: {
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(26, 22, 37, 0.06)',
+    paddingTop: 16,
+    gap: 12,
   },
-  detailRow: {
+  metaRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
   },
-  detailLabel: {
-    width: 100,
-    fontWeight: 'bold',
-    color: '#666',
+  metaKey: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    fontWeight: '600',
   },
-  detailValue: {
+  metaVal: {
     flex: 1,
-    color: '#333',
-  },
-  yourProgressLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#333',
-  },
-  progressContainer: {
-    marginBottom: 16,
-  },
-  progressText: {
-    marginBottom: 4,
     fontSize: 14,
-    color: '#555',
+    fontWeight: '600',
+    color: '#1A1625',
+    textAlign: 'right',
   },
-  progressBar: {
-    height: 8,
-    borderRadius: 4,
+  sectionHeading: {
+    marginTop: 24,
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1A1625',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
-  rankInfo: {
-    marginBottom: 16,
+  progressSection: {
+    marginTop: 14,
   },
-  rankText: {
+  progressHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+  },
+  progressFraction: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#1A1625',
+  },
+  progressUnit: {
     fontSize: 14,
-    color: '#9317ED',
-    fontWeight: 'bold',
+    fontWeight: '600',
+    color: '#6B6578',
   },
-  updateProgressContainer: {
-    marginBottom: 16,
+  progressPct: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#7C3AED',
+  },
+  progressTrackMain: {
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: '#EDE9FE',
+    overflow: 'hidden',
+    marginTop: 10,
+  },
+  progressTrackFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: '#6D28D9',
+  },
+  rankLine: {
+    marginTop: 12,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#5B21B6',
+  },
+  editBlock: {
+    marginTop: 16,
   },
   progressInput: {
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
     marginBottom: 12,
   },
   updateButtons: {
     flexDirection: 'row',
+    gap: 10,
   },
   updateButton: {
     flex: 1,
   },
-  updateProgressButton: {
-    marginBottom: 16,
+  primaryBtn: {
+    marginTop: 16,
+    borderRadius: 14,
   },
-  completedContainer: {
+  winCard: {
+    marginTop: 14,
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#E8F5E9',
-    borderRadius: 8,
-    marginBottom: 16,
+    padding: 22,
+    borderRadius: 20,
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: 'rgba(234, 179, 8, 0.35)',
   },
-  completedIcon: {
-    backgroundColor: '#4CAF50',
+  winIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 12,
   },
-  completedText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2E7D32',
+  winTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#92400E',
     textAlign: 'center',
-    marginBottom: 8,
   },
-  completedSubtext: {
+  winSub: {
     fontSize: 14,
-    color: '#388E3C',
+    color: '#B45309',
     textAlign: 'center',
+    marginTop: 6,
   },
-  notJoinedContainer: {
+  winStats: {
+    marginTop: 12,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1625',
+  },
+  ctaCard: {
+    marginTop: 14,
+    padding: 18,
+    borderRadius: 18,
+    backgroundColor: '#F8F6FC',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    marginBottom: 16,
+    gap: 14,
   },
-  notJoinedText: {
-    fontSize: 16,
-    color: '#666',
+  ctaText: {
+    fontSize: 15,
+    color: '#6B6578',
     textAlign: 'center',
-    marginBottom: 12,
-  },
-  joinButton: {
-    marginTop: 8,
+    lineHeight: 22,
   },
   participantsContainer: {
     flex: 1,
   },
   participantsList: {
-    padding: 16,
+    padding: 20,
+    paddingBottom: 40,
   },
-  participantCard: {
-    marginBottom: 12,
-    borderRadius: 12,
-    elevation: 1,
-  },
-  currentUserCard: {
-    borderLeftWidth: 3,
-    borderLeftColor: '#9317ED',
-  },
-  participantContent: {
+  participantRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(26, 22, 37, 0.06)',
+    gap: 14,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#1E1033',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+      },
+      android: { elevation: 2 },
+    }),
   },
-  participantRank: {
-    marginRight: 10,
+  participantRowHighlight: {
+    borderColor: 'rgba(109, 40, 217, 0.35)',
+    backgroundColor: '#FAF5FF',
   },
-  rankAvatar: {
-    marginRight: 8,
-  },
-  firstRankAvatar: {
-    backgroundColor: '#FFD700',
-  },
-  secondRankAvatar: {
-    backgroundColor: '#C0C0C0',
-  },
-  thirdRankAvatar: {
-    backgroundColor: '#CD7F32',
-  },
-  otherRankAvatar: {
-    backgroundColor: '#9E9E9E',
-  },
-  participantInfo: {
+  rankAvatar: {},
+  firstRankAvatar: { backgroundColor: '#EAB308' },
+  secondRankAvatar: { backgroundColor: '#94A3B8' },
+  thirdRankAvatar: { backgroundColor: '#D97706' },
+  otherRankAvatar: { backgroundColor: '#A78BFA' },
+  participantBody: {
     flex: 1,
   },
+  participantTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   participantName: {
+    flex: 1,
     fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    fontWeight: '700',
+    color: '#1A1625',
+  },
+  youSuffix: {
+    fontWeight: '600',
+    color: '#7C3AED',
   },
   currentUserText: {
-    color: '#9317ED',
+    color: '#5B21B6',
   },
-  progressInfo: {
-    marginBottom: 4,
-  },
-  progressValue: {
+  participantScore: {
     fontSize: 14,
-    color: '#555',
-    marginBottom: 4,
+    fontWeight: '800',
+    color: '#7C3AED',
   },
-  completedChip: {
-    backgroundColor: '#E8F5E9',
+  participantTrack: {
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: '#EDE9FE',
+    marginTop: 8,
+    overflow: 'hidden',
+  },
+  participantTrackFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: '#6D28D9',
+  },
+  participantUnit: {
+    marginTop: 6,
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  doneBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
     alignSelf: 'flex-start',
-    marginTop: 4,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  doneBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#15803D',
   },
   commentsContainer: {
     flex: 1,
+    padding: 20,
   },
-  commentInputCard: {
-    margin: 16,
-    marginBottom: 8,
-    borderRadius: 12,
-    elevation: 3,
+  commentComposer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(26, 22, 37, 0.06)',
   },
   commentInput: {
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
     marginBottom: 12,
   },
   addCommentButton: {
     alignSelf: 'flex-end',
+    borderRadius: 12,
   },
   commentsList: {
-    padding: 16,
-    paddingTop: 8,
+    paddingBottom: 32,
   },
   commentCard: {
     marginBottom: 12,
-    borderRadius: 12,
-    elevation: 2,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: 'rgba(26, 22, 37, 0.06)',
   },
   currentUserCommentCard: {
-    borderLeftWidth: 3,
-    borderLeftColor: '#9317ED',
+    borderColor: 'rgba(109, 40, 217, 0.25)',
+    backgroundColor: '#FAF5FF',
   },
   commentHeader: {
     flexDirection: 'row',
@@ -1093,62 +1085,70 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   commentUsername: {
-    fontWeight: 'bold',
+    fontWeight: '700',
     fontSize: 14,
+    color: '#1A1625',
   },
   commentDate: {
     fontSize: 12,
-    color: '#888',
+    color: '#9CA3AF',
   },
   commentContent: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#333',
+    color: '#4B5563',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F4F2F8',
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
-    color: '#666',
+    fontSize: 15,
+    color: '#6B6578',
+    fontWeight: '500',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
+    backgroundColor: '#F4F2F8',
+    gap: 12,
   },
   errorText: {
     fontSize: 16,
-    color: '#B00020',
+    color: '#6B6578',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 8,
+    maxWidth: 280,
+    lineHeight: 24,
   },
   backButton: {
     marginTop: 8,
+    borderRadius: 12,
   },
-  emptyContainer: {
+  emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: 32,
+    gap: 12,
   },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
+  emptyTitle: {
+    fontSize: 15,
+    color: '#6B6578',
     textAlign: 'center',
-  },
-  loginPromptContainer: {
-    alignItems: 'center',
-    padding: 16,
+    maxWidth: 260,
+    lineHeight: 22,
   },
   loginPromptText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 14,
+    color: '#6B6578',
     textAlign: 'center',
+    lineHeight: 20,
   },
 });
 

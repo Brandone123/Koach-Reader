@@ -12,7 +12,8 @@ import {
   useTheme,
   IconButton
 } from 'react-native-paper';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '../store/hooks';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
@@ -35,14 +36,14 @@ const CategoryBooksScreen: React.FC<CategoryBooksScreenProps> = ({ navigation, r
   const { t } = useTranslation();
   const theme = useTheme();
   const { categoryId, categoryName } = route.params;
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
   const books = useSelector(selectBooks);
   const isLoading = useSelector(selectBooksLoading);
 
-  const filteredBooks = books.filter(book => 
+  const filteredBooks = books.filter((book: { categories?: { id: string }[] }) => 
     book.categories?.some(cat => typeof cat === 'object' && cat.id === categoryId)
-  );
+  ) as Book[];
 
   React.useEffect(() => {
     navigation.setOptions({
